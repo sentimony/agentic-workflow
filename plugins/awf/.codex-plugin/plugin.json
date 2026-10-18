@@ -1,0 +1,34 @@
+{
+  "name": "awf",
+  "version": "0.0.1",
+  "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change.",
+  "author": {
+    "name": "Ihor Orlovskyi",
+    "email": "ihororlovskyi@gmail.com",
+    "url": "https://github.com/sentimony"
+  },
+  "repository": "https://github.com/sentimony/agentic-workflow",
+  "license": "MIT",
+  "keywords": [
+    "agentic-workflow",
+    "code-review",
+    "engineering",
+    "best-practices"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Sentimony Agentic Workflow",
+    "shortDescription": "Request a structured review of an exact change",
+    "longDescription": "Pin the exact change, gather intent and constraints, and dispatch an independent read-only reviewer that reports separate verdicts and evidence-backed findings.",
+    "developerName": "Ihor Orlovskyi",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ],
+    "defaultPrompt": [
+      "Review my changes since main against the spec."
+    ],
+    "websiteURL": "https://github.com/sentimony/agentic-workflow"
+  }
+}

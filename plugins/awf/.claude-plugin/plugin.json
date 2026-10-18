@@ -1,0 +1,21 @@
+{
+  "name": "awf",
+  "version": "0.0.1",
+  "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change.",
+  "author": {
+    "name": "Ihor Orlovskyi",
+    "email": "ihororlovskyi@gmail.com",
+    "url": "https://github.com/sentimony"
+  },
+  "repository": "https://github.com/sentimony/agentic-workflow",
+  "license": "MIT",
+  "keywords": [
+    "agentic-workflow",
+    "code-review",
+    "engineering",
+    "best-practices"
+  ],
+  "skills": [
+    "./skills/cr-request"
+  ]
+}

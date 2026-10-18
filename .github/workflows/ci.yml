@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
 
@@ -37,7 +37,10 @@ jobs:
                   errors.append(f"{skill_md}: name must equal directory '{skill_md.parent.name}'")
               if not re.search(r"^description:\s*\S", fm, re.MULTILINE):
                   errors.append(f"{skill_md}: missing 'description'")
-              version = re.search(r'^  version:\s*"(\d+\.\d+\.\d+)"\s*$', fm, re.MULTILINE)
+              # Only the version key inside the metadata block counts, not any other nested key.
+              # The same metadata regex is in the README check below; change both together.
+              metadata = re.search(r"^metadata:[ \t]*\n((?:[ \t]+.*\n?)*)", fm + "\n", re.MULTILINE)
+              version = metadata and re.search(r'^  version:\s*"(\d+\.\d+\.\d+)"\s*$', metadata.group(1), re.MULTILINE)
               if not version:
                   errors.append(f"{skill_md}: metadata.version must be plain semver X.Y.Z")
               if not re.search(r"^license:\s*MIT\s*$", fm, re.MULTILINE):
@@ -122,7 +125,10 @@ jobs:
                   errors.append(f"README.md: Plugins table row for {name} {plugin.get('version')} missing or stale")
 
           for skill_md in root.glob("*/skills/*/SKILL.md"):
-              version = re.search(r'^  version:\s*"([^"]+)"', skill_md.read_text(encoding="utf-8"), re.MULTILINE)
+              fm = re.match(r"^---\n(.*?)\n---\n", skill_md.read_text(encoding="utf-8"), re.DOTALL)
+              # Same metadata regex as in the frontmatter check above; change both together.
+              metadata = fm and re.search(r"^metadata:[ \t]*\n((?:[ \t]+.*\n?)*)", fm.group(1) + "\n", re.MULTILINE)
+              version = metadata and re.search(r'^  version:\s*"([^"]+)"', metadata.group(1), re.MULTILINE)
               skill = skill_md.parent.name
               if version and not re.search(rf"^\| \[{re.escape(skill)}\]\([^)]*\) \| {re.escape(version.group(1))} \|", readme, re.MULTILINE):
                   errors.append(f"README.md: Skills table row for {skill} {version.group(1)} missing or stale")

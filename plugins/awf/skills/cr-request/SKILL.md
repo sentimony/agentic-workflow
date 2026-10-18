@@ -3,7 +3,7 @@ name: cr-request
 description: Use when a change needs an independent code review before it moves on - a finished task, a feature branch, a pull request, or work-in-progress changes since a given ref - in any programming language. Pins the exact diff, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>]"
 metadata:
-  version: "0.0.1"
+  version: "0.0.2"
 license: MIT
 ---
 
@@ -29,9 +29,12 @@ A review of the wrong diff is worse than no review. Before anything else:
   and generated artifacts instead of reviewing them silently;
 - confirm the diff is non-empty and record the target identity.
 
-Commands and the identity record are in [target.md](references/target.md). If the
-boundary is ambiguous and the choice changes the review, ask. Never fall back to
-reviewing the whole repository.
+When the caller hands over a prepared target (an identity record with the diff and log
+already captured), use it as given instead of running the commands.
+
+Commands, the identity record, and prepared targets are in
+[target.md](references/target.md). If the boundary is ambiguous and the choice changes
+the review, ask. Never fall back to reviewing the whole repository.
 
 ## 2. State the intent
 
@@ -93,9 +96,9 @@ Accept the result only when it contains:
 "Looks good" without verdicts is incomplete; re-request. Do not merge or rerank the
 axes into one score: a change can satisfy the spec and still break the system.
 
-Hand the result to whoever resolves findings. This skill does not fix, accept, or
-reject them. A PASS belongs to its target identity; after any change to the target,
-the review is stale.
+Hand the result to `cr-receive`, which verifies and resolves the findings. This skill
+does not fix, accept, or reject them. A PASS belongs to its target identity; after any
+change to the target, the review is stale.
 
 ## Security Model
 
@@ -119,3 +122,4 @@ reviewers. The skill does not edit code, commit, or push.
 - [Target pinning](references/target.md)
 - [Reviewer brief and result contract](references/brief.md)
 - [Review lenses](references/lenses.md)
+- Next step: `cr-receive`

@@ -9,7 +9,7 @@
     {
       "name": "awf",
       "source": "./plugins/awf",
-      "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change.",
+      "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change and resolve its findings with evidence.",
       "category": "development",
       "keywords": [
         "agentic-workflow",

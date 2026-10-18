@@ -3,7 +3,13 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the `awf`
 plugin.
 
-Release: `v0.0.1` (plugin `awf` 0.0.1)
+Version: `v0.0.1`
+
+## Plugins
+
+| Plugin | Version | Skills |
+| --- | --- | --- |
+| [awf](plugins/awf) | 0.0.1 | cr-request |
 
 ## Skills
 

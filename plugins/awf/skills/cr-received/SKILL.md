@@ -1,5 +1,5 @@
 ---
-name: cr-receive
+name: cr-received
 description: Use when code review feedback has arrived and needs a decision before any fix - a cr-request result, pull request comments, CI or static-analysis review output, or a reviewer's message - in any programming language. Verifies each finding against the current code, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, and reports per finding.
 argument-hint: "[<review-path>]"
 metadata:
@@ -7,7 +7,7 @@ metadata:
 license: MIT
 ---
 
-# CR Receive
+# CR Received
 
 A review is a set of claims about code. This skill turns each claim into a decision
 backed by evidence, then fixes only what the evidence supports.

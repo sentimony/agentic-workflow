@@ -112,10 +112,9 @@ jobs:
       REVIEWER: yngwald
       NUMBER: ${{ needs.gate.outputs.number }}
       HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
-      # sentimony/agentic-workflow commit of tag v0.0.1 with plugins/awf/skills/cr-request; the
-      # reviewer skill comes from a released tag, never from the PR head under review. Bump it to
-      # the v0.0.2 tag commit after release: 0.0.1 lacks the prepared target mode.
-      CR_REQUEST_REF: 39626fcce7cadd6a77b1cf5ebc6b0ce922f37960
+      # sentimony/agentic-workflow commit of tag v0.0.2 with plugins/awf/skills/cr-request; the
+      # reviewer skill comes from a released tag, never from the PR head under review.
+      CR_REQUEST_REF: 006400f88d768452a9aa07c6736bbbb7bb5d55c3
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:

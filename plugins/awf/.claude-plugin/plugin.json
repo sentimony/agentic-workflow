@@ -1,7 +1,7 @@
 {
   "name": "awf",
-  "version": "0.0.2",
-  "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change and resolve its findings with evidence.",
+  "version": "0.0.3",
+  "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change, resolve its findings with evidence, and record session learnings in agent instructions.",
   "author": {
     "name": "Ihor Orlovskyi",
     "email": "ihororlovskyi@gmail.com",
@@ -17,6 +17,7 @@
   ],
   "skills": [
     "./skills/cr-request",
-    "./skills/cr-receive"
+    "./skills/cr-received",
+    "./skills/session-learnings"
   ]
 }

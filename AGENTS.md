@@ -18,6 +18,8 @@
   version, each plugin version, and each skill version.
 - After a release tag, bump the `awf` entry `ref` in sentimony/skills
   `.claude-plugin/marketplace.json` with a skills patch release.
+- `claude-review.yml` changes in a PR run only after merge: `workflow_run` uses the default
+  branch copy. `.auto-review/` is reserved for the review job and must not be tracked.
 - License: MIT, Ihor Orlovskyi.
 - Branches: `YYMMDD-dev-session`, squash-merged into `main` via PR.
 - English only, plain hyphen.

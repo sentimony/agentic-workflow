@@ -129,6 +129,9 @@ jobs:
           BASE_SHA: ${{ needs.gate.outputs.base_sha }}
         run: |
           out=.auto-review/target
+          # The checkout is the PR head, which may ship .auto-review entries as symlinks; start
+          # from a fresh directory so no redirection below follows one.
+          rm -rf .auto-review
           mkdir -p "$out/base"
           merge_base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
           {

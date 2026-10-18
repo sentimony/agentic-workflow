@@ -137,10 +137,11 @@ jobs:
           python3 - <<'PY'
           import pathlib, subprocess, sys
 
-          # Bidi controls, zero-width and invisible format characters, BOM, soft hyphen,
-          # and the en and em dashes the repository bans in prose.
+          # Bidi controls, zero-width and invisible format characters, BOM, and soft hyphen,
+          # plus every non-ASCII hyphen, dash, and minus: prose uses the plain hyphen only.
           forbidden = set(range(0x202A, 0x202F)) | set(range(0x2066, 0x206A)) | set(range(0x200B, 0x2010)) \
-              | set(range(0x2060, 0x2065)) | {0x00AD, 0x061C, 0x180E, 0xFEFF, 0x2013, 0x2014}
+              | set(range(0x2060, 0x2065)) | {0x00AD, 0x061C, 0x180E, 0xFEFF} \
+              | set(range(0x2010, 0x2016)) | {0x2212}
           files = subprocess.run(["git", "ls-files", "-z"], check=True, capture_output=True).stdout.decode().split("\0")
           errors = 0
           for name in filter(None, files):

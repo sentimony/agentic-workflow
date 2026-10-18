@@ -1,0 +1,14 @@
+Thumbs.db
+.DS_Store
+.idea/
+__pycache__/
+
+*.local*
+*.env*
+
+.agents/*
+!.agents/plugins/
+.claude/
+.opencode/
+skills-lock.json
+.sdd/

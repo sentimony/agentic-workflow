@@ -1,0 +1,22 @@
+{
+  "name": "agentic-workflow",
+  "owner": {
+    "name": "Ihor Orlovskyi",
+    "url": "https://github.com/sentimony"
+  },
+  "description": "Agentic workflow skills by Sentimony, as an installable Claude Code and Codex plugin.",
+  "plugins": [
+    {
+      "name": "awf",
+      "source": "./plugins/awf",
+      "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change.",
+      "category": "development",
+      "keywords": [
+        "agentic-workflow",
+        "code-review",
+        "engineering",
+        "best-practices"
+      ]
+    }
+  ]
+}

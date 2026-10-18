@@ -113,7 +113,8 @@ jobs:
       NUMBER: ${{ needs.gate.outputs.number }}
       HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
       # sentimony/agentic-workflow commit of tag v0.0.1 with plugins/awf/skills/cr-request; the
-      # reviewer skill comes from a released tag, never from the PR head under review.
+      # reviewer skill comes from a released tag, never from the PR head under review. Bump it to
+      # the v0.0.2 tag commit after release: 0.0.1 lacks the prepared target mode.
       CR_REQUEST_REF: 39626fcce7cadd6a77b1cf5ebc6b0ce922f37960
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -135,19 +136,22 @@ jobs:
           mkdir -p "$out/base"
           merge_base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
           {
-            echo "Repository: $GITHUB_REPOSITORY"
+            echo "Repository root: $GITHUB_WORKSPACE ($GITHUB_REPOSITORY)"
+            echo "Branch or worktree: detached checkout of PR #$NUMBER"
             echo "Boundary: range"
             echo "Base: $BASE_SHA"
             echo "Effective base: $merge_base"
             echo "Head: $HEAD_SHA"
+            echo "Included paths: every path in stat.txt"
+            echo "Excluded paths and reason: none"
             echo "Uncommitted state: none"
             echo "Captured at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > "$out/identity.txt"
           git log --oneline "$merge_base..$HEAD_SHA" > "$out/log.txt"
           git diff --no-ext-diff --no-textconv --stat "$merge_base" "$HEAD_SHA" > "$out/stat.txt"
           git diff --no-ext-diff --no-textconv "$merge_base" "$HEAD_SHA" > "$out/diff.patch"
-          # Base copies of modified and deleted files; the checkout already holds the head side.
-          git diff -z --name-only --no-renames --diff-filter=MD "$merge_base" "$HEAD_SHA" |
+          # Base copies of modified, deleted, and type-changed files; the checkout holds the head side.
+          git diff -z --name-only --no-renames --diff-filter=MDT "$merge_base" "$HEAD_SHA" |
             while IFS= read -r -d '' path; do
               mkdir -p "$out/base/$(dirname "$path")"
               git show "$merge_base:$path" > "$out/base/$path"
@@ -178,8 +182,9 @@ jobs:
             Run the cr-request skill for this pull request on a prepared target. The target is the
             committed range from the merge base of BASE SHA and HEAD SHA to HEAD SHA, already captured in
             .auto-review/target/: identity.txt, log.txt, stat.txt, diff.patch, and base/ with the merge-base
-            copies of modified and deleted files. The checkout is HEAD SHA. git diff, git log, and git show
-            are not available; read these files instead. Intent: the PR title and description from `gh pr view`, plus AGENTS.md.
+            copies of modified, deleted, and type-changed files. The checkout is HEAD SHA. git diff, git log, and git show
+            are not available; read these files instead, and pass the same instruction to any reviewer you
+            dispatch. Intent: the PR title and description from `gh pr view`, plus AGENTS.md.
             CI (skill frontmatter, manifests and marketplaces, README versions, hidden Unicode) is green on HEAD SHA; tests were not run in this job - say so in the gaps.
             Earlier review comments on the PR are context; label this a fresh review pass when the same
             reviewer already reviewed an older head.

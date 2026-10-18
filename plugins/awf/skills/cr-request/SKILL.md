@@ -97,8 +97,8 @@ Accept the result only when it contains:
 axes into one score: a change can satisfy the spec and still break the system.
 
 Hand the result to `cr-receive`, which verifies and resolves the findings. This skill
-does not fix, accept, or reject them. A PASS belongs to its target identity; after any change to the target,
-the review is stale.
+does not fix, accept, or reject them. A PASS belongs to its target identity; after any
+change to the target, the review is stale.
 
 ## Security Model
 

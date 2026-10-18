@@ -18,6 +18,13 @@ claude plugin marketplace add sentimony/agentic-workflow
 claude plugin install awf@agentic-workflow
 ```
 
+Codex:
+
+```bash
+codex plugin marketplace add sentimony/agentic-workflow
+codex plugin add awf@agentic-workflow
+```
+
 Any agent through [skills](https://github.com/vercel-labs/skills):
 
 ```bash

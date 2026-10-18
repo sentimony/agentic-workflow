@@ -7,7 +7,8 @@ The target identity makes a review reproducible and lets anyone tell when it is 
     Repository root:
     Branch or worktree:
     Boundary: range | commits | file-set | working-tree
-    Base: <ref and resolved SHA>
+    Base: <ref as given and resolved SHA>
+    Effective base: <merge-base SHA the diff starts from>
     Head: <resolved SHA>
     Included paths:
     Excluded paths and reason:
@@ -24,12 +25,17 @@ rewriting the output.
     git rev-parse HEAD
     git status --porcelain=v1 --untracked-files=all
 
-Committed range against a base (three dots compare with the merge-base):
+Committed range against a base. Resolve the merge-base once and use it everywhere, so
+the log, the diff, and the identity share one boundary:
 
     git rev-parse --verify <base>^{commit}
-    git log --oneline <base>..HEAD
-    git diff --no-ext-diff --no-textconv --stat <base>...HEAD
-    git diff --no-ext-diff --no-textconv <base>...HEAD
+    git merge-base <base> HEAD
+    git log --oneline <merge-base>..HEAD
+    git diff --no-ext-diff --no-textconv --stat <merge-base> HEAD
+    git diff --no-ext-diff --no-textconv <merge-base> HEAD
+
+When the merge-base differs from the resolved base, the base branch moved on; say so in
+the brief.
 
 Working tree on top of HEAD:
 

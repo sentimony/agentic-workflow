@@ -6,7 +6,8 @@ __pycache__/
 *.local*
 *.env*
 
-.agents/
+.agents/*
+!.agents/plugins/
 .claude/
 .opencode/
 skills-lock.json

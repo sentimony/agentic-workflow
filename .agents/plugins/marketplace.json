@@ -1,0 +1,20 @@
+{
+  "name": "agentic-workflow",
+  "interface": {
+    "displayName": "Sentimony Agentic Workflow"
+  },
+  "plugins": [
+    {
+      "name": "awf",
+      "source": {
+        "source": "local",
+        "path": "./plugins/awf"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

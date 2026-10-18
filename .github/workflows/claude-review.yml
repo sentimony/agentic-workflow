@@ -1,0 +1,204 @@
+name: Claude review
+
+# Posts one review-request comment as yngwald on each open, non-draft, same-repo PR whose head
+# has a green CI run, once per head SHA. Claude itself gets only a read-only token and writes
+# the review to a file; a separate step posts it with the yngwald PAT.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  # A PR opened, reopened, or marked ready after its CI went green gets no new CI run.
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number
+        required: true
+
+permissions: {}
+
+jobs:
+  gate:
+    name: Review gate
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      review: ${{ steps.gate.outputs.review }}
+      number: ${{ steps.gate.outputs.number }}
+      base_sha: ${{ steps.gate.outputs.base_sha }}
+      head_sha: ${{ steps.gate.outputs.head_sha }}
+    steps:
+      - id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          REVIEWER: yngwald
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+          EVENT_PR: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          skip() {
+            echo "Skip: $1" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "review=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          if [ -n "$RUN_SHA" ]; then
+            [ "$RUN_HEAD_REPO" = "$REPO" ] || skip "CI run from a fork"
+            # CI runs on push, so its run carries no PR; find the open PR by commit.
+            number=$(gh api "repos/$REPO/commits/$RUN_SHA/pulls" \
+              --jq "[.[] | select(.state == \"open\" and .head.sha == \"$RUN_SHA\")][0].number // empty")
+          else
+            number="$EVENT_PR"
+          fi
+          [ -z "$number" ] || [[ "$number" =~ ^[0-9]+$ ]] || skip "invalid PR number '$number'"
+          [ -n "$number" ] || skip "no open PR for $RUN_SHA"
+
+          pr=$(gh api "repos/$REPO/pulls/$number")
+          head_sha=$(jq -r .head.sha <<< "$pr")
+          base_sha=$(jq -r .base.sha <<< "$pr")
+          [ "$(jq -r .state <<< "$pr")" = open ] || skip "PR #$number is not open"
+          [ "$(jq -r .draft <<< "$pr")" = false ] || skip "PR #$number is a draft"
+          [ "$(jq -r .head.repo.full_name <<< "$pr")" = "$REPO" ] || skip "PR #$number is from a fork"
+          [ "$(jq -r .user.type <<< "$pr")" != Bot ] || skip "PR #$number is from a bot"
+          [ "$(jq -r .user.login <<< "$pr")" != "$REVIEWER" ] || skip "PR #$number is by $REVIEWER"
+          jq -e '.labels | map(.name) | index("skip-auto-review") | not' <<< "$pr" > /dev/null \
+            || skip "PR #$number has the skip-auto-review label"
+          [ -z "$RUN_SHA" ] || [ "$RUN_SHA" = "$head_sha" ] || skip "PR #$number moved on from $RUN_SHA"
+
+          # Runs are listed newest first; the per-workflow endpoint answers 404 until ci.yml has run.
+          ci=$(gh api "repos/$REPO/actions/runs?head_sha=$head_sha&event=push" \
+            --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")][0]
+              | if . == null then "none" elif .status != "completed" then .status else .conclusion end')
+          [ "$ci" = success ] || skip "CI on $head_sha is $ci"
+
+          # Captured first: under pipefail, grep -q closing the pipe early would fail gh with SIGPIPE.
+          bodies=$(gh api --paginate "repos/$REPO/issues/$number/comments" \
+            --jq ".[] | select(.user.login == \"$REVIEWER\") | .body")
+          if grep -qF "<!-- claude-review sha=$head_sha -->" <<< "$bodies"; then
+            skip "PR #$number already has a review of $head_sha"
+          fi
+
+          echo "Review PR #$number at $head_sha" | tee -a "$GITHUB_STEP_SUMMARY"
+          {
+            echo "review=true"
+            echo "number=$number"
+            echo "base_sha=$base_sha"
+            echo "head_sha=$head_sha"
+          } >> "$GITHUB_OUTPUT"
+
+  review:
+    name: Claude review
+    needs: gate
+    if: needs.gate.outputs.review == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: claude-review-${{ needs.gate.outputs.number }}
+      cancel-in-progress: true
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    env:
+      # Read-only, for the agent's gh calls; the post step overrides it.
+      GH_TOKEN: ${{ github.token }}
+      REVIEWER: yngwald
+      NUMBER: ${{ needs.gate.outputs.number }}
+      HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
+      # sentimony/skills commit with plugins/devflow/skills/review-request
+      REVIEW_SKILLS_REF: a59fd2e1c4aca3a983f5f424a62918fd60c07e11
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.gate.outputs.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # User scope: .claude/ is gitignored, and the action restores it from the base branch.
+      - name: Install review-request skill
+        run: |
+          git init -q "$RUNNER_TEMP/skills"
+          git -C "$RUNNER_TEMP/skills" fetch -q --depth 1 https://github.com/sentimony/skills "$REVIEW_SKILLS_REF"
+          git -C "$RUNNER_TEMP/skills" checkout -q FETCH_HEAD
+          mkdir -p ~/.claude/skills .auto-review
+          cp -R "$RUNNER_TEMP/skills/plugins/devflow/skills/review-request" ~/.claude/skills/
+          test -f ~/.claude/skills/review-request/SKILL.md
+
+      - uses: anthropics/claude-code-action@867ab36a6fa36ec00845704bc92d95ae20a817b1 # v1
+        with:
+          # Read-only token: the agent reads the PR but cannot write to GitHub.
+          github_token: ${{ github.token }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ needs.gate.outputs.number }}
+            BASE SHA: ${{ needs.gate.outputs.base_sha }}
+            HEAD SHA: ${{ needs.gate.outputs.head_sha }}
+
+            Run the review-request skill for this pull request. The review boundary is the committed range
+            BASE SHA...HEAD SHA (three dots, from their merge base); both commits are available locally.
+            Requirements: the PR title and description from `gh pr view`, plus AGENTS.md.
+            CI (skill frontmatter, manifests and marketplaces, README versions, hidden Unicode) is green on HEAD SHA; tests were not run in this job - say so in the gaps.
+            Earlier review comments on the PR are context; label this a fresh review pass when the same
+            reviewer already reviewed an older head.
+
+            If the review-request skill is not available to you, do not review and do not write
+            .auto-review/comment.md; stop and report that the skill is missing.
+
+            Output: write only the final review comment, in English with hyphens only, to
+            .auto-review/comment.md. It must hold the reviewed range, the four verdicts, the findings with
+            severity, file:line, impact and evidence, optional suggestions, and review gaps.
+            The comment must end with the line `Reviewed with: review-request skill`.
+            Do not edit any other file, post comments, push, or merge.
+          claude_args: >-
+            --model ${{ vars.CLAUDE_REVIEW_MODEL || 'claude-opus-5-5' }}
+            --max-turns 60
+            --allowedTools "Skill,Agent,Task,Read,Glob,Grep,Write(./.auto-review/**),Edit(./.auto-review/**),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git merge-base:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*)"
+
+      - name: Post review as yngwald
+        id: post
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEWER_TOKEN: ${{ secrets.YNGWALD_PR_TOKEN }}
+        run: |
+          test -s .auto-review/comment.md || { echo "::error::the review produced no comment"; exit 1; }
+          last="$(tr -d '\r' < .auto-review/comment.md | grep -v '^[[:space:]]*$' | tail -n 1 | sed 's/[[:space:]]*$//' || true)"
+          [ "$last" = 'Reviewed with: review-request skill' ] \
+            || { echo "::error::the comment was not made with the review-request skill"; exit 1; }
+          # The comment author is the PAT owner; refuse to post as anyone else.
+          test -n "$REVIEWER_TOKEN" || { echo "::error::YNGWALD_PR_TOKEN is not set"; exit 1; }
+          login="$(GH_TOKEN="$REVIEWER_TOKEN" gh api user --jq .login)"
+          test "$login" = "$REVIEWER" || { echo "::error::YNGWALD_PR_TOKEN belongs to '$login', not $REVIEWER"; exit 1; }
+          # The PR may have moved on while the review ran; a stale pass is not published.
+          current="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER" --jq '.head.sha')"
+          [ "$current" = "$HEAD_SHA" ] || { echo "Skip: PR #$NUMBER moved on to $current"; exit 0; }
+          # Another run may have reviewed this SHA after the gate passed.
+          bodies=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments" \
+            --jq ".[] | select(.user.login == \"$REVIEWER\") | .body")
+          if grep -qF "<!-- claude-review sha=$HEAD_SHA -->" <<< "$bodies"; then
+            echo "Skip: PR #$NUMBER already has a review of $HEAD_SHA"
+            exit 0
+          fi
+          {
+            printf '<!-- claude-review sha=%s -->\n' "$HEAD_SHA"
+            cat .auto-review/comment.md
+          } > "$RUNNER_TEMP/body.md"
+          GH_TOKEN="$REVIEWER_TOKEN" gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/body.md"
+          echo "posted=true" >> "$GITHUB_OUTPUT"
+
+      - name: Verify review comment
+        if: steps.post.outputs.posted == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # One comment must carry both this SHA's marker and the skill line.
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments" \
+            --jq ".[] | select(.user.login == \"$REVIEWER\") | select(.body | contains(\"<!-- claude-review sha=$HEAD_SHA -->\") and contains(\"Reviewed with: review-request skill\")) | .id")
+          [ -n "$ids" ] || { echo "::error::no $REVIEWER review comment made with the review-request skill"; exit 1; }

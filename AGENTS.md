@@ -7,6 +7,7 @@
 - `plugins/awf/.claude-plugin/plugin.json` - Claude Code manifest; lists skills.
 - `plugins/awf/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
 - `plugins/awf/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
+- `.github/workflows/ci.yml` - validation; `claude-review.yml` - auto review as yngwald.
 
 ## Rules
 

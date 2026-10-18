@@ -1,0 +1,157 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Validate SKILL.md frontmatter
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+
+          errors = []
+          skills = sorted(pathlib.Path("plugins").glob("*/skills/*/SKILL.md"))
+          if not skills:
+              errors.append("no plugins/*/skills/*/SKILL.md found")
+          for skill_md in skills:
+              m = re.match(r"^---\n(.*?)\n---\n", skill_md.read_text(encoding="utf-8"), re.DOTALL)
+              if not m:
+                  errors.append(f"{skill_md}: missing YAML frontmatter")
+                  continue
+              fm = m.group(1)
+              name = re.search(r"^name:\s*(\S+)\s*$", fm, re.MULTILINE)
+              if not name or name.group(1) != skill_md.parent.name:
+                  errors.append(f"{skill_md}: name must equal directory '{skill_md.parent.name}'")
+              if not re.search(r"^description:\s*\S", fm, re.MULTILINE):
+                  errors.append(f"{skill_md}: missing 'description'")
+              version = re.search(r'^  version:\s*"(\d+\.\d+\.\d+)"\s*$', fm, re.MULTILINE)
+              if not version:
+                  errors.append(f"{skill_md}: metadata.version must be plain semver X.Y.Z")
+              if not re.search(r"^license:\s*MIT\s*$", fm, re.MULTILINE):
+                  errors.append(f"{skill_md}: license must be MIT")
+              if not (skill_md.parent / "LICENSE").is_file():
+                  errors.append(f"{skill_md.parent}: missing LICENSE")
+              changelog = skill_md.parent / "CHANGELOG.md"
+              if not changelog.is_file():
+                  errors.append(f"{skill_md.parent}: missing CHANGELOG.md")
+              elif version:
+                  top = re.search(r"^## \[(\d+\.\d+\.\d+)\]", changelog.read_text(encoding="utf-8"), re.MULTILINE)
+                  if not top or top.group(1) != version.group(1):
+                      errors.append(f"{changelog}: newest entry {top and top.group(1)} != metadata.version {version.group(1)}")
+              hint = re.search(r"^argument-hint:(.*)$", fm, re.MULTILINE)
+              if hint:
+                  value = hint.group(1).strip().strip("\"'").strip()
+                  depth = 0
+                  for ch in value:
+                      depth += {"[": 1, "]": -1}.get(ch, 0)
+                      if depth < 0:
+                          break
+                  if not value or value[0] in "|>" or depth != 0 or value.count("<") != value.count(">"):
+                      errors.append(f"{skill_md}: argument-hint must be a non-empty single line with balanced [] and <>")
+
+          for err in errors:
+              print(f"::error::{err}")
+          sys.exit(1 if errors else 0)
+          PY
+
+      - name: Check manifests, marketplaces, and README versions
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re, sys
+
+          errors = []
+          root = pathlib.Path("plugins")
+          load = lambda path: json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+          readme = pathlib.Path("README.md").read_text(encoding="utf-8")
+          # The repository version in README is the release every plugin tracks.
+          release = re.search(r"^Version: `v(\d+\.\d+\.\d+)`$", readme, re.MULTILINE)
+          release = release and release.group(1)
+          if not release:
+              errors.append("README.md: missing 'Version: `vX.Y.Z`' line")
+
+          plugin_dirs = sorted(p.name for p in root.iterdir() if p.is_dir())
+          claude_market = {e["name"]: e.get("source") for e in load(".claude-plugin/marketplace.json")["plugins"]}
+          codex_market = {e["name"]: e.get("source", {}).get("path") for e in load(".agents/plugins/marketplace.json")["plugins"]}
+          if sorted(claude_market) != plugin_dirs:
+              errors.append(f".claude-plugin/marketplace.json plugins {sorted(claude_market)} != plugins/ {plugin_dirs}")
+          if sorted(codex_market) != plugin_dirs:
+              errors.append(f".agents/plugins/marketplace.json plugins {sorted(codex_market)} != plugins/ {plugin_dirs}")
+          for name in plugin_dirs:
+              for label, source in (("Claude", claude_market.get(name)), ("Codex", codex_market.get(name))):
+                  if source is not None and source != f"./plugins/{name}":
+                      errors.append(f"{label} marketplace plugin {name}: source {source!r} != './plugins/{name}'")
+
+          owner = {}
+          for name in plugin_dirs:
+              base = root / name
+              dirs = sorted(p.parent.name for p in base.glob("skills/*/SKILL.md"))
+              for skill in dirs:
+                  if skill in owner:
+                      errors.append(f"skill {skill} is in both {owner[skill]} and {name}")
+                  owner[skill] = name
+              claude_path, codex_path = base / ".claude-plugin/plugin.json", base / ".codex-plugin/plugin.json"
+              if not claude_path.is_file() or not codex_path.is_file():
+                  errors.append(f"{base}: needs .claude-plugin/plugin.json and .codex-plugin/plugin.json")
+                  continue
+              plugin, codex = load(claude_path), load(codex_path)
+              listed = sorted(s.removeprefix("./skills/") for s in plugin.get("skills", []))
+              if listed != dirs:
+                  errors.append(f"{claude_path} skills {listed} != {base}/skills directories {dirs}")
+              if plugin.get("name") != name:
+                  errors.append(f"{claude_path} name {plugin.get('name')} != directory {name}")
+              if plugin.get("version") != release:
+                  errors.append(f"{claude_path} version {plugin.get('version')} != README version {release}")
+              if (codex.get("name"), codex.get("version")) != (plugin.get("name"), plugin.get("version")):
+                  errors.append(f"{codex_path} name/version != {claude_path}")
+              if codex.get("skills") != "./skills/":
+                  errors.append(f"{codex_path} skills {codex.get('skills')!r} != './skills/'")
+              if not re.search(rf"^\| \[{re.escape(name)}\]\([^)]*\) \| {re.escape(str(plugin.get('version')))} \|", readme, re.MULTILINE):
+                  errors.append(f"README.md: Plugins table row for {name} {plugin.get('version')} missing or stale")
+
+          for skill_md in root.glob("*/skills/*/SKILL.md"):
+              version = re.search(r'^  version:\s*"([^"]+)"', skill_md.read_text(encoding="utf-8"), re.MULTILINE)
+              skill = skill_md.parent.name
+              if version and not re.search(rf"^\| \[{re.escape(skill)}\]\([^)]*\) \| {re.escape(version.group(1))} \|", readme, re.MULTILINE):
+                  errors.append(f"README.md: Skills table row for {skill} {version.group(1)} missing or stale")
+
+          for err in errors:
+              print(f"::error::{err}")
+          sys.exit(1 if errors else 0)
+          PY
+
+      - name: Check for hidden Unicode and typographic dashes
+        run: |
+          python3 - <<'PY'
+          import pathlib, subprocess, sys
+
+          # Bidi controls, zero-width and invisible format characters, BOM, soft hyphen,
+          # and the en and em dashes the repository bans in prose.
+          forbidden = set(range(0x202A, 0x202F)) | set(range(0x2066, 0x206A)) | set(range(0x200B, 0x2010)) \
+              | set(range(0x2060, 0x2065)) | {0x00AD, 0x061C, 0x180E, 0xFEFF, 0x2013, 0x2014}
+          files = subprocess.run(["git", "ls-files", "-z"], check=True, capture_output=True).stdout.decode().split("\0")
+          errors = 0
+          for name in filter(None, files):
+              try:
+                  text = pathlib.Path(name).read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  continue
+              for number, line in enumerate(text.splitlines(), 1):
+                  hits = sorted({f"U+{ord(ch):04X}" for ch in line if ord(ch) in forbidden})
+                  if hits:
+                      print(f"::error file={name},line={number}::forbidden character {', '.join(hits)}")
+                      errors += 1
+          sys.exit(1 if errors else 0)
+          PY

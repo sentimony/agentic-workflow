@@ -53,11 +53,12 @@ Fingerprint for uncommitted state:
 
 ## Prepared target
 
-A caller that cannot grant Git access, such as a CI job with a narrow allowlist, can capture
-the target itself: the identity record, the commit log, the diff stat, the full diff, and
-base copies of modified and deleted files. Review from those files, name them in the brief
-as the target, and tell the reviewer to read them instead of running Git. Check that the
-identity names the same head the files came from; a mismatch is a wrong target.
+A caller that cannot grant Git access, such as a CI job with a narrow allowlist, can
+capture the target itself: the identity record, the commit log, the diff stat, the full
+diff, and base copies of modified, deleted, and type-changed files. Review from those
+files, name them in the brief as the target, and tell the reviewer to read them instead of
+running Git. Check that the identity names the same head the files came from; a mismatch
+is a wrong target.
 
 ## Base discovery
 

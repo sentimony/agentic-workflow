@@ -131,7 +131,11 @@ jobs:
         run: |
           out=.auto-review/target
           # The checkout is the PR head, which may ship .auto-review entries as symlinks; start
-          # from a fresh directory so no redirection below follows one.
+          # from a fresh directory so no redirection below follows one. The path is reserved.
+          if [ -n "$(git ls-files .auto-review)" ]; then
+            echo "::error::.auto-review/ is reserved for the review job; remove it from the PR"
+            exit 1
+          fi
           rm -rf .auto-review
           mkdir -p "$out/base"
           merge_base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
@@ -153,7 +157,7 @@ jobs:
           # Base copies of modified, deleted, and type-changed files; the checkout holds the head side.
           git diff -z --name-only --no-renames --diff-filter=MDT "$merge_base" "$HEAD_SHA" |
             while IFS= read -r -d '' path; do
-              mkdir -p "$out/base/$(dirname "$path")"
+              mkdir -p "$out/base/$(dirname -- "$path")"
               git show "$merge_base:$path" > "$out/base/$path"
             done
           test -s "$out/diff.patch" || { echo "::error::empty diff for $merge_base..$HEAD_SHA"; exit 1; }

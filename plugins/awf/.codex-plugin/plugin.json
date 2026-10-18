@@ -1,7 +1,7 @@
 {
   "name": "awf",
-  "version": "0.0.2",
-  "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change and resolve its findings with evidence.",
+  "version": "0.0.3",
+  "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change, resolve its findings with evidence, and record session learnings in agent instructions.",
   "author": {
     "name": "Ihor Orlovskyi",
     "email": "ihororlovskyi@gmail.com",
@@ -18,8 +18,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Sentimony Agentic Workflow",
-    "shortDescription": "Request a structured code review and resolve its findings",
-    "longDescription": "Pin the exact change, gather intent and constraints, and dispatch an independent read-only reviewer that reports separate verdicts and evidence-backed findings, then verify each finding against the current code and fix only what holds up.",
+    "shortDescription": "Request and resolve code reviews, record session learnings",
+    "longDescription": "Pin the exact change, gather intent and constraints, and dispatch an independent read-only reviewer that reports separate verdicts and evidence-backed findings, then verify each finding against the current code and fix only what holds up. Record what a session taught in the right agent instruction file.",
     "developerName": "Ihor Orlovskyi",
     "category": "Developer Tools",
     "capabilities": [
@@ -28,7 +28,8 @@
     ],
     "defaultPrompt": [
       "Review my changes since main against the spec.",
-      "Work through the review findings on this branch."
+      "Work through the review findings on this branch.",
+      "Record the learnings from this session."
     ],
     "websiteURL": "https://github.com/sentimony/agentic-workflow"
   }

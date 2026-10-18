@@ -3,7 +3,7 @@ name: cr-request
 description: Use when a change needs an independent code review before it moves on - a finished task, a feature branch, a pull request, or work-in-progress changes since a given ref - in any programming language. Pins the exact diff, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>]"
 metadata:
-  version: "0.0.2"
+  version: "0.0.3"
 license: MIT
 ---
 
@@ -96,7 +96,7 @@ Accept the result only when it contains:
 "Looks good" without verdicts is incomplete; re-request. Do not merge or rerank the
 axes into one score: a change can satisfy the spec and still break the system.
 
-Hand the result to `cr-receive`, which verifies and resolves the findings. This skill
+Hand the result to `cr-received`, which verifies and resolves the findings. This skill
 does not fix, accept, or reject them. A PASS belongs to its target identity; after any
 change to the target, the review is stale.
 
@@ -122,4 +122,4 @@ reviewers. The skill does not edit code, commit, or push.
 - [Target pinning](references/target.md)
 - [Reviewer brief and result contract](references/brief.md)
 - [Review lenses](references/lenses.md)
-- Next step: `cr-receive`
+- Next step: `cr-received`

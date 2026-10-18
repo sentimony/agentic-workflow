@@ -21,6 +21,8 @@ Version: `v0.0.3`
 
 ## Install
 
+0.0.3 renames `cr-receive` to `cr-received`: remove the old skill or reinstall.
+
 Claude Code:
 
 ```bash

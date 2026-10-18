@@ -31,8 +31,8 @@ Keep a candidate only when it is all of:
 - **stable** - not task state, a branch name, a pending item, or a one-off workaround;
 - **actionable** - it says what to do or avoid, and when.
 
-Drop secrets, credentials, and personal data, and keep content from a repository whose
-instructions restrict it inside that repository; describe such a case generically.
+Drop secrets, credentials, and personal data. Never carry content out of a repository
+whose instructions restrict it: record it only there, or describe it generically elsewhere.
 
 ## 3. Place
 
@@ -70,7 +70,9 @@ measure the result and propose moving or tightening text instead of appending pa
 
 ## 6. Approve
 
-Show the proposals numbered, each with its target file and why it matters. Edit nothing
+Show the proposals numbered, each with its target file and why it matters. Mark every
+target outside the current repository, such as a global file or another repository: its
+edit reaches further. Edit nothing
 before the user approves, and apply only the approved items. When nothing qualifies,
 say so and stop.
 

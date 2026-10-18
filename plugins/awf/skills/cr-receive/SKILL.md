@@ -46,9 +46,9 @@ the current tree using read-only Git (see [records.md](references/records.md)):
 
 - same identity: proceed;
 - moved on: a finding whose code changed since the review is checked against the
-  current code, and becomes `STALE` when the cited problem no longer exists;
+  current code, and becomes `OUTDATED` when the cited problem no longer exists;
 - identity unknown: reconstruct it from the review; when that fails, material findings
-  stay `NEEDS DECISION` until a fresh review.
+  stay `NEEDS RULING` until a fresh review.
 
 Name unrelated local edits and leave them outside the fix boundary. Never stash, reset,
 or commit to make inspection easier.

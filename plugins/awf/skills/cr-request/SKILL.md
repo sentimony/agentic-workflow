@@ -29,9 +29,12 @@ A review of the wrong diff is worse than no review. Before anything else:
   and generated artifacts instead of reviewing them silently;
 - confirm the diff is non-empty and record the target identity.
 
-Commands and the identity record are in [target.md](references/target.md). If the
-boundary is ambiguous and the choice changes the review, ask. Never fall back to
-reviewing the whole repository.
+When the caller hands over a prepared target (an identity record with the diff and log
+already captured), use it as given instead of running the commands.
+
+Commands, the identity record, and prepared targets are in
+[target.md](references/target.md). If the boundary is ambiguous and the choice changes
+the review, ask. Never fall back to reviewing the whole repository.
 
 ## 2. State the intent
 

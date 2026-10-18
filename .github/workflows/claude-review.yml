@@ -122,6 +122,35 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # The agent gets no git diff, log, or show: they accept --output=<path>, which could write
+      # outside .auto-review/. The target is prepared here and handed over as files instead.
+      - name: Prepare review target
+        env:
+          BASE_SHA: ${{ needs.gate.outputs.base_sha }}
+        run: |
+          out=.auto-review/target
+          mkdir -p "$out/base"
+          merge_base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+          {
+            echo "Repository: $GITHUB_REPOSITORY"
+            echo "Boundary: range"
+            echo "Base: $BASE_SHA"
+            echo "Effective base: $merge_base"
+            echo "Head: $HEAD_SHA"
+            echo "Uncommitted state: none"
+            echo "Captured at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > "$out/identity.txt"
+          git log --oneline "$merge_base..$HEAD_SHA" > "$out/log.txt"
+          git diff --no-ext-diff --no-textconv --stat "$merge_base" "$HEAD_SHA" > "$out/stat.txt"
+          git diff --no-ext-diff --no-textconv "$merge_base" "$HEAD_SHA" > "$out/diff.patch"
+          # Base copies of modified and deleted files; the checkout already holds the head side.
+          git diff -z --name-only --no-renames --diff-filter=MD "$merge_base" "$HEAD_SHA" |
+            while IFS= read -r -d '' path; do
+              mkdir -p "$out/base/$(dirname "$path")"
+              git show "$merge_base:$path" > "$out/base/$path"
+            done
+          test -s "$out/diff.patch" || { echo "::error::empty diff for $merge_base..$HEAD_SHA"; exit 1; }
+
       # User scope: .claude/ is gitignored, and the action restores it from the base branch.
       - name: Install cr-request skill
         run: |
@@ -143,9 +172,11 @@ jobs:
             BASE SHA: ${{ needs.gate.outputs.base_sha }}
             HEAD SHA: ${{ needs.gate.outputs.head_sha }}
 
-            Run the cr-request skill for this pull request with BASE SHA as the base ref. The target is the
-            committed range from the merge base of BASE SHA and HEAD SHA to HEAD SHA; both commits are
-            available locally. Intent: the PR title and description from `gh pr view`, plus AGENTS.md.
+            Run the cr-request skill for this pull request on a prepared target. The target is the
+            committed range from the merge base of BASE SHA and HEAD SHA to HEAD SHA, already captured in
+            .auto-review/target/: identity.txt, log.txt, stat.txt, diff.patch, and base/ with the merge-base
+            copies of modified and deleted files. The checkout is HEAD SHA. git diff, git log, and git show
+            are not available; read these files instead. Intent: the PR title and description from `gh pr view`, plus AGENTS.md.
             CI (skill frontmatter, manifests and marketplaces, README versions, hidden Unicode) is green on HEAD SHA; tests were not run in this job - say so in the gaps.
             Earlier review comments on the PR are context; label this a fresh review pass when the same
             reviewer already reviewed an older head.
@@ -159,13 +190,10 @@ jobs:
             suggestions, the set-aside list, open questions, review gaps, and merge readiness.
             The comment must end with the line `Reviewed with: cr-request skill`.
             Do not edit any other file, post comments, push, or merge.
-          # Accepted risk: the git prefixes below also accept --output=<path>, so text in the PR could
-          # steer a file write outside .auto-review/. Only same-repo PRs reach this job, the agent token
-          # is read-only, and the post step reads only comment.md.
           claude_args: >-
             --model ${{ vars.CLAUDE_REVIEW_MODEL || 'claude-opus-5-5' }}
             --max-turns 60
-            --allowedTools "Skill,Agent,Task,Read,Glob,Grep,Write(./.auto-review/**),Edit(./.auto-review/**),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git status:*),Bash(git ls-files:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*)"
+            --allowedTools "Skill,Agent,Task,Read,Glob,Grep,Write(./.auto-review/**),Edit(./.auto-review/**),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git status:*),Bash(git ls-files:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*)"
 
       - name: Post review as yngwald
         id: post

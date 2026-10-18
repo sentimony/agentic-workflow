@@ -51,6 +51,14 @@ Fingerprint for uncommitted state:
     git diff --no-ext-diff --no-textconv HEAD | git hash-object --stdin
     git hash-object <each included untracked file>
 
+## Prepared target
+
+A caller that cannot grant Git access, such as a CI job with a narrow allowlist, can capture
+the target itself: the identity record, the commit log, the diff stat, the full diff, and
+base copies of modified and deleted files. Review from those files, name them in the brief
+as the target, and tell the reviewer to read them instead of running Git. Check that the
+identity names the same head the files came from; a mismatch is a wrong target.
+
 ## Base discovery
 
 When the user names no base, take the merge-base with the default branch

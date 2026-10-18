@@ -35,16 +35,16 @@ moves the affected findings to a recheck against current code.
 
 ## Assessment states
 
-- `UNASSESSED` - not checked yet; never the final state of a material record.
-- `VALID` - reachable and has the stated impact on the current tree.
-- `PARTIALLY VALID` - real, but narrower, different, or less severe than claimed.
-- `INVALID` - not reachable, contradicted by evidence, or based on a wrong premise.
-- `STALE` - may have held for the reviewed revision but not for the current tree.
-- `DUPLICATE` - the same root cause as a named primary record.
-- `NEEDS DECISION` - cannot be settled without information or a ruling the user holds.
+- `OPEN` - not checked yet; never the final state of a material record.
+- `CONFIRMED` - reachable and has the stated impact on the current tree.
+- `NARROWER` - real, but narrower, different, or less severe than claimed.
+- `UNFOUNDED` - not reachable, contradicted by evidence, or based on a wrong premise.
+- `OUTDATED` - may have held for the reviewed revision but not for the current tree.
+- `SAME CAUSE` - the same root cause as a named primary record.
+- `NEEDS RULING` - cannot be settled without information or a ruling the user holds.
 
-Assessment and disposition are separate: a `VALID` finding can be `DEFER`, and a
-`PARTIALLY VALID` one can be `ACCEPT` once rescoped.
+Assessment and disposition are separate: a `CONFIRMED` finding can be `DEFER`, and a
+`NARROWER` one can be `ACCEPT` once rescoped.
 
 ## Summary
 

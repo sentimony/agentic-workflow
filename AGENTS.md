@@ -20,6 +20,8 @@
   `.claude-plugin/marketplace.json` with a skills patch release.
 - `claude-review.yml` changes in a PR run only after merge: `workflow_run` uses the default
   branch copy. `.auto-review/` is reserved for the review job and must not be tracked.
+- Renaming a released skill: the new name starts at `0.0.1`, its CHANGELOG names the old one,
+  and README Install says to remove the old skill or reinstall.
 - License: MIT, Ihor Orlovskyi.
 - Branches: `YYMMDD-dev-session`, squash-merged into `main` via PR.
 - English only, plain hyphen.

@@ -38,6 +38,7 @@ jobs:
               if not re.search(r"^description:\s*\S", fm, re.MULTILINE):
                   errors.append(f"{skill_md}: missing 'description'")
               # Only the version key inside the metadata block counts, not any other nested key.
+              # The same metadata regex is in the README check below; change both together.
               metadata = re.search(r"^metadata:[ \t]*\n((?:[ \t]+.*\n?)*)", fm + "\n", re.MULTILINE)
               version = metadata and re.search(r'^  version:\s*"(\d+\.\d+\.\d+)"\s*$', metadata.group(1), re.MULTILINE)
               if not version:
@@ -125,6 +126,7 @@ jobs:
 
           for skill_md in root.glob("*/skills/*/SKILL.md"):
               fm = re.match(r"^---\n(.*?)\n---\n", skill_md.read_text(encoding="utf-8"), re.DOTALL)
+              # Same metadata regex as in the frontmatter check above; change both together.
               metadata = fm and re.search(r"^metadata:[ \t]*\n((?:[ \t]+.*\n?)*)", fm.group(1) + "\n", re.MULTILINE)
               version = metadata and re.search(r'^  version:\s*"([^"]+)"', metadata.group(1), re.MULTILINE)
               skill = skill_md.parent.name

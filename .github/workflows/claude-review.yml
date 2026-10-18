@@ -130,8 +130,8 @@ jobs:
           BASE_SHA: ${{ needs.gate.outputs.base_sha }}
         run: |
           out=.auto-review/target
-          # The checkout is the PR head, which may ship .auto-review entries as symlinks; start
-          # from a fresh directory so no redirection below follows one. The path is reserved.
+          # The path is reserved: a PR that tracks anything under it, symlinks included, fails here.
+          # rm -rf then clears only untracked leftovers, and every write below lands in a fresh directory.
           if [ -n "$(git ls-files .auto-review)" ]; then
             echo "::error::.auto-review/ is reserved for the review job; remove it from the PR"
             exit 1

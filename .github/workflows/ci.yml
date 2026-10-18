@@ -135,13 +135,16 @@ jobs:
       - name: Check for hidden Unicode and typographic dashes
         run: |
           python3 - <<'PY'
-          import pathlib, subprocess, sys
+          import pathlib, subprocess, sys, unicodedata
 
-          # Bidi controls, zero-width and invisible format characters, BOM, and soft hyphen,
-          # plus every non-ASCII hyphen, dash, and minus: prose uses the plain hyphen only.
-          forbidden = set(range(0x202A, 0x202F)) | set(range(0x2066, 0x206A)) | set(range(0x200B, 0x2010)) \
-              | set(range(0x2060, 0x2065)) | {0x00AD, 0x061C, 0x180E, 0xFEFF} \
-              | set(range(0x2010, 0x2016)) | {0x2212}
+          # Bidi controls, zero-width and invisible format characters, BOM, and soft hyphen.
+          invisible = set(range(0x202A, 0x202F)) | set(range(0x2066, 0x206A)) | set(range(0x200B, 0x2010)) \
+              | set(range(0x2060, 0x2065)) | {0x00AD, 0x061C, 0x180E, 0xFEFF}
+
+          # Prose uses the plain hyphen only: every other dash punctuation (Pd) and the minus sign.
+          def forbidden(ch):
+              return ord(ch) in invisible or ord(ch) == 0x2212 or (ch != "-" and unicodedata.category(ch) == "Pd")
+
           files = subprocess.run(["git", "ls-files", "-z"], check=True, capture_output=True).stdout.decode().split("\0")
           errors = 0
           for name in filter(None, files):
@@ -150,7 +153,7 @@ jobs:
               except UnicodeDecodeError:
                   continue
               for number, line in enumerate(text.splitlines(), 1):
-                  hits = sorted({f"U+{ord(ch):04X}" for ch in line if ord(ch) in forbidden})
+                  hits = sorted({f"U+{ord(ch):04X}" for ch in line if forbidden(ch)})
                   if hits:
                       print(f"::error file={name},line={number}::forbidden character {', '.join(hits)}")
                       errors += 1

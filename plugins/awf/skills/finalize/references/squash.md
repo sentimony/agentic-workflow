@@ -6,8 +6,10 @@ only after the user chose `squash` in this conversation.
 
 ## Before the merge
 
-1. Re-read the state (SKILL.md step 1) and the gate (step 3). The PR head must be the
-   commit whose tree the `Verify: PASS` line names; a later push needs a new verdict.
+1. Re-read the state (SKILL.md step 1) and the gate (step 3). The fingerprint of the PR
+   head, taken with the recipe in [tree-fingerprint.md](tree-fingerprint.md) on a clean
+   checkout of it, must equal the tree the `Verify: PASS` line names; a later push needs a
+   new verdict.
 2. Confirm the PR title and body describe the whole branch
    ([pr-body.md](pr-body.md)): the squash commit takes the PR title as its subject.
 3. Wait for the required checks. Read them, do not guess:

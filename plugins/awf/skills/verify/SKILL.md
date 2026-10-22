@@ -46,8 +46,8 @@ Split vague promises ("works", "done") until each part has a check that can fail
 
 Read the journal's `Review`, `Finding`, and `Received` lines and, when present in the
 conversation, the `Blocking:` field of the `cr-received` return block. A blocker is a
-`Critical` or `Important` finding of the last round with no `REJECT`, `OUTDATED`, or
-`DEFER` disposition, or any `ESCALATE`. The exact reading is in
+`Critical` or `Important` finding of the last round that no `Received` line rules on yet,
+or any `ESCALATE`; this run's checks are the proof for `ACCEPT` and `PARTIAL` fixes. The exact reading is in
 [report.md](references/report.md). An open blocker rules out `PASS` whatever the matrix
 shows.
 

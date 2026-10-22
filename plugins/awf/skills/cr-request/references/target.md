@@ -113,8 +113,11 @@ capture the target itself: the identity record, the commit log, the diff stat, t
 diff, and base copies of modified, deleted, and type-changed files. Review from those
 files, name them in the brief as the target, and tell the reviewer to read them instead of
 running Git. Check that the identity names the same head the files came from; a mismatch
-is a wrong target. Take `Tree` from the caller's identity; without it, use
-`git rev-parse '<head>^{tree}'` when allowed, else write `Tree: unknown - <reason>`.
+is a wrong target. Take `Tree` from the caller's identity. Without it, when Git is
+allowed, run the recipe in [tree-fingerprint.md](tree-fingerprint.md) with
+`GIT_INDEX_FILE="$tmp" git read-tree '<head>'` in place of its `cp` and `git add -A`
+lines, so the plan stays out; `git rev-parse '<head>^{tree}'` gives the same ID only
+when the plan is not committed. Else write `Tree: unknown - <reason>`.
 
 ## Base discovery
 

@@ -114,14 +114,19 @@ The plan-journal that a standalone run creates has this shape:
 ```text
 # <topic>
 
-Spec: none
-Goal: <one sentence with the domain values of the request>
-Execution: inline
+**Spec:** none
+
+**Goal:** <one sentence with the domain values of the request>
+
+**Execution:** inline
 
 ## Execution record
 
+Branch: <name>
 Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM>
 ```
+
+The `Branch` line lets `finalize` find the journal in a later session.
 
 It lives in the project's plans folder, or in `docs/plans/YYYYMMDD-HHMM-<topic>.md`.
 Credentials and secrets never enter its Goal; use placeholder names such as `<API_TOKEN>`.

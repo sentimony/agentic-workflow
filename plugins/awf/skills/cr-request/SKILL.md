@@ -157,9 +157,9 @@ Finding R<n>-F<k>: <severity> <location> - <title>
 Round review <n>: <cause>
 ```
 
-One `Finding` line per finding; the round `n` equals the review number `R<n>`, and its
-`Round` line is skipped when the journal already has it. Never rewrite existing lines. The full result stays in
-the response; only the user or CI saves it to a file. Before dispatch, take the round
+One `Finding` line per finding; `n` equals the review number `R<n>`, and a `Round` line
+the journal already has is skipped. Never rewrite existing lines. The full result stays
+in the response; only the user or CI saves it to a file. Before dispatch, take the round
 number from the journal (`Round <loop> <n>`, loop `review`) so a fresh session continues:
 
 ```text
@@ -175,7 +175,7 @@ The last line of the result is the next step:
 
 | Result | Last line |
 | --- | --- |
-| Findings | `Next step: cr-received - <n> findings to rule on` |
+| Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | `Next step: cr-received - <n> findings to rule on` |
 | Clean, and a full `Verify: PASS` exists on this tree | `Next step: finalize - reviewed and verified on this tree` |
 | Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |
@@ -206,11 +206,11 @@ user, and project instructions keep priority. Files that may hold secrets are ex
 before any content leaves for a reviewer.
 
 Capabilities: the skill runs read-only Git commands to pin the target, a fingerprint
-recipe that writes Git objects and a temporary index but never the real index, and a
-hash of a document; it may dispatch one or more reviewer agents. Its only network access is reading a linked issue through
-a tool the user already configured. Reviewers are read-only and do not dispatch nested
-reviewers. The only file the skill edits is the plan's execution record; it does not
-edit code, commit, or push.
+recipe that writes Git objects and a temporary index but never the real index, and a hash
+of a document; it may dispatch one or more reviewer agents. Its only network access is
+reading a linked issue through a tool the user already configured. Reviewers are read-only
+and do not dispatch nested reviewers. The only file the skill edits is the plan's
+execution record; it does not edit code, commit, or push.
 
 ## References
 

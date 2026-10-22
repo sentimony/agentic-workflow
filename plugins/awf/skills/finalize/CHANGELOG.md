@@ -4,7 +4,8 @@
 
 - Initial release: replaces devflow `branch-finish`. Reads the Git state before every
   action, takes the base branch from the strongest source, and integrates only with a
-  full `Verify: PASS` on the current tree fingerprint, otherwise hands back to `verify`.
+  full `Verify: PASS` on the current tree fingerprint and nothing but the plan left
+  uncommitted, otherwise hands back to `verify`.
 - Six options: `merge`, `pr`, `squash`, `keep`, `discard` (explicit request only, with
   the commits that will be lost), and `pause` (wip commit with a continuation note).
 - Squash merge recipe pinned to the verified head, PR title and body template with

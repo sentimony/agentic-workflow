@@ -69,11 +69,16 @@ and `discard` integrate nothing and may run without it.
 4. Proceed only when that line says `PASS`, its mode is `full`, and its tree equals the
    current fingerprint. Also check the latest `Received` line: `Re-review: needed`
    with no later review on this tree means the chain is not finished.
+5. `git status --porcelain` lists nothing but the plan: only commits leave the branch.
+   Committing keeps the fingerprint, so commit what is left on the user's instruction;
+   `Initial dirty state` paths go in only on the user's word. A path the user keeps out
+   is moved aside by the user, which changes the tree and needs a new verdict.
 
 When the gate fails - no plan, no `Verify` line, a non-`PASS` verdict, a `compact`
 verdict, or a different tree - integrate nothing, say which condition failed, and end
 with `Next step: verify - no full PASS on the current tree`. When only the re-review is
-missing, end with `Next step: verify - re-review still needed on this tree`.
+missing, end with `Next step: verify - re-review still needed on this tree`; when only
+uncommitted paths remain, with `Next step: none - commit or move aside <paths>`.
 
 The gate holds through the whole run. A merge of the base into the branch, a rebase, a
 conflict resolution, or a regenerated lock file that changes the content gives a new
@@ -97,18 +102,22 @@ line (no remote, no forge CLI, detached HEAD, nothing to merge).
 Recommend one option with a reason, then wait. Merge, push, branch deletion, and
 workspace removal happen only on the user's instruction; a recommendation is not one.
 
-**`discard`.** Before anything is deleted, list what will be lost:
+**`discard`.** It deletes the local branch and a workspace this run or the chain made;
+the remote branch and an open PR go only when the confirmation names them. Before
+anything is deleted, list what will be lost:
 `git log --oneline <base>..HEAD` and the uncommitted paths. Ask for confirmation that
 names the branch. Without that confirmation, do nothing.
 
-**`pause`.** Commit the current work with a message that starts with `wip:` and contains
-the continuation note: the intent, what is verified and on which fingerprint, the next
-step, and the key files. Show the note in the response too. Do not push unless asked.
+**`pause`.** Commit the current work, without the `Initial dirty state` paths unless the
+user includes them, with a message that starts with `wip:` and contains the continuation
+note: the intent, what is verified and on which fingerprint, the next step, and the key
+files. Show the note in the response too. Do not push unless asked.
 
 **`merge`.** The base receives only verified content. When the base has moved past the
 merge-base, first merge the base into the branch; if the fingerprint then differs from
-the verified one, stop with `Next step: verify` before the base changes. Then switch to
-the base and fast-forward it to the branch (`git merge --ff-only <branch>`).
+the verified one, stop with `Next step: verify` before the base changes. Then, in the
+worktree that has the base checked out (`git worktree list`), or after `git switch <base>`
+when none has, fast-forward the base to the branch (`git merge --ff-only <branch>`).
 
 ## 5. Act, then check
 
@@ -154,9 +163,9 @@ table below.
 
 These never run, whatever the state or the request:
 
-- `--force` on `git worktree remove`, `git push`, `git checkout`, or `git clean`; a
-  local branch that Git calls unmerged after a squash is deleted only after the tree
-  comparison in [squash.md](references/squash.md) proves its content is on the base;
+- `--force` on `git worktree remove`, `git push`, `git checkout`, or `git clean`;
+  `git branch -D` runs only after a confirmed `discard`, or after a squash once the tree
+  comparison in [squash.md](references/squash.md) proves the content is on the base;
 - force push in any form;
 - `--admin` or any other bypass of required checks or branch protection;
 - `reset --hard`.

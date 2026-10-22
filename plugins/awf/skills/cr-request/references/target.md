@@ -6,14 +6,21 @@ The target identity makes a review reproducible and lets anyone tell when it is 
 
     Repository root:
     Branch or worktree:
-    Boundary: range | commits | file-set | working-tree
+    Boundary: range | commits | file-set | working-tree | base-to-working-tree | document
     Base: <ref as given and resolved SHA>
     Effective base: <merge-base SHA the diff starts from>
     Head: <resolved SHA>
+    Tree: <full fingerprint from tree-fingerprint.md>
+    Document: <path> sha256 <hash>   (document boundary only)
     Included paths:
     Excluded paths and reason:
+    Others' changes in scope (not assessed): <paths and whose, or none>
     Uncommitted state: none | tracked patch hash + untracked file hashes
     Captured at:
+
+`Tree` is filled for every boundary, including a committed range, from the recipe in
+[tree-fingerprint.md](tree-fingerprint.md). It is what the journal's `Review` line and
+`cr-received` compare against. Take it before writing anything to the journal.
 
 ## Read-only commands
 
@@ -46,10 +53,58 @@ Working tree on top of HEAD:
 Plain `git diff` omits untracked files: list them and give the reviewer their full
 content.
 
+Base to working tree: one diff from the merge-base to the files on disk, so committed,
+staged, and unstaged changes arrive together, plus the untracked files:
+
+    git merge-base <base> HEAD
+    git log --oneline <merge-base>..HEAD
+    git diff --no-ext-diff --no-textconv --stat <merge-base>
+    git diff --no-ext-diff --no-textconv <merge-base>
+    git ls-files --others --exclude-standard
+
+Use it when the task or branch is partly committed; the `Tree` field then names exactly
+the state the reviewer saw.
+
 Fingerprint for uncommitted state:
 
     git diff --no-ext-diff --no-textconv HEAD | git hash-object --stdin
     git hash-object <each included untracked file>
+
+## Secret scan before sending
+
+Read the `--stat` output and the untracked list before any diff goes to a reviewer. A
+path that looks like it holds secrets (`.env` files, private keys, credential or token
+files, cloud config) is excluded with the reason `possible secret`; its content is never
+pasted into the brief. Tell the user which paths were excluded.
+
+## Others' changes
+
+Paths inside the boundary that this change did not make - the journal's
+`Initial dirty state`, edits from another session, generated files - go into
+`Others' changes in scope (not assessed)`. The reviewer may read them for context and
+gives them no verdict or finding.
+
+## Document target
+
+For a spec or plan review, the boundary is the file itself:
+
+    shasum -a 256 <path>
+
+(`sha256sum <path>` where `shasum` is missing). Record the path and hash under
+`Document`, and still record `Tree`. The reviewer reads the whole file and the
+documents it names; locations are `§<heading>`. A document review is stale when the
+hash changes.
+
+## Re-review diff
+
+The base of a re-review is the `Tree` of the previous round, taken from its `Review`
+line or identity record. Tree IDs are valid diff endpoints:
+
+    git diff --no-ext-diff --no-textconv --stat <previous tree> <current tree>
+    git diff --no-ext-diff --no-textconv <previous tree> <current tree>
+
+The current tree is the fresh fingerprint. If the previous tree object is missing,
+fall back to the previous `Head` and say so in the brief.
 
 ## Prepared target
 
@@ -58,11 +113,13 @@ capture the target itself: the identity record, the commit log, the diff stat, t
 diff, and base copies of modified, deleted, and type-changed files. Review from those
 files, name them in the brief as the target, and tell the reviewer to read them instead of
 running Git. Check that the identity names the same head the files came from; a mismatch
-is a wrong target.
+is a wrong target. Take `Tree` from the caller's identity; without it, use
+`git rev-parse '<head>^{tree}'` when allowed, else write `Tree: unknown - <reason>`.
 
 ## Base discovery
 
-When the user names no base, take the merge-base with the default branch
+When the user names no base, use the `Base` line of the plan's execution record if it
+is set (not `unset`); otherwise take the merge-base with the default branch
 (`git merge-base origin/HEAD HEAD`, falling back to `main` or `master`). State the choice in
 the brief. If the branch has no upstream and no obvious parent, ask.
 
@@ -74,5 +131,5 @@ wrong target.
 
 ## Stale review
 
-A review is stale when HEAD, the base, the included paths, or the uncommitted
-fingerprint differ from its identity record. A stale PASS is not evidence.
+A review is stale when the `Tree` (or the document `sha256`), HEAD, the base, or the
+included paths differ from its identity record. A stale PASS is not evidence.

@@ -1,0 +1,117 @@
+# Execution record, plan-journal, and resume
+
+The plan is the single state file of a change. Its last section, `## Execution record`,
+is the journal every skill in the chain reads and extends.
+
+## Line format
+
+The whole chain uses one format. Lines are appended at the bottom; existing lines are not
+rewritten, except the state of a `Task` line.
+
+```text
+Base: <full SHA>   Root: <path>   Branch: <name>
+Initial dirty state: <paths or none>
+Task <n>: pending | in progress | done | blocked - <evidence: command -> result>
+Ruling: <decision> - <reason> - <cost if wrong>
+Deferred: <item> - <owner or place>
+Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM>
+Review R<n>: <Summary line> tree <tree SHA> reviewer <model> mode <code|document|re-review>
+Finding R<n>-F<k>: <severity> <location> - <title>
+Received R<n>: <ID> <ACCEPT|REJECT|PARTIAL|DEFER|ESCALATE|OUTDATED>, ... Re-review: <needed|not needed>
+Round <loop> <n>: <cause>
+```
+
+## Lines this skill writes
+
+`implement` writes `Base`, `Root`, `Branch`, `Initial dirty state`, `Task`, `Ruling`,
+`Deferred`, and its own `Round` lines. `Verify`, `Review`, `Finding`, and `Received`
+belong to other skills; read them, never write them.
+
+- **Start.** `plan-craft` leaves the placeholder `Base: unset`, meaning execution has not
+  begun. Fill that placeholder line with the real values (it is a placeholder, like a
+  `pending` task state, not a record), then add `Initial dirty state` under it:
+
+  ```text
+  Base: 3f9c2a7e1b4d8f6a0c5e9b2d7f1a4c8e6b3d0f92   Root: /path/to/repo   Branch: feature-x
+  Initial dirty state: none
+  ```
+
+  `Base` is the full 40-character SHA of `HEAD` before the first task. `Root` is the
+  absolute path of the working tree the tasks run in (the worktree, when one was made).
+
+- **Task state.** Change the state of the task's own line in place. Every state except
+  `pending` carries evidence: a command and what it returned.
+
+  ```text
+  Task 2: in progress - started at 3f9c2a7
+  Task 2: done - npm test -- parser -> 14 passed
+  Task 4: blocked - missing credentials: <API_TOKEN> for the staging API
+  ```
+
+- **Ruling.** One line per decision the agent made on its own (approach drift, a choice
+  between equal options) or one awaiting the user, with the reason and what it costs if
+  the decision is wrong. A ruling awaiting the user says so in the decision:
+
+  ```text
+  Ruling: use the renamed parseConfig instead of loadConfig - the plan predates the rename - low, a call site
+  Ruling: awaiting user - retry with backoff or fail fast on timeout - both fit the spec - behavior on outages
+  ```
+
+- **Deferred.** Out-of-scope items noticed during a task, with an owner or a place:
+
+  ```text
+  Deferred: flaky date test in utils - follow-up issue
+  ```
+
+- **Round.** `Round task-<n> <k>: <cause>` for each extra attempt at a failing check of
+  task `<n>`; a mechanical fix rerun inside the same round adds no line.
+
+Keep the journal proportional: a short plan needs one line per task and nothing more.
+
+## Plan-journal
+
+When there is no plan and the change is one or two obvious edits, create the smallest
+plan that can hold the journal. Path: the project's plans folder when its instructions or
+existing files define one, else `docs/plans/YYYYMMDD-HHMM-<topic>.md`. Credentials never
+appear in it; use placeholder names such as `<API_TOKEN>`.
+
+```markdown
+# <topic>
+
+**Spec:** none
+
+**Goal:** <one sentence with the domain values of the request: names, numbers, behavior>
+
+**Execution:** inline
+
+### Task 1: <title>
+
+**Files:** <paths>
+
+**Check:** <command> -> <expected result>
+
+## Execution record
+
+Base: unset
+Task 1: pending
+```
+
+With no task block (a single edit that needs none), the record still gets `Base` and
+`Initial dirty state`, and the evidence goes into a `Ruling` or the report. A plan that
+already exists with an unfinished journal is never overwritten; a new change gets a new
+file.
+
+## Resume
+
+When `Base` is already set, execution is being resumed:
+
+1. Read the whole record, the plan, and `git log <Base>..HEAD` with `git status`.
+2. For every task marked `done`, look for its trace: a commit in that range touching the
+   task's `Files`, or the task's changes present in the working tree. A `done` task with
+   no trace in the tree or the history goes back to `pending`, and a `Ruling` line says
+   why.
+3. A task `in progress` is inspected: keep the partial work that matches the task, rerun
+   its check, and continue from there.
+4. Continue `Round` counters from the last recorded number for each loop.
+5. A `Ruling` awaiting the user stays open until the user answers; do not decide it
+   because the session is new.

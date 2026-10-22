@@ -25,6 +25,15 @@
   branch copy. `.auto-review/` is reserved for the review job and must not be tracked.
 - Renaming a released skill: the new name starts at `0.0.1`, its CHANGELOG names the old one,
   and README Install says to remove the old skill or reinstall.
+- Skills form one chain: specify -> plan-craft -> implement -> verify -> cr-request ->
+  cr-received -> verify -> finalize -> session-learnings. Each runs standalone: it takes the
+  previous skill's file artifact or builds a minimal one, and ends with a `Next step` line;
+  no orchestrator skill.
+- awf skills replace their sentimony/skills devflow counterparts (scope-triage,
+  plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
+  review-request, review-resolution): a description opens with `You MUST use this when`,
+  as devflow's do, and names the skill it replaces. README Install keeps review-request and
+  review-resolution installed while devflow `cross-review` depends on them.
 - License: MIT, Ihor Orlovskyi.
 - Branches: `YYMMDD-dev-session`, squash-merged into `main` via PR.
 - English only, plain hyphen.

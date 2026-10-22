@@ -1,0 +1,126 @@
+# Verify report
+
+The report is the answer `verify` returns. The full matrix is required before
+`cr-request` and before `finalize`; a compact report is enough for an intermediate check.
+Both end with exactly one `Next step` line.
+
+## Full report
+
+```text
+HEAD: <full SHA>   Branch: <name or detached>
+Tree: <40-character fingerprint>
+Working state: staged <n or none>, unstaged <n or none>, untracked <n or none>
+Plan: <path or none>   Spec: <path or none>
+
+Claims:
+C1 (AC1): <observable promise>
+C2 (Task 3): <observable promise>
+C3 (journal): <observable promise>
+C4 (caller): <observable promise>
+
+Matrix:
+C1 | <check command> | `passed`
+C2 | <check command> | `failed`
+C3 | <check command> | `n/a: <reason>`
+C4 | <check command> | `not verified: <reason>`
+
+Bar check: <weakening found, with path and line, or none>
+Review blockers: <IDs with severity and disposition, or none>
+Verdict: PASS | FAIL | INCOMPLETE (<owner> - <next action>) | BLOCKED (<what stops the check>)
+Journal: Verify: <verdict> full tree <tree SHA> <YYYY-MM-DD HH:MM>
+Next step: <skill> - <one-line reason>
+```
+
+## Compact report
+
+```text
+Verdict: <verdict>   Tree: <40-character fingerprint>
+<only rows whose status is not passed, in the matrix form>
+Journal: Verify: <verdict> compact tree <tree SHA> <YYYY-MM-DD HH:MM>
+Next step: <skill> - <one-line reason>
+```
+
+A compact `PASS` lists no rows. A compact report never stands in for the full matrix:
+`finalize` and a clean `cr-request` look for a full `Verify: PASS` on the current tree.
+
+## Claims
+
+- Number claims `C1`, `C2`, and so on before any check runs.
+- Sources, all of them when present: every `AC<n>` of the spec the plan names, every task
+  of the plan, the `Task`, `Ruling`, and `Deferred` lines of the journal, and the words of
+  the caller ("fixed the login redirect", "all tests pass").
+- The source tag in parentheses is `AC<n>`, `Task <n>`, `journal`, or `caller`. A claim
+  that comes from an acceptance criterion always names its `AC<n>`.
+- A claim is one observable promise. "Done" or "works" is split until each part has a
+  check that could fail.
+- Without a plan, the sources are the caller's words and the diff from the base the
+  caller names, or from `HEAD` when none is named.
+
+## Row statuses
+
+Each status sits in a code span:
+
+- `passed` - the check ran on the current tree and its output shows the claim holds.
+- `failed` - the check ran and its output contradicts the claim.
+- `n/a: <reason>` - the claim does not apply to this change, for a stated reason.
+- `not verified: <reason>` - no check ran, or its output does not decide the claim. A
+  missing tool, missing access, missing credentials, or a check outside the session's
+  reach is always `not verified`, never `n/a`.
+
+The check command is the exact command run, or the exact file and line read for a claim
+that only reading can decide. "Looked fine" is not a command.
+
+## Verdicts
+
+- `PASS` - every row is `passed` or `n/a`, the bar check found nothing unreported, and no
+  review blocker is open.
+- `FAIL` - at least one row is `failed`.
+- `INCOMPLETE` - no row failed, but a row is `not verified` or a review blocker is open.
+  Name the owner (the user, `implement`, `cr-received`, CI, a named person) and the next
+  action that would decide it.
+- `BLOCKED` - the verification itself cannot move: the tree cannot be read, the project
+  cannot be built at all, or the claims cannot be formed. Name what stops it.
+
+Any `not verified`, any `failed`, or any open review blocker rules out `PASS`.
+
+## Review blockers
+
+Read the journal of the plan:
+
+- the last round is the highest `<n>` among the `Review R<n>` and `Finding R<n>-F<k>` lines;
+- each `Finding` of that round with severity `Critical` or `Important` is a blocker unless
+  a `Received R<n>` line gives its ID `REJECT`, `OUTDATED`, or `DEFER`; a finding with no
+  disposition at all is open;
+- any `ESCALATE` in any `Received` line is a blocker until the user decides it;
+- when the `cr-received` return block is in the conversation, every item of its
+  `Blocking:` field other than `none` is a blocker too.
+
+## Journal lines
+
+Append at the bottom of `## Execution record`; never rewrite an existing line:
+
+```text
+Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM>
+Round <loop> <n>: <cause>
+```
+
+For this skill `<loop>` is `verify` and the cause lists the failing claims, for example
+`Round verify 2: C3 failed - login test still red`. A `Round` line is written only when
+the verdict is `FAIL`, numbered one above the last `Round verify` line in the journal.
+
+The plan-journal that a standalone run creates has this shape:
+
+```text
+# <topic>
+
+Spec: none
+Goal: <one sentence with the domain values of the request>
+Execution: inline
+
+## Execution record
+
+Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM>
+```
+
+It lives in the project's plans folder, or in `docs/plans/YYYYMMDD-HHMM-<topic>.md`.
+Credentials and secrets never enter its Goal; use placeholder names such as `<API_TOKEN>`.

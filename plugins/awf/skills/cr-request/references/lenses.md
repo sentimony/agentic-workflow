@@ -44,6 +44,28 @@ Look past the diff to what it touches.
 - The change follows local idioms of the surrounding code.
 - Leftovers: debug output, commented-out code, stray files, unpinned dependencies.
 
+## Documents
+
+For a spec or plan under review, the axes keep their names and change their object:
+
+- **Intent** - the document answers the request it came from: every stated need is
+  covered, and nothing outside the request is decided silently.
+- **System** - it agrees with the repository as it is (paths, commands, names, versions
+  that exist) and with neighboring specs, plans, and instructions; a conflict names
+  both sides.
+- **Craft** - each acceptance criterion is a checkable predicate; no placeholders, open
+  TODOs, or steps without a command; names stay consistent across sections; a plan task
+  lists its inputs, outputs, and the criteria it covers.
+
+Locate each finding by section (`§<heading>`), not by line.
+
+## Re-review
+
+- Check each previous finding against the fix diff, not against the author's reply.
+- A fix that moves the defect elsewhere is `NOT ADDRESSED` plus a new finding.
+- Look for breakage the fix introduced in its own lines; older code outside the fix diff
+  is out of scope for this round.
+
 ## Common smells
 
 Judgement calls, always labelled "possible": unclear name, duplicated logic, a function

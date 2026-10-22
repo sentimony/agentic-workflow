@@ -131,5 +131,6 @@ wrong target.
 
 ## Stale review
 
-A review is stale when the `Tree` (or the document `sha256`), HEAD, the base, or the
-included paths differ from its identity record. A stale PASS is not evidence.
+A review is stale when the `Tree` (or the document `sha256`), the base, or the included
+paths differ from its identity record. A new HEAD with the same `Tree`, such as an amend
+or a rebase that keeps the content, leaves it valid. A stale PASS is not evidence.

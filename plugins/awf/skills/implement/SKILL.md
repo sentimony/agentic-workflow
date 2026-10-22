@@ -162,6 +162,7 @@ follows the table:
 | --- | --- |
 | all tasks are `done` | `Next step: verify - all tasks done, check the tree` |
 | a task is `blocked`, or a `Ruling` awaits the user | `Next step: none - awaiting user` |
+| the Round rule stopped a task | `Next step: none - <cause>, awaiting user` |
 | no plan, and the change is more than one or two obvious edits | `Next step: plan-craft - <why a plan is needed>` |
 
 `done` here is a task state, not a claim that the work is complete; that claim belongs to

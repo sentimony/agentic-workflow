@@ -24,8 +24,8 @@ or the current branch points at; when there is none, run standalone (step 9).
 
 Record `HEAD` (full SHA), the branch, and the counts of staged, unstaged, and untracked
 paths from `git status --porcelain`. Compute the fingerprint with the recipe in
-[tree-fingerprint.md](references/tree-fingerprint.md): the plain `HEAD^{tree}` when the
-status is empty, otherwise the temporary-index recipe. The real index is never touched.
+[tree-fingerprint.md](references/tree-fingerprint.md), even on a clean tree: the plain
+`HEAD^{tree}` still holds a committed plan. The real index is never touched.
 
 ## 2. Claims before checks
 
@@ -151,13 +151,14 @@ The result ends with exactly one line `Next step: <skill> - <one-line reason>`:
 | Condition | Next step |
 | --- | --- |
 | `PASS`, no `Review` line in the journal yet | `cr-request` |
-| `PASS`, the last `Received` line says `Re-review: needed` | `cr-request` (re-review mode) |
+| `PASS`, the last `Review` line has no `Finding` lines and no `Received` line follows it | `finalize` |
+| `PASS`, the last `Received` line says `Re-review: needed` and no clean `Review` follows it | `cr-request` (re-review mode) |
 | `PASS`, review resolved, `Re-review: not needed`, no blockers | `finalize` |
 | `FAIL` | `implement` (or `cr-received` when the fix of a finding fails) |
 | `INCOMPLETE` or `BLOCKED` | `none - <owner and next action>` |
 
-A fix after a review changes the tree, so the last `Received` line, not the tree of the
-`Review` line, decides between the last two `PASS` rows.
+A fix after a review changes the tree, so the latest `Review` or `Received` line, not the
+tree of the `Review` line, decides between the last three `PASS` rows.
 When the Round rule stops the loop, the line is `Next step: none - <cause> needs the
 user`.
 

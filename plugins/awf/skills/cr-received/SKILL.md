@@ -147,8 +147,8 @@ otherwise at most three. The same cause twice escalates to the user. Two rounds 
 findings and none accepted stop the loop.
 ```
 
-The counter is the journal line `Round <loop> <n>` with the loop `review`: continue from
-the last `Round review <n>`. When the rule stops the loop, stop patching and escalate
+The counter is the journal line `Round review <n>`, shared with `cr-request`: `n` is the
+review number `R<n>`, and a line `cr-request` already wrote is not repeated. When the rule stops the loop, stop patching and escalate
 with what kept failing and a proposal to simplify.
 
 ## 9. Journal

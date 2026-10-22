@@ -37,9 +37,9 @@ Round <loop> <n>: <cause>
   suggested one, a set-aside row ruled in or out, a reading of an unclear contract, a
   conflict between two findings settled by the governing contract.
 - `Deferred` - one line per `DEFER`, naming the item, its owner, and where it is tracked.
-- `Round review <n>` - one line per completed review and fix round, with the mechanism
-  the findings hit as the cause. Read the last one before starting, so a fresh session
-  continues the count.
+- `Round review <n>` - one line per review round, with the mechanism the findings hit
+  as the cause. `n` equals the review number `R<n>` of the `Received` line; skip the line
+  when the journal already has `Round review <n>` from `cr-request`.
 
 Without a plan, write nothing: the same lines go under
 `Rulings for the execution record` in the return block.

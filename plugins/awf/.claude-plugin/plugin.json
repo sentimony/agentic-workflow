@@ -1,7 +1,7 @@
 {
   "name": "awf",
-  "version": "0.0.3",
-  "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change, resolve its findings with evidence, and record session learnings in agent instructions.",
+  "version": "0.0.4",
+  "description": "Agentic workflow skills for one change from request to merge: specify the design, craft the plan, implement it, verify with evidence, request and resolve an independent code review, finalize the branch, and record session learnings.",
   "author": {
     "name": "Ihor Orlovskyi",
     "email": "ihororlovskyi@gmail.com",
@@ -11,13 +11,23 @@
   "license": "MIT",
   "keywords": [
     "agentic-workflow",
+    "spec",
+    "plan",
+    "implement",
+    "verify",
     "code-review",
+    "finalize",
     "engineering",
     "best-practices"
   ],
   "skills": [
+    "./skills/specify",
+    "./skills/plan-craft",
+    "./skills/implement",
+    "./skills/verify",
     "./skills/cr-request",
     "./skills/cr-received",
+    "./skills/finalize",
     "./skills/session-learnings"
   ]
 }

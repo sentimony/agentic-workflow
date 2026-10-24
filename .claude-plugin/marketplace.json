@@ -9,11 +9,16 @@
     {
       "name": "awf",
       "source": "./plugins/awf",
-      "description": "Agentic workflow skills: request a structured, language-agnostic code review of an exact change, resolve its findings with evidence, and record session learnings in agent instructions.",
+      "description": "Agentic workflow skills for one change from request to merge: specify the design, craft the plan, implement it, verify with evidence, request and resolve an independent code review, finalize the branch, and record session learnings.",
       "category": "development",
       "keywords": [
         "agentic-workflow",
+        "spec",
+        "plan",
+        "implement",
+        "verify",
         "code-review",
+        "finalize",
         "engineering",
         "best-practices"
       ]

@@ -16,13 +16,15 @@ Claims:
 C1 (AC1): <observable promise>
 C2 (Task 3): <observable promise>
 C3 (journal): <observable promise>
-C4 (caller): <observable promise>
+C4 (R1-F2): <observable promise>
+C5 (caller): <observable promise>
 
 Matrix:
 C1 | <check command> | `passed`
 C2 | <check command> | `failed`
 C3 | <check command> | `n/a: <reason>`
-C4 | <check command> | `not verified: <reason>`
+C4 | <check command> | `passed`
+C5 | <check command> | `not verified: <reason>`
 
 Bar check: <weakening found, with path and line, or none>
 Review blockers: <IDs with severity and disposition, or none>
@@ -47,10 +49,17 @@ A compact `PASS` lists no rows. A compact report never stands in for the full ma
 
 - Number claims `C1`, `C2`, and so on before any check runs.
 - Sources, all of them when present: every `AC<n>` of the spec the plan names, every task
-  of the plan, the `Task`, `Ruling`, and `Deferred` lines of the journal, and the words of
-  the caller ("fixed the login redirect", "all tests pass").
-- The source tag in parentheses is `AC<n>`, `Task <n>`, `journal`, or `caller`. A claim
-  that comes from an acceptance criterion always names its `AC<n>`.
+  of the plan with its `Produces` and `Covers` fields, the `Task`, `Ruling`, and
+  `Deferred` lines of the journal, each finding of the last review round that a
+  `Received` line marks `ACCEPT` or `PARTIAL`, and the words of the caller ("fixed the
+  login redirect", "all tests pass").
+- The source tag in parentheses is `AC<n>`, `Task <n>`, `journal`, `R<n>-F<k>` (or
+  `R<n>-<reviewer>-F<k>` with several reviewers, as `cr-received` keeps it), or `caller`.
+  A claim that comes from an acceptance criterion always names its `AC<n>`.
+- A finding claim promises that the cited problem is gone; for `PARTIAL`, the promise is
+  the remedy the `Received` and `Ruling` lines chose, not the reviewer's full suggestion.
+  Its check is the command `cr-received` lists under `Checks to rerun` when that return
+  block is in the conversation; a failing one points back at the finding.
 - A claim is one observable promise. "Done" or "works" is split until each part has a
   check that could fail.
 - Without a plan, the sources are the caller's words and the diff from the base the
@@ -90,8 +99,8 @@ Read the journal of the plan:
 - the last round is the highest `<n>` among the `Review R<n>` and `Finding R<n>-F<k>` lines;
 - each `Finding` of that round with severity `Critical` or `Important` is a blocker until
   a `Received R<n>` line gives its ID a disposition; `REJECT`, `OUTDATED`, and `DEFER`
-  close it, and `ACCEPT` and `PARTIAL` mark it fixed, with this run's checks over the
-  current tree as the proof (a check that fails points back at the finding);
+  close it, and `ACCEPT` and `PARTIAL` mark it fixed, with its claim (tag `R<n>-F<k>`)
+  checked in this run over the current tree as the proof;
 - any `ESCALATE` in any `Received` line is a blocker until the user decides it;
 - when the `cr-received` return block is in the conversation, every item of its
   `Blocking:` field other than `none` is a blocker too.
@@ -105,11 +114,16 @@ Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM>
 Round <loop> <n>: <cause>
 ```
 
-For this skill `<loop>` is `verify` and the cause lists the failing claims, for example
-`Round verify 2: C3 failed - login test still red`. A `Round` line is written only when
+For this skill `<loop>` is `verify` and the cause lists each failing claim by its source
+tag and promise, for example `Round verify 2: AC3 - login redirects to /home`. `C<n>`
+numbers are reassigned every run, so they never form the cause; the same tag and promise
+in two rounds is the same cause for the Round rule. A `Round` line is written only when
 the verdict is `FAIL`, numbered one above the last `Round verify` line in the journal.
 
-The plan-journal that a standalone run creates has this shape:
+Credentials and secrets never enter the plan-journal a standalone run creates, its Goal
+included; use placeholder names such as `<API_TOKEN>`.
+
+The plan-journal has this shape:
 
 ```text
 # <topic>
@@ -129,4 +143,3 @@ Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM>
 The `Branch` line lets `finalize` find the journal in a later session.
 
 It lives in the project's plans folder, or in `docs/plans/YYYYMMDD-HHMM-<topic>.md`.
-Credentials and secrets never enter its Goal; use placeholder names such as `<API_TOKEN>`.

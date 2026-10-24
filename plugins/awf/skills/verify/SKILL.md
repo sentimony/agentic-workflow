@@ -1,6 +1,6 @@
 ---
 name: verify
-description: You MUST use this when anyone - you, a subagent, or the user - is about to state that work is done, fixed, ready, or mergeable, and before the commit that completes it, a merge, opening a pull request, or a handoff report, including work that has no plan. Splits the claim into numbered checks, runs each fresh on the current tree fingerprint, and returns PASS, FAIL, INCOMPLETE, or BLOCKED without editing anything. Replaces devflow verification-gate.
+description: You MUST use this when anyone - you, a subagent, or the user - is about to state that work is done, fixed, ready, or mergeable, and before the commit that completes it, a merge, opening a pull request, or a handoff report, including work that has no plan. Covers every promise behind the claim - spec criteria, plan tasks, journal entries, accepted review fixes, and the caller's words - proven with fresh checks on the current tree and given one verdict, without editing code. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-path>]"
 metadata:
   version: "0.0.1"
@@ -29,14 +29,11 @@ paths from `git status --porcelain`. Compute the fingerprint with the recipe in
 
 ## 2. Claims before checks
 
-Write the claims down before running anything, numbered `C1`, `C2`, and so on, with the
-source tag defined in [report.md](references/report.md):
-
-- every `AC<n>` of the spec the plan names (`Spec:` in the plan header), each claim
-  citing its `AC<n>`;
-- every task of the plan and its `Produces` and `Covers` fields;
-- the journal: `Task <n>: done` evidence, `Ruling`, and `Deferred` lines;
-- what the caller said ("fixed", "all green", "no behavior change").
+Write the claims down before running anything, numbered `C1`, `C2`, and so on. Take
+them from every source present - the spec's `AC<n>` (via `Spec:` in the plan header),
+the plan's tasks with `Produces` and `Covers`, the journal's `Task`, `Ruling`, and
+`Deferred` lines, each `ACCEPT` or `PARTIAL` finding of the last review round, and the
+caller's words; the list and source tags are in [report.md](references/report.md).
 
 The caller's words alone are never the full list when a spec or plan exists. A `Task`
 line with evidence is a claim to recheck, not proof: nobody confirms their own work.
@@ -47,9 +44,9 @@ Split vague promises ("works", "done") until each part has a check that can fail
 Read the journal's `Review`, `Finding`, and `Received` lines and, when present in the
 conversation, the `Blocking:` field of the `cr-received` return block. A blocker is a
 `Critical` or `Important` finding of the last round that no `Received` line rules on yet,
-or any `ESCALATE`; this run's checks are the proof for `ACCEPT` and `PARTIAL` fixes. The exact reading is in
-[report.md](references/report.md). An open blocker rules out `PASS` whatever the matrix
-shows.
+or any `ESCALATE`; `ACCEPT` and `PARTIAL` fixes are proven as claims (step 2). Read
+[report.md](references/report.md) for the exact reading whenever the journal has a
+`Review` line. An open blocker rules out `PASS` whatever the matrix shows.
 
 ## 4. Fresh evidence only
 
@@ -80,11 +77,11 @@ A check that cannot decide its claim gives `not verified`, with what would decid
 
 ## 6. Bar check and easy wins
 
-Read the diff from the plan's `Base` (or the caller's base, or `HEAD`), untracked files
-included, for changes that lower the bar instead of meeting it: tests skipped, deleted,
-or marked expected-to-fail; assertions removed or loosened; lint, type, or security
-suppressions added; coverage or performance thresholds lowered; catch blocks that
-swallow errors. Each one is reported with path and line. One that no `Ruling` or user
+Read the diff from the plan's `Base`; when it is `unset` or there is no plan, from the
+base the caller names, else from `HEAD`. Include untracked files, and look for changes
+that lower the bar instead of meeting it: tests skipped, deleted, or marked
+expected-to-fail; assertions removed or loosened; lint, type, or security suppressions
+added; coverage or performance thresholds lowered; catch blocks that swallow errors. Each one is reported with path and line. One that no `Ruling` or user
 decision covers makes the related claim `failed`.
 
 Treat a success that came too easily as a defect to explain: zero tests collected, a
@@ -94,20 +91,17 @@ without running its target. Confirm the check really ran what the claim needs.
 ## 7. Re-pin and decide
 
 Compute the fingerprint again. If it changed while checking, the results belong to no
-single tree: start over from step 1. Then pick the verdict by the rules in
-[report.md](references/report.md):
+single tree: start over from step 1. Then pick `PASS`, `FAIL`, `INCOMPLETE`, or
+`BLOCKED` by the definitions in [report.md](references/report.md), read before every
+verdict: any `failed` row is `FAIL`; `INCOMPLETE` names the owner and the next action;
+`BLOCKED` says what stops the verification itself.
 
-- `PASS` - every row `passed` or `n/a`, no unreported weakening, no open blocker;
-- `FAIL` - any row `failed`;
-- `INCOMPLETE` - nothing failed, but a row is `not verified` or a blocker is open; name
-  the owner and the next action;
-- `BLOCKED` - the verification itself cannot proceed; say what stops it.
+Any `not verified`, any `failed`, any unreported weakening, or any open review blocker
+rules out `PASS`. A `PASS` grants no right to commit, push, or merge; those stay with the
+user and `finalize`.
 
-Any `not verified`, any `failed`, or any open review blocker forbids `PASS`. A `PASS`
-grants no right to commit, push, or merge; those stay with the user and `finalize`.
-
-Give the full matrix before `cr-request` and `finalize`, and the compact report (verdict,
-fingerprint, rows that did not pass) for an intermediate check.
+The full matrix is required before `cr-request` and `finalize`; the compact report fits
+an intermediate check. Both shapes are in [report.md](references/report.md).
 
 ## 8. Journal and loop
 
@@ -118,13 +112,16 @@ the format the journal uses, with the fingerprint from step 7:
 Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM>
 ```
 
-This is the only line `verify` writes, besides the round counter below. It never edits
-code, tests, the spec, or the plan body. A failing claim goes back to `implement`; a
-failing fix of a review finding goes back to `cr-received`.
+Besides this line, `verify` writes only the round counter below and, with no plan, the
+new plan-journal of step 9. It never edits code, tests, the spec, or the plan body. A
+failing claim goes back to `implement`; a failing claim tagged `R<n>-F<k>` goes back to
+`cr-received`.
 
 A `FAIL` starts a new verify-fix round, recorded as `Round <loop> <n>: <cause>` with
-`verify` as the loop and the failing claim IDs as the cause. The counter lives in the
-journal, so a fresh session continues it.
+`verify` as the loop. The cause names each failing claim by its source tag and promise,
+not by its `C<n>` number, which is reassigned every run; the same tag and promise in two
+rounds is the same cause. The counter lives in the journal, so a fresh session continues
+it.
 
 ```text
 Round rule: a round count the user gave explicitly allows exactly that many rounds;
@@ -133,9 +130,13 @@ findings and none accepted stop the loop.
 ```
 
 When the rule stops the loop, the verdict stays `FAIL` and the next step goes to the
-user. After `cr-received`, rerun the checks its `Checks to rerun` field names and then
-the whole matrix once; when it says `Previous verification: still valid (tree
-unchanged)` and the fingerprint agrees, the earlier rows stand.
+user. After `cr-received`, compare the fingerprint yourself with the tree of the last
+`Verify` line; its `Previous verification` field is a signal, not proof:
+
+- tree changed (or `stale`): run the `Checks to rerun` it names first, as the checks of
+  the finding claims, then the whole matrix once on the new tree;
+- tree unchanged: the earlier rows stand, but redo step 3 against the new `Received`
+  lines and derive the verdict and the next step again.
 
 ## 9. Standalone
 
@@ -152,13 +153,14 @@ The result ends with exactly one line `Next step: <skill> - <one-line reason>`:
 | --- | --- |
 | `PASS`, no `Review` line in the journal yet | `cr-request` |
 | `PASS`, the last `Review` line has no `Finding` lines and no `Received` line follows it | `finalize` |
-| `PASS`, the last `Received` line says `Re-review: needed` and no clean `Review` follows it | `cr-request` (re-review mode) |
-| `PASS`, review resolved, `Re-review: not needed`, no blockers | `finalize` |
-| `FAIL` | `implement` (or `cr-received` when the fix of a finding fails) |
+| `PASS`, the last `Review` line has `Finding` lines (all `Minor`) and no `Received` line follows it | `cr-received` |
+| `PASS`, the last `Received` line says `Re-review: needed` and no `Review` follows it | `cr-request` (re-review mode) |
+| `PASS`, review resolved, `Re-review: not needed` | `finalize` |
+| `FAIL` | `implement` (or `cr-received` when a claim tagged `R<n>-F<k>` fails) |
 | `INCOMPLETE` or `BLOCKED` | `none - <owner and next action>` |
 
-A fix after a review changes the tree, so the latest `Review` or `Received` line, not the
-tree of the `Review` line, decides between the last three `PASS` rows.
+A fix after a review changes the tree, so the order of the journal's `Review` and
+`Received` lines picks the `PASS` row; the tree SHA a `Review` line records does not.
 When the Round rule stops the loop, the line is `Next step: none - <cause> needs the
 user`.
 

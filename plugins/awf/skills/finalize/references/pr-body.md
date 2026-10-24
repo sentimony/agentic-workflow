@@ -1,6 +1,6 @@
 # PR title and body
 
-Used by the `pr` option, and again after every push to a branch whose PR is open.
+Used by the `pr` option and by [After every push](#after-every-push).
 
 ## Title
 
@@ -67,7 +67,7 @@ When the branch already has an open PR, a push changes what the PR contains. Aft
 each push:
 
 1. Re-read `git log --oneline <base>..HEAD`.
-2. Rebuild the title and every section from the current branch and journal.
+2. Rebuild the title and every section from the current branch and execution record.
 3. Update both on the forge:
 
    ```sh

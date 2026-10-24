@@ -6,11 +6,11 @@ only after the user chose `squash` in this conversation.
 
 ## Before the merge
 
-1. Re-read the state (SKILL.md step 1) and the gate (step 3), including its rule that
-   nothing outside the plan is uncommitted. The PR head must be the local `HEAD`:
-   `gh pr view <pr> --json headRefOid` prints the full SHA of `git rev-parse HEAD`.
-   Then the PR carries the content the `Verify: PASS` line names; a different head
-   stops the merge, and a later push needs a new verdict.
+1. Re-read the state (SKILL.md "Read the state") and the gate ("Gate on the verdict"),
+   including its rule that nothing outside the plan is uncommitted. The PR head must be
+   the local `HEAD`: `gh pr view <pr> --json headRefOid` prints the full SHA of
+   `git rev-parse HEAD`. Then the PR carries the content the `Verify: PASS` line names;
+   a different head stops the merge, and a later push needs a new verdict.
 2. Confirm the PR title and body describe the whole branch
    ([pr-body.md](pr-body.md)): the squash commit takes the PR title as its subject.
 3. Wait for the required checks. Read them, do not guess:
@@ -34,7 +34,8 @@ gh pr merge <pr> --squash --match-head-commit "$head"
 ```
 
 Delete the branch, in this command (`--delete-branch`) or after it, only when the user
-asked for it and the branch barrier in SKILL.md step 6 allows it.
+asked for it and the branch barrier in SKILL.md "Clean up behind two barriers" allows
+it.
 
 Never bypass branch protection or required checks with `--admin`, and never retry a
 rejected merge with a bypass flag. A rejection is reported to the user as it is.

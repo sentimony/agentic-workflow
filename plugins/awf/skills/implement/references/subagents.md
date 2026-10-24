@@ -48,11 +48,10 @@ the task into smaller ones. Each retry counts as a round under the Round rule an
 
 ## Parallel dispatch
 
-Dispatch several tasks at once only when their independence is shown: disjoint files, no
-`Consumes` between them, and separate mutable state or an isolation that covers it. Each
-parallel subagent works in its own isolated workspace (see
-[isolation.md](isolation.md)). Integrate the results one by one, rerunning the checks after
-each, and resolve any overlap before starting the next wave.
+Several tasks go out at once only under the rules of the skill's Parallel tasks section:
+shown independence, a separate isolated workspace per subagent (see
+[isolation.md](isolation.md)), results integrated one by one with the checks rerun, and
+overlap resolved before the next wave.
 
 ## Review inside execution
 

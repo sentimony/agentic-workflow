@@ -17,7 +17,7 @@ Target: <file and section>
 
 - Copy the words as they appeared: the user's sentence, the command with its error line,
   or the tool output that exposed the mistake. Trim to the part that proves the event;
-  keep it short enough to read in the approval list.
+  keep it short enough to read in the notes and the triage list.
 - Paraphrase is not a quote. When the evidence is spread over several turns, quote the
   turn that settles it and name the others in `Event`.
 - A quote that contains a secret, a credential, or personal data is masked before it is
@@ -45,11 +45,15 @@ confidence of a "the user wants" rule.
   but the cause was not confirmed.
 - `low` - inferred from a single observation, or the fix was never exercised.
 
-`low` candidates are shown only in the "dropped" part of the approval list unless the
-user asks for them. `medium` candidates say what would raise them to `high`.
+`low` candidates are never written to the notes. The report lists them as dropped, one
+line each, and shows their full records only when the user asks. `medium` candidates say
+what would raise them to `high`.
 
 ## Repeat runs
 
 When the skill already ran earlier in the same session, its previous report marks the
-boundary: collect only events after it. A candidate that the previous run proposed and
-the user declined is not proposed again unless a new event changed the evidence.
+boundary: collect only events after it. A note already in the notes file, or one a
+triage marked `Declined`, is not written again unless a new event changed the evidence.
+Then the sharper or corrected version is appended as a new note with `Supersedes:`
+naming the earlier one; earlier notes are never rewritten, and triage removes the one
+superseded. Notes written in the current run may still be edited before its report.

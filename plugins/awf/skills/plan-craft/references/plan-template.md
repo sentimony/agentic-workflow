@@ -1,5 +1,7 @@
 # Plan template
 
+Contents: skeleton, field notes, execution record format and writers.
+
 Copy the skeleton below into the new plan file and fill every placeholder. Field keys and
 their values (`Spec`, `Execution`, `Covers`, `pending`, `unset`) stay literal English
 tokens even when the rest of the plan follows the language of the project's other plans.
@@ -22,8 +24,8 @@ Headings and prose may use that language; the keys may not.
 
 ## Global constraints
 
-<Copied word for word from the spec: decisions, out-of-scope items, security rules.
-With `Spec: none`, the constraints the user stated in the conversation.>
+<Copied word for word from the spec's `Decisions`, `Out of scope`, and `Security Model`
+sections. With `Spec: none`, the constraints the user stated in the conversation.>
 
 ## Review focus
 
@@ -41,6 +43,8 @@ section; the spec holds the criteria.>
 | File | Change | Task |
 | --- | --- | --- |
 | `<path>` | <new, modified, or deleted, and what for> | <n> |
+
+## Tasks
 
 ### Task <n>: <title>
 
@@ -73,17 +77,11 @@ Task <n>: pending
 ```
 ````
 
-Write one `Task <n>: pending` line per task, in task order. These two kinds of line are
-the only ones `plan-craft` writes into the record; `Base: unset` means execution has not
-started.
-
 ## Field notes
 
-- `Spec` names the spec the plan serves; the spec ranks above the plan. `none` only when
-  the requirements came from the conversation (then the `Acceptance criteria` section is
-  required).
-- `Global constraints` is a copy, not a summary. A paraphrase drifts from the spec the
-  first time someone edits one of the two.
+Spec precedence, the word-for-word constraints, stateful logic, `n/a`, the record
+placeholders, and when a record is unfinished are rules of SKILL.md steps 1-5.
+
 - `Execution` stays `unset` until the user chooses; then it becomes `inline` or
   `subagents` and nothing else.
 - `Produces` and `Consumes` of neighboring tasks must name the same signature or format
@@ -92,11 +90,6 @@ started.
   a hole in the plan.
 - `Commit` names the task's own paths. A bare `git add .` or `git add -A` without paths
   sweeps in unrelated edits.
-- Stateful logic (caches, retries, ordering, rollback) is written as behavior, invariants,
-  and named race scenarios in `Produces` and the steps, not as finished code. Full code
-  belongs only to mechanical steps.
-- A dimension that does not apply (parallel waves, shared state, isolation) gets
-  `n/a: <reason>` once in `Architecture`, not an empty section.
 
 ## Execution record format
 
@@ -120,11 +113,7 @@ Round <loop> <n>: <cause>
 | --- | --- |
 | `plan-craft` | `Base: unset`, `Task <n>: pending` (placeholders only) |
 | `implement` | `Base`, `Root`, `Branch`, `Initial dirty state`, `Task`, `Ruling`, `Deferred` |
-| `verify` | `Verify` |
+| `verify` | `Verify`; with no plan, a new plan-journal with `Branch` and `Verify` |
 | `cr-request` | `Review`, `Finding` |
 | `cr-received` | `Received`, `Ruling`, `Deferred` |
 | any skill with a loop | `Round` |
-
-A record is finished when every `Task` line says `done`. Any task line in another state
-makes it unfinished, including a plan whose `Base` is still `unset`. A plan with an
-unfinished record is never replaced in place; a different plan goes into a new file.

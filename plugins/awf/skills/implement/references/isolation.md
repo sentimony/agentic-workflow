@@ -27,8 +27,8 @@ Existing isolation is used as it is. Do not stack a new worktree on top of one.
    other sessions: `git worktree add -b <branch> <path> <base>`, placed where the
    project's instructions say. Record its path as `Root` in the journal.
 
-Parallel subagents each need a separate workspace; two writers in one working tree is
-never an option.
+Parallel subagents each need a separate workspace; the rule is in the skill's Parallel
+tasks section.
 
 ## Limits
 

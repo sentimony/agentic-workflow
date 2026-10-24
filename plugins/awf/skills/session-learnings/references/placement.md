@@ -18,8 +18,8 @@ Rules for climbing:
   proposed as a check or a hook, with the prose line at most pointing at it.
 - A learning that comes back although a prose rule already covers it moves one rung up.
   Rewording the same line is not a fix: the line was there and did not hold.
-- The skill drafts the higher-rung change but does not build it on its own. A check, a
-  hook, or a test is a code change: it goes through the approval step like any edit, and
+- Recording only names the higher-rung change in the note. A check, a hook, or a test is
+  a code change: triage drafts it, it goes through the approval step like any edit, and
   the user may choose to keep only the prose line.
 - When the candidate stays on `prose`, its record names why the rungs above do not fit.
 

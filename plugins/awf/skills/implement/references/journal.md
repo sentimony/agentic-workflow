@@ -3,6 +3,8 @@
 The plan is the single state file of a change. Its last section, `## Execution record`,
 is the journal every skill in the chain reads and extends.
 
+Contents: line format, lines this skill writes, plan-journal, resume.
+
 ## Line format
 
 The whole chain uses one format. Lines are appended at the bottom; existing lines are not
@@ -48,9 +50,11 @@ belong to other skills; read them, never write them.
   Task 4: blocked - missing credentials: <API_TOKEN> for the staging API
   ```
 
-- **Ruling.** One line per decision the agent made on its own (approach drift, a choice
-  between equal options) or one awaiting the user, with the reason and what it costs if
-  the decision is wrong. A ruling awaiting the user says so in the decision:
+- **Ruling.** One line per decision, with the reason and what it costs if the decision is
+  wrong. The agent rules on its own only on approach drift and on a choice the spec
+  treats as equal, where the options do not differ in behavior. A goal drift, options
+  that change behavior, and a defect with several reasonable fixes (Step 7 of the skill)
+  go to the user, and the ruling says it is awaiting the user in the decision:
 
   ```text
   Ruling: use the renamed parseConfig instead of loadConfig - the plan predates the rename - low, a call site
@@ -63,8 +67,10 @@ belong to other skills; read them, never write them.
   Deferred: flaky date test in utils - follow-up issue
   ```
 
-- **Round.** `Round task-<n> <k>: <cause>` for each extra attempt at a failing check of
-  task `<n>`; a mechanical fix rerun inside the same round adds no line.
+- **Round.** `Round task-<n> <k>: <cause>` for each round of task `<n>` as Step 7 of the
+  skill defines it (another try at a failing check, or a changed re-dispatch after
+  `NEEDS_CONTEXT` or `BLOCKED`); a mechanical fix rerun inside the same round adds no
+  line.
 
 Keep the journal proportional: a short plan needs one line per task and nothing more.
 
@@ -90,6 +96,8 @@ appear in it; use placeholder names such as `<API_TOKEN>`.
 
 **Check:** <command> -> <expected result>
 
+**Commit:** `git add -A -- <paths>`
+
 ## Execution record
 
 Base: unset
@@ -97,7 +105,10 @@ Task 1: pending
 ```
 
 With no task block (a single edit that needs none), the record still gets `Base` and
-`Initial dirty state`, and the evidence goes into a `Ruling` or the report. A plan that
+`Initial dirty state`, and the evidence (command and result) goes into a `Ruling` line;
+the report repeats it. Such a plan-journal has no `Task` lines to be `done`: it is
+finished once `Base` is set and that evidence is written, and the next step is `verify`.
+While `Base` is still `unset` it is unfinished, as in plan-craft's rule. A plan that
 already exists with an unfinished journal is never overwritten; a new change gets a new
 file.
 

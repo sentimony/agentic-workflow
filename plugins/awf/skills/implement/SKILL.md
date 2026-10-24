@@ -1,6 +1,6 @@
 ---
 name: implement
-description: You MUST use this when an existing implementation plan is to be executed, either directly in the current session or through subagents, including resuming an interrupted execution from the plan's execution record, or when one or two edits with an obvious approach need doing without a plan. Covers a clean start with a baseline check, test-first tasks, root causes, task boundaries, plan drift, a closed list of blockers, and the execution record. Replaces devflow inline-plan-dev and subagent-plan-dev. Not for writing a plan (plan-craft) or for checking finished work (verify).
+description: You MUST use this when an existing implementation plan is to be executed, either directly in the current session or through subagents, including resuming an interrupted execution from the plan's execution record, or when one or two edits with an obvious approach need doing without a plan. Covers task-by-task execution with evidence, drift handling and blockers, and a resumable execution record. Replaces devflow inline-plan-dev and subagent-plan-dev. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize).
 argument-hint: "[<plan-path>] [--inline|--subagents]"
 metadata:
   version: "0.0.1"
@@ -17,12 +17,14 @@ plan -> mode -> isolation -> clean start -> task loop -> drift and blockers -> r
 ```
 
 Arguments are optional: a path to the plan, and `--inline` or `--subagents` to choose the
-mode. The spec binds; the plan advises.
+mode.
 
 ## Step 1. Find the plan
 
 Take the plan from the argument, else from the conversation, else the most recent plan
-in the project's plans folder whose `## Execution record` is unfinished. Read the plan
+in the project's plans folder whose `## Execution record` is unfinished (a task not
+`done`, or `Base: unset`; a task-less plan-journal is finished once `Base` is set and its
+evidence is written). Read the plan
 header (`Spec`, `Goal`, `Global constraints`, `Execution`) and, when `Spec` names a file,
 the spec too.
 
@@ -37,7 +39,7 @@ as `<API_TOKEN>` wherever a credential would appear.
 
 The plan-journal holds `Spec: none`, a `Goal` of one sentence carrying the domain values of
 the request (names, numbers, behavior), `Execution: inline`, one task or none, and the
-`## Execution record` section. Its path and template are in
+`## Execution record` section. Its path, template, and the task-less case are in
 [journal.md](references/journal.md).
 
 ## Step 2. Choose the mode
@@ -59,19 +61,17 @@ place, then the harness's own isolation mechanism, then a Git worktree. Working 
 is a full option, not a fallback. Details and limits are in
 [isolation.md](references/isolation.md).
 
-On a fresh start (`Base: unset`), record the starting point in the journal before the
-first task:
-
-```text
-Base: <full SHA>   Root: <path>   Branch: <name>
-Initial dirty state: <paths or none>
-```
+On a fresh start (`Base: unset`), record the starting point before the first task: fill
+the `Base` placeholder with the full SHA of `HEAD`, `Root`, and `Branch`, and add
+`Initial dirty state` under it (format and example in
+[journal.md](references/journal.md)).
 
 Uncommitted changes listed there belong to someone else: work around them, never fold
 them into task commits, and never stash, reset, or clean them. Then run the project's
 baseline check (the plan's, else the project's test or build command) so that a later
 failure clearly belongs to a task. A baseline that already fails is recorded and
-reported, not fixed silently.
+reported, not fixed silently: the tasks still go ahead, the report lists the failure,
+and with no other blocker the next step is still `verify`.
 
 On resume (`Base` is set), follow the resume rule in [journal.md](references/journal.md):
 a task marked `done` with no trace in the tree or the history goes back to `pending`.
@@ -89,8 +89,7 @@ task `in progress` in the journal.
 - **Test first** where the behavior has a seam. The `RED` step must fail for the reason
   the plan expects, not for a typo or a missing import. Write the smallest change that
   turns it `GREEN`. Take expected values from the requirement, never from what the code
-  happens to compute. A useful test fails when the behavior is broken and still passes
-  when internals are rearranged. Without a seam, run the nearest executable check
+  happens to compute. Without a seam, run the nearest executable check
   (`Check:` in the plan).
 - **Root cause.** No fix without evidence of the cause; one hypothesis, one check. Two
   fixes resting on the same assumption mean the assumption itself needs checking; a
@@ -98,8 +97,9 @@ task `in progress` in the journal.
 - **Task boundaries.** When the task ends, compare the changed paths with the task's
   `Files`. Explain anything unexpected instead of reverting it. Things noticed but out of
   scope become `Deferred` lines, not edits.
-- **Commit** as the task's `Commit` field says, with only the task's own paths, unless the
-  user said not to commit.
+- **Commit** with the task's `Commit` line from the plan's task template
+  (`git add -A -- <paths>`), with only the task's own paths, unless the user said not to
+  commit.
 
 A task is `done` only with evidence: a command run on this tree and its result, written
 into the `Task` line.
@@ -114,8 +114,9 @@ The plan was written against an earlier state of the repository; expect differen
   scope, security, or do something irreversible. Stop that task, present the options
   with a recommendation, and wait for the user.
 
-When a deviation changes a decision recorded in the spec, update the spec in the same
-pass and say so in the `Ruling`, so the spec never trails the code.
+The spec binds; the plan advises. When a deviation changes a decision recorded in the
+spec, update the spec in the same pass and say so in the `Ruling`, so the spec never
+trails the code.
 
 ## Step 7. Blockers and loops
 
@@ -137,20 +138,22 @@ otherwise at most three. The same cause twice escalates to the user. Two rounds 
 findings and none accepted stop the loop.
 ```
 
-A round is one more attempt to make a failing check of a task pass after the first
-implementation; each one adds `Round <loop> <n>: <cause>` to the journal, with the loop
-named after the task (`Round task-3 2: <cause>`). A mechanical defect with one obvious fix
-(a typo, a missing import, a wrong path) is fixed and the check rerun inside the same
-round. A defect with several reasonable fixes becomes a `Ruling` for the user to decide,
-and the task waits.
+A round is one more attempt at a task after the first implementation: another try to make
+a failing check of the task pass, or, in subagent mode, a changed re-dispatch after
+`NEEDS_CONTEXT` or `BLOCKED`. Each round adds a `Round` line to the journal, with the loop
+named after the task (format in [journal.md](references/journal.md)). A mechanical defect
+with one obvious fix (a typo, a missing import, a wrong path) is fixed and the check rerun
+inside the same round. A defect with several reasonable fixes becomes a `Ruling` for the
+user to decide, and the task waits.
 
 ## Parallel tasks
 
 Tasks run at the same time only when their independence is shown, not assumed: no shared
 files, no task consuming another's output, and separate mutable state (ports, databases,
 generated files) or an isolation that covers it. Each parallel subagent gets its own
-isolated workspace from step 3. The controller integrates the results one at a time and
-reruns the checks after each, as for any subagent result.
+isolated workspace from step 3; two writers in one working tree is never an option. The
+controller integrates the results one at a time, reruns the checks after each, as for any
+subagent result, and resolves any overlap before starting the next wave.
 
 ## Step 8. Report
 
@@ -160,7 +163,7 @@ follows the table:
 
 | Condition | Last line |
 | --- | --- |
-| all tasks are `done` | `Next step: verify - all tasks done, check the tree` |
+| all tasks are `done`, or a task-less plan-journal has `Base` and its evidence | `Next step: verify - all tasks done, check the tree` |
 | a task is `blocked`, or a `Ruling` awaits the user | `Next step: none - awaiting user` |
 | the Round rule stopped a task | `Next step: none - <cause>, awaiting user` |
 | no plan, and the change is more than one or two obvious edits | `Next step: plan-craft - <why a plan is needed>` |

@@ -318,10 +318,10 @@ jobs:
           echo "Read and search paths:"
           jq -r '[if type == "array" then .[] else . end | select(.type? == "assistant") | .message.content[]?
             | select(.type? == "tool_use" and (.name == "Read" or .name == "Grep" or .name == "Glob"))
-            | "\(.name) \(.input.file_path // .input.path // "." )"] | unique[]' "$EXECUTION_FILE" || true
+            | "\(.name) \(.input.file_path // .input.path // ".") \(.input.pattern // "") \(.input.glob // "")"] | unique[]' "$EXECUTION_FILE" || true
           echo "Permission denials:"
           jq -r '[if type == "array" then .[] else . end | select(.type? == "result")] | last
-            | (.permission_denials // [])[] | "\(.tool_name) \(.tool_input.file_path // .tool_input.path // (.tool_input.command // "" | .[0:160]))"' "$EXECUTION_FILE" || true
+            | (.permission_denials // [])[] | "\(.tool_name) \(.tool_input.file_path // .tool_input.path // (.tool_input.command // "" | .[0:160])) \(.tool_input.pattern // "") \(.tool_input.glob // "")"' "$EXECUTION_FILE" || true
           [ -f .auto-review/review.md ] && exit 0
           echo "::warning::The agent finished without .auto-review/review.md; its result follows"
           jq -r '[if type == "array" then .[] else . end | select(.type? == "result")] | last | "subtype=\(.subtype // "none") turns=\(.num_turns // "none") is_error=\(.is_error | tostring)", (.result // "no result message")[0:4000]' "$EXECUTION_FILE" || true

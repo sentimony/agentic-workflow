@@ -7,7 +7,9 @@
 - `plugins/awf/.claude-plugin/plugin.json` - Claude Code manifest; lists skills.
 - `plugins/awf/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
 - `plugins/awf/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
-- `.github/workflows/ci.yml` - validation; `claude-review.yml` - auto review as yngwald.
+- `.github/workflows/ci.yml` - validation; `claude-review.yml` - auto review: gate, review
+  (read-only agent writes the body), publish (validates it, posts a PR review as yngwald, sets
+  the `Claude review` status); also runs when yngwald is requested as a reviewer.
 
 ## Rules
 
@@ -21,8 +23,9 @@
 - Releases go through the `rc-verifier` and `releaser` roles (contracts and the release
   checklist in the `skills-aiassist` workbench): `rc-verifier` approves the tree, then
   `releaser` commits, squash-merges the PR, and pushes the annotated tag.
-- `claude-review.yml` changes in a PR run only after merge: `workflow_run` uses the default
-  branch copy. `.auto-review/` is reserved for the review job and must not be tracked.
+- `claude-review.yml` changes in a PR reach `workflow_run` only after merge (it uses the default
+  branch copy); `pull_request` runs use the PR branch copy. `.auto-review/` is reserved for the
+  review job and must not be tracked.
 - Renaming a released skill: the new name starts at `0.0.1`, its CHANGELOG names the old one,
   and README Install says to remove the old skill or reinstall.
 - Skills form one chain: specify -> plan-craft -> implement -> verify -> cr-request ->

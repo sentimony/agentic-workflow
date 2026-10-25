@@ -29,10 +29,11 @@
 - `claude-review.yml` changes in a PR reach `workflow_run` only after merge (it uses the default
   branch copy); `pull_request` runs use the PR branch copy. `.auto-review/` is reserved for the
   review job and must not be tracked.
-- `claude-review.yml` keeps one run per PR branch (workflow-level concurrency), so automatic
-  runs no longer race. A `workflow_dispatch` run has its own group, and next to an event-driven
-  run for the same head only the status owner posts: an accepted trade-off, not a defect for
-  review; re-requesting yngwald recovers, and the status is advisory.
+- `claude-review.yml` keeps one run per head SHA (workflow-level concurrency), so automatic
+  runs for one head no longer race, and a late CI run for an older head cannot cancel the review
+  of a newer one. A `workflow_dispatch` run has its own group, and next to an event-driven run
+  for the same head only the status owner posts: an accepted trade-off, not a defect for review;
+  re-requesting yngwald recovers, and the status is advisory.
 - Renaming a released skill: the new name starts at `0.0.1`, its CHANGELOG names the old one,
   and README Install says to remove the old skill or reinstall.
 - Skills form one chain: specify -> plan-craft -> implement -> verify -> cr-request ->

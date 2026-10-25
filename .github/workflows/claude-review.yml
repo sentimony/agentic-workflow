@@ -21,14 +21,16 @@ on:
         description: PR number
         required: true
 
-# One group per PR branch, so the gate that posts the latest `pending` status is also the run whose
-# review survives. A review request for someone else gets its own group and cancels nothing. A
-# workflow_dispatch run knows only the PR number, so it gets its own group and may review alongside
-# an event-driven run; status ownership in publish then decides which result is reported.
+# One group per head SHA, so the gate that posts the latest `pending` status for a head is also the
+# run whose review survives, and a late CI run for an older head cannot cancel the review of a newer
+# one (publish reports that older run as superseded). A review request for someone else gets its own
+# group and cancels nothing. A workflow_dispatch run knows only the PR number, so it gets its own
+# group and may review alongside an event-driven run; status ownership in publish then decides which
+# result is reported.
 concurrency:
   group: >-
     claude-review-${{ github.event.pull_request.head.repo.full_name || github.event.workflow_run.head_repository.full_name || github.repository }}-${{
-    github.event.pull_request.head.ref || github.event.workflow_run.head_branch || format('pr-{0}', inputs.pr_number) }}${{
+    github.event.workflow_run.head_sha || github.event.pull_request.head.sha || format('pr-{0}', inputs.pr_number) }}${{
     github.event.action == 'review_requested' && github.event.requested_reviewer.login != 'yngwald'
     && format('-{0}', github.run_id) || '' }}
   cancel-in-progress: true
@@ -80,8 +82,8 @@ jobs:
           # For skips that end a requested review: a "waiting for green CI" status would stay pending.
           skip_final() {
             [ -n "${head_sha:-}" ] || skip "$1"
-            waiting=$(gh api "repos/$REPO/commits/$head_sha/statuses" \
-              --jq '[.[] | select(.context == env.CONTEXT)][0] | select(.state == "pending")
+            waiting=$(gh api "repos/$REPO/commits/$head_sha/status?per_page=100" \
+              --jq '[.statuses[] | select(.context == env.CONTEXT)][0] | select(.state == "pending")
                 | (.description // "") | startswith("Review requested; waiting")')
             [ "$waiting" != true ] || post_status error "Not reviewed: $1"
             skip "$1"
@@ -135,8 +137,10 @@ jobs:
             # One JSON object per review, slurped below: --paginate with --jq applies the filter per page.
             marked=$(gh api --paginate "repos/$REPO/pulls/$number/reviews" \
               --jq '.[] | select(.user.login == env.REVIEWER) | .body |= ((. // "") | gsub("\r"; ""))
-                | select(.body | test("^<!-- claude-review sha=[0-9a-f]{40} -->"))
-                | {submitted_at, sha: (.body | capture("^<!-- claude-review sha=(?<sha>[0-9a-f]{40})").sha), body}
+                | select(.body | startswith("<!-- claude-review sha="))
+                | .sha = (.body | split("\n")[0] | ltrimstr("<!-- claude-review sha=") | rtrimstr(" -->"))
+                | select(.sha | test("^[0-9a-f]{40}$"))
+                | {submitted_at, sha, body}
                 | tojson')
             total=$(jq -s length <<< "$marked")
             if [ "$total" -gt 0 ]; then
@@ -515,6 +519,7 @@ jobs:
           SUMMARY: ${{ steps.validate.outputs.summary }}
           STATE: ${{ steps.validate.outputs.state }}
           VALIDATED_AT: ${{ steps.validate.outputs.validated_at }}
+          JOB_STATUS: ${{ job.status }}
         run: |
           post_status() {
             gh api "repos/$REPO/statuses/$HEAD_SHA" -f state="$1" -f description="$2" \
@@ -536,6 +541,10 @@ jobs:
             REVIEW_ID=$(tail -n 1 <<< "$ids")
           elif [ "$POST_OUTCOME" != success ]; then
             REVIEW_ID=""
+          fi
+          if [ -z "$REVIEW_ID" ] && [ "$JOB_STATUS" = cancelled ]; then
+            post_status error "Claude review was cancelled"
+            exit 0
           fi
           if [ -z "$REVIEW_ID" ]; then
             post_status failure "Posting the review failed"

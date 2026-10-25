@@ -248,6 +248,10 @@ jobs:
             Earlier reviews and comments on the PR are context; label this a fresh review pass when the same
             reviewer already reviewed an older head.
 
+            This run ends with your final message: dispatch reviewers in the foreground, never in the
+            background, write .auto-review/review.md before you finish, and never end with a reviewer still
+            running.
+
             If the cr-request skill is not available to you, do not review and do not write
             .auto-review/review.md; stop and report that the skill is missing.
 

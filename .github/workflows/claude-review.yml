@@ -297,13 +297,14 @@ jobs:
             body must end with it, backticks included:
             Reviewed with: `/cr-request` ${{ steps.skill.outputs.version }} skill
           # Reads stay in the workspace and the installed skill, so injected PR text cannot steer the agent
-          # to runner files or /proc and copy a token into the body. Grep and Glob follow the Read rules
-          # (Glob(path) rules never match); Write follows the Edit rule for the body file. Bash is denied,
-          # built-in read-only commands included: any allowed command can echo an expanded variable.
+          # to runner files or /proc and copy a token into the body. Grep and Glob are allowed bare: the
+          # blockReadsOutsideWorkingDirectories setting, not a path rule, refuses them outside the
+          # workspace. Write follows the Edit rule for the body file. Bash is denied, built-in read-only
+          # commands included: any allowed command can echo an expanded variable.
           claude_args: >-
             --model ${{ vars.CLAUDE_REVIEW_MODEL || 'claude-opus-5-5' }}
             --max-turns 60
-            --allowedTools "Skill,Agent,Task,Read(./**),Read(~/.claude/skills/**),Edit(./.auto-review/review.md),Write(./.auto-review/review.md)"
+            --allowedTools "Skill,Agent,Task,Grep,Glob,Read(./**),Read(~/.claude/skills/**),Edit(./.auto-review/review.md),Write(./.auto-review/review.md)"
             --disallowedTools "Bash"
 
       # The action hides the agent's output: list the paths it read and the calls the permission rules

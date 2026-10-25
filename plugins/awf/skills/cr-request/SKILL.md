@@ -184,10 +184,10 @@ The last line of the result is the next step:
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |
 
 CI auto-review exception: when the caller requires a closing line, that line stays the
-very last one, in its exact text with backticks, and the `Next step` line goes right
-before it. The `claude-review.yml` workflows require
-``Reviewed with: `/cr-request` <version> skill``, where `<version>` is this skill's
-`metadata.version`.
+very last one, in its exact text, and the `Next step` line goes right before it. The CI
+auto-review (`claude-review.yml`) requires
+``Reviewed with: `/cr-request` <version> skill``, backticks included, where `<version>`
+is this skill's `metadata.version`.
 
 ## When not to use
 

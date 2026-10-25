@@ -62,6 +62,15 @@ jobs:
             exit 0
           }
 
+          # For skips that end a requested review: a "waiting for green CI" status would stay pending.
+          skip_final() {
+            waiting=$(gh api "repos/$REPO/commits/$head_sha/statuses" \
+              --jq '[.[] | select(.context == env.CONTEXT)][0] | select(.state == "pending")
+                | (.description // "") | startswith("Review requested; waiting")')
+            [ "$waiting" != true ] || post_status error "Not reviewed: $1"
+            skip "$1"
+          }
+
           if [ -n "$RUN_SHA" ]; then
             [ "$RUN_HEAD_REPO" = "$REPO" ] || skip "CI run from a fork"
             # CI runs on push, so its run carries no PR; find the open PR by commit.
@@ -76,13 +85,13 @@ jobs:
           pr=$(gh api "repos/$REPO/pulls/$number")
           head_sha=$(jq -r .head.sha <<< "$pr")
           base_sha=$(jq -r .base.sha <<< "$pr")
-          [ "$(jq -r .state <<< "$pr")" = open ] || skip "PR #$number is not open"
-          [ "$(jq -r .draft <<< "$pr")" = false ] || skip "PR #$number is a draft"
+          [ "$(jq -r .state <<< "$pr")" = open ] || skip_final "PR #$number is not open"
+          [ "$(jq -r .draft <<< "$pr")" = false ] || skip_final "PR #$number is a draft"
           [ "$(jq -r .head.repo.full_name <<< "$pr")" = "$REPO" ] || skip "PR #$number is from a fork"
-          [ "$(jq -r .user.type <<< "$pr")" != Bot ] || skip "PR #$number is from a bot"
-          [ "$(jq -r .user.login <<< "$pr")" != "$REVIEWER" ] || skip "PR #$number is by $REVIEWER"
+          [ "$(jq -r .user.type <<< "$pr")" != Bot ] || skip_final "PR #$number is from a bot"
+          [ "$(jq -r .user.login <<< "$pr")" != "$REVIEWER" ] || skip_final "PR #$number is by $REVIEWER"
           jq -e '.labels | map(.name) | index("skip-auto-review") | not' <<< "$pr" > /dev/null \
-            || skip "PR #$number has the skip-auto-review label"
+            || skip_final "PR #$number has the skip-auto-review label"
           [ -z "$RUN_SHA" ] || [ "$RUN_SHA" = "$head_sha" ] || skip "PR #$number moved on from $RUN_SHA"
           requested=$(jq --arg r "$REVIEWER" '[.requested_reviewers[].login] | index($r) != null' <<< "$pr")
 
@@ -103,13 +112,14 @@ jobs:
 
           # A pending review request asks for a fresh pass even when this SHA was already reviewed.
           if [ "$requested" != true ]; then
-            # Captured first, so grep -q never closes a gh pipe early.
-            bodies=$(gh api --paginate "repos/$REPO/pulls/$number/reviews" \
-              --jq ".[] | select(.user.login == \"$REVIEWER\") | .body"
-            gh api --paginate "repos/$REPO/issues/$number/comments" \
+            # Captured first, so grep -q never closes a gh pipe early; one call per assignment, so either
+            # call failing fails the step.
+            reviews=$(gh api --paginate "repos/$REPO/pulls/$number/reviews" \
               --jq ".[] | select(.user.login == \"$REVIEWER\") | .body")
-            if grep -qF "<!-- claude-review sha=$head_sha -->" <<< "$bodies"; then
-              skip "PR #$number already has a review of $head_sha"
+            comments=$(gh api --paginate "repos/$REPO/issues/$number/comments" \
+              --jq ".[] | select(.user.login == \"$REVIEWER\") | .body")
+            if grep -qF "<!-- claude-review sha=$head_sha -->" <<< "$reviews"$'\n'"$comments"; then
+              skip_final "PR #$number already has a review of $head_sha"
             fi
           fi
 
@@ -139,8 +149,6 @@ jobs:
     outputs:
       version: ${{ steps.skill.outputs.version }}
     env:
-      # Read-only, for the agent's gh calls.
-      GH_TOKEN: ${{ github.token }}
       NUMBER: ${{ needs.gate.outputs.number }}
       HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
       # sentimony/agentic-workflow commit of tag v0.0.4 with plugins/awf/skills/cr-request; the
@@ -159,6 +167,7 @@ jobs:
         # bash -eo pipefail: a failing git diff feeding the base-copy loop must fail the step.
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           BASE_SHA: ${{ needs.gate.outputs.base_sha }}
         run: |
           out=.auto-review/target
@@ -185,6 +194,8 @@ jobs:
             echo "Captured at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > "$out/identity.txt"
           git log --format='%h %H %s' "$merge_base..$HEAD_SHA" > "$out/log.txt"
+          # The agent has no gh: gh --jq can read its environment.
+          gh pr view "$NUMBER" --repo "$GITHUB_REPOSITORY" --json title,body,author,reviews,comments > "$out/pr.json"
           git diff --no-ext-diff --no-textconv --stat "$merge_base" "$HEAD_SHA" > "$out/stat.txt"
           git diff --no-ext-diff --no-textconv "$merge_base" "$HEAD_SHA" > "$out/diff.patch"
           # Base copies of modified, deleted, and type-changed files; the checkout holds the head side.
@@ -227,11 +238,12 @@ jobs:
             Run the cr-request skill for this pull request on a prepared target. The target is the
             committed range from the merge base of BASE SHA and HEAD SHA to HEAD SHA, already captured in
             .auto-review/target/: identity.txt (the target identity, tree included), log.txt
-            (`<short sha> <full sha> <subject>` per commit), stat.txt, diff.patch, and base/ with the
-            merge-base copies of modified, deleted, and type-changed files. The checkout is HEAD SHA.
-            git diff, git log, and git show are not available; read these files instead, and pass the same
-            instruction to any reviewer you dispatch. Intent: the PR title and description from
-            `gh pr view`, plus AGENTS.md. There is no plan file and no journal to write.
+            (`<short sha> <full sha> <subject>` per commit), stat.txt, diff.patch, base/ with the
+            merge-base copies of modified, deleted, and type-changed files, and pr.json with the PR title,
+            description, reviews, and comments. The checkout is HEAD SHA. git diff, git log, git show, and gh
+            are not available; read these files instead, and pass the same instruction to any reviewer you
+            dispatch. Intent: the PR title and description from pr.json, plus AGENTS.md. There is no plan
+            file and no journal to write.
             CI (skill frontmatter, manifests and marketplaces, README versions, hidden Unicode) is green on HEAD SHA; tests were not run in this job - say so in the gaps.
             Earlier reviews and comments on the PR are context; label this a fresh review pass when the same
             reviewer already reviewed an older head.
@@ -284,7 +296,7 @@ jobs:
           claude_args: >-
             --model ${{ vars.CLAUDE_REVIEW_MODEL || 'claude-opus-5-5' }}
             --max-turns 60
-            --allowedTools "Skill,Agent,Task,Read(./**),Read(~/.claude/skills/**),Edit(./.auto-review/review.md),Write(./.auto-review/review.md),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git status:*),Bash(git ls-files:*),Bash(gh pr view:*),Bash(gh pr diff:*)"
+            --allowedTools "Skill,Agent,Task,Read(./**),Read(~/.claude/skills/**),Edit(./.auto-review/review.md),Write(./.auto-review/review.md),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git status:*),Bash(git ls-files:*)"
 
       # The action hides the agent's output: list the paths it read and the calls the permission rules
       # refused (paths and commands only), and the result when it wrote no body.
@@ -357,10 +369,11 @@ jobs:
             summary_section | grep -oE "^\| *$1 *\| *[0-9]+ *\|" | grep -oE '[0-9]+' | head -n 1 || true
           }
 
-          # An older run must not overwrite the status a newer gate set.
-          latest=$(gh api "repos/$REPO/commits/$HEAD_SHA/statuses" \
-            --jq '[.[] | select(.context == env.CONTEXT)][0].target_url // ""')
-          [ "$latest" = "$RUN_URL" ] || { echo "Status owned by a newer run"; exit 0; }
+          # An older run must not overwrite the status a newer gate set; a status from an older run
+          # does not stop this one.
+          owner=$(gh api "repos/$REPO/commits/$HEAD_SHA/statuses" \
+            --jq '[.[] | select(.context == env.CONTEXT)][0].target_url // "" | capture("/runs/(?<id>[0-9]+)$").id // "0"')
+          [ "${owner:-0}" -le "$GITHUB_RUN_ID" ] || { echo "Status owned by a newer run"; exit 0; }
 
           if [ ! -f "$BODY_FILE" ]; then
             if [ "$REVIEW_RESULT" = cancelled ]; then
@@ -436,9 +449,9 @@ jobs:
             --jq '.user.login == env.REVIEWER and .commit_id == env.HEAD_SHA
               and (.body | contains(env.MARKER)) and (.body | contains(env.SIGNATURE))')
           [ "$posted" = true ] || { post_status failure "Posted review not found"; exit 1; }
-          latest=$(gh api "repos/$REPO/commits/$HEAD_SHA/statuses" \
-            --jq '[.[] | select(.context == env.CONTEXT)][0].target_url // ""')
-          [ "$latest" = "$RUN_URL" ] || { echo "Review posted; status owned by a newer run"; exit 0; }
+          owner=$(gh api "repos/$REPO/commits/$HEAD_SHA/statuses" \
+            --jq '[.[] | select(.context == env.CONTEXT)][0].target_url // "" | capture("/runs/(?<id>[0-9]+)$").id // "0"')
+          [ "${owner:-0}" -le "$GITHUB_RUN_ID" ] || { echo "Review posted; status owned by a newer run"; exit 0; }
           post_status "$STATE" "$SUMMARY"
 
       # A step that failed before setting a final status, a transient API error for example.

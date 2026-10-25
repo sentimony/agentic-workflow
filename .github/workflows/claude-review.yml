@@ -228,8 +228,8 @@ jobs:
           # Read-only token: the agent reads the PR but cannot write to GitHub.
           github_token: ${{ github.token }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # User-scope setting: Read, Grep, Glob, and file-reading Bash commands outside the working
-          # directory are refused; Claude Code keeps ~/.claude/skills readable.
+          # User-scope setting: Read, Grep, and Glob outside the working directory are refused (Bash is
+          # denied in claude_args); Claude Code keeps ~/.claude/skills readable.
           settings: '{"permissions":{"blockReadsOutsideWorkingDirectories":true}}'
           prompt: |
             REPO: ${{ github.repository }}
@@ -321,6 +321,7 @@ jobs:
           # workflow commands until the random token ends the block.
           stop="$(openssl rand -hex 16)"
           echo "::stop-commands::$stop"
+          trap 'echo "::$stop::"' EXIT
           echo "Read and search calls:"
           jq -r '[if type == "array" then .[] else . end | select(.type? == "assistant") | .message.content[]?
             | select(.type? == "tool_use" and (.name == "Read" or .name == "Grep" or .name == "Glob"))
@@ -334,7 +335,6 @@ jobs:
           if [ ! -f .auto-review/review.md ]; then
             jq -r '[if type == "array" then .[] else . end | select(.type? == "result")] | last | "subtype=\(.subtype // "none") turns=\(.num_turns // "none") is_error=\(.is_error | tostring)", (.result // "no result message")[0:4000]' "$EXECUTION_FILE" || true
           fi
-          echo "::$stop::"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -395,6 +395,9 @@ jobs:
           [ "${owner:-0}" -le "$GITHUB_RUN_ID" ] || { echo "Status owned by a newer run"; exit 0; }
 
           if [ ! -f "$BODY_FILE" ]; then
+            # Gates can finish out of run-ID order: the review job that won the queue may belong to an
+            # older run, so only the run whose gate set the latest status reports a missing body.
+            [ "${owner:-0}" = "$GITHUB_RUN_ID" ] || { echo "No body; status owned by run ${owner:-none}"; exit 0; }
             if [ "$REVIEW_RESULT" = cancelled ]; then
               post_status error "Claude review was cancelled"
               exit 0

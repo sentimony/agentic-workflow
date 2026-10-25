@@ -3,7 +3,7 @@ name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>]"
 metadata:
-  version: "0.0.4"
+  version: "0.0.5"
 license: MIT
 ---
 
@@ -88,8 +88,11 @@ as security or migration safety; a second generic opinion only adds cost.
 Fill the template in [brief.md](references/brief.md) and dispatch a fresh reviewer
 (subagent or new session) with no implementation history. Name the reviewer model
 explicitly in the dispatch and in the brief; never let it fall back to an unnamed
-default. When the harness cannot isolate a reviewer, run the pass yourself, label it
-"self-review, not independent", and review from the diff alone.
+default. In a non-interactive run (`claude -p`, a CI action, any run that ends with the
+final message), dispatch the reviewer in the foreground, wait for its result, and write
+any required output file before the final message; never end the turn while the
+reviewer still runs. When the harness cannot isolate a reviewer, run the pass yourself,
+label it "self-review, not independent", and review from the diff alone.
 
 The brief stays neutral. It never tells the reviewer what not to flag or caps a
 severity, and the author's rationale does not lower one. A defect the plan itself
@@ -159,8 +162,9 @@ Round review <n>: <cause>
 
 One `Finding` line per finding; `n` equals the review number `R<n>`, and a `Round` line
 the journal already has is skipped. Never rewrite existing lines. The full result stays
-in the response; only the user or CI saves it to a file. Before dispatch, take the round
-number from the journal (`Round <loop> <n>`, loop `review`) so a fresh session continues:
+in the response; it goes to a file only when the user or the caller (a CI run, step 4)
+asks for one. Before dispatch, take the round number from the journal
+(`Round <loop> <n>`, loop `review`) so a fresh session continues:
 
 ```text
 Round rule: a round count the user gave explicitly allows exactly that many rounds;
@@ -180,9 +184,11 @@ The last line of the result is the next step:
 | Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |
 
-CI auto-review exception: when the caller requires a closing line (the
-`claude-review.yml` comment), the last line stays `Reviewed with: cr-request skill`
-and the `Next step` line goes right before it.
+CI auto-review exception: when the caller requires a closing line, that line stays the
+very last one, in its exact text, and the `Next step` line goes right before it. The CI
+auto-review (`claude-review.yml`) requires
+``Reviewed with: `/cr-request` <version> skill``, backticks included, where `<version>`
+is this skill's `metadata.version`.
 
 ## When not to use
 

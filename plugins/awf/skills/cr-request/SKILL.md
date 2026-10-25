@@ -162,8 +162,9 @@ Round review <n>: <cause>
 
 One `Finding` line per finding; `n` equals the review number `R<n>`, and a `Round` line
 the journal already has is skipped. Never rewrite existing lines. The full result stays
-in the response; only the user or CI saves it to a file. Before dispatch, take the round
-number from the journal (`Round <loop> <n>`, loop `review`) so a fresh session continues:
+in the response; it goes to a file only when the user or the caller (a CI run, step 4)
+asks for one. Before dispatch, take the round number from the journal
+(`Round <loop> <n>`, loop `review`) so a fresh session continues:
 
 ```text
 Round rule: a round count the user gave explicitly allows exactly that many rounds;

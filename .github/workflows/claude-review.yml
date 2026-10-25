@@ -275,8 +275,8 @@ jobs:
             (`<short sha> <full sha> <subject>` per commit), stat.txt, diff.patch, base/ with the
             merge-base copies of modified, deleted, and type-changed files, and pr.json with the PR title,
             description, author, base and head branches, URL, reviews, and comments. The checkout is HEAD
-            SHA; `.claude/` dirs and `.mcp.json` were removed before the run, and their changes are in
-            diff.patch. No shell commands are available
+            SHA; `.claude/` dirs, `.mcp.json`, `.claude.json`, and `CLAUDE.local.md` were removed before the
+            run, and their changes are in diff.patch. No shell commands are available
             (no git, no gh): use the tree in identity.txt and read these files instead, and pass the same
             instruction to any reviewer you dispatch. Intent: the PR title and description from pr.json,
             plus AGENTS.md. There is no plan file and no journal to write.
@@ -407,9 +407,13 @@ jobs:
           path: review-out
 
       # Runs with GITHUB_TOKEN and owns the status; the artifact exists only when the review job succeeded.
+      # always(): after a workflow-level cancel a step without a status check is skipped, and the
+      # pending status this run's gate set would never resolve.
       - id: validate
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
           REVIEW_RESULT: ${{ needs.review.result }}
           VERSION: ${{ needs.review.outputs.version }}
         run: |
@@ -433,6 +437,10 @@ jobs:
             --jq '[.statuses[] | select(.context == env.CONTEXT)][0].target_url // ""') \
             || { post_status error "Could not read the Claude review status"; exit 1; }
           [ "$latest" = "$RUN_URL" ] || { echo "Status owned by another run: ${latest:-none}"; exit 0; }
+          if [ "$JOB_STATUS" = cancelled ]; then
+            post_status error "Claude review was cancelled"
+            exit 0
+          fi
 
           if [ ! -f "$BODY_FILE" ]; then
             if [ "$REVIEW_RESULT" = cancelled ]; then

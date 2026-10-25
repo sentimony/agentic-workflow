@@ -25,9 +25,8 @@ permissions: {}
 jobs:
   gate:
     name: Review gate
-    if: >-
-      (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') &&
-      (github.event.action != 'review_requested' || github.event.requested_reviewer.login == 'yngwald')
+    # Failed CI runs pass too: the gate turns a pending request's status into `error` and skips.
+    if: github.event.action != 'review_requested' || github.event.requested_reviewer.login == 'yngwald'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -104,7 +103,7 @@ jobs:
 
           # A pending review request asks for a fresh pass even when this SHA was already reviewed.
           if [ "$requested" != true ]; then
-            # Captured first: under pipefail, grep -q closing the pipe early would fail gh with SIGPIPE.
+            # Captured first, so grep -q never closes a gh pipe early.
             bodies=$(gh api --paginate "repos/$REPO/pulls/$number/reviews" \
               --jq ".[] | select(.user.login == \"$REVIEWER\") | .body"
             gh api --paginate "repos/$REPO/issues/$number/comments" \
@@ -157,6 +156,8 @@ jobs:
       # The agent gets no git diff, log, or show: they accept --output=<path>, which could write
       # outside .auto-review/. The target is prepared here and handed over as files instead.
       - name: Prepare review target
+        # bash -eo pipefail: a failing git diff feeding the base-copy loop must fail the step.
+        shell: bash
         env:
           BASE_SHA: ${{ needs.gate.outputs.base_sha }}
         run: |
@@ -335,8 +336,11 @@ jobs:
             gh api "repos/$REPO/statuses/$HEAD_SHA" -f state="$1" -f description="$2" \
               -f context="$CONTEXT" -f target_url="$RUN_URL" > /dev/null
           }
+          summary_section() {
+            tr -d '\r' < "$BODY_FILE" | awk '/^### /{on = ($0 ~ /^### Summary[[:space:]]*$/); next} on'
+          }
           count() {
-            grep -oE "^\| *$1 *\| *[0-9]+ *\|" "$BODY_FILE" | grep -oE '[0-9]+' | head -n 1 || true
+            summary_section | grep -oE "^\| *$1 *\| *[0-9]+ *\|" | grep -oE '[0-9]+' | head -n 1 || true
           }
 
           # An older run must not overwrite the status a newer gate set.
@@ -359,14 +363,15 @@ jobs:
           fail() { post_status failure "$1"; exit 1; }
           [[ "$VERSION" =~ ^[0-9][0-9.]*$ ]] || fail "No cr-request version from the review job"
           [ "$(head -n 1 "$BODY_FILE" | tr -d '\r')" = "$MARKER" ] || fail "The review body does not start with the marker"
-          grep -qxF "Reviewed with: \`/cr-request\` $VERSION skill" "$BODY_FILE" || fail "The review body has no signature line"
+          last=$(tr -d '\r' < "$BODY_FILE" | grep -v '^[[:space:]]*$' | tail -n 1 | sed 's/[[:space:]]*$//' || true)
+          [ "$last" = "Reviewed with: \`/cr-request\` $VERSION skill" ] || fail "The review body does not end with the signature line"
           if grep -qE '(ghp_|ghs_|gho_|ghu_|ghr_|github_pat_|sk-ant-|sb_secret_)[A-Za-z0-9]' "$BODY_FILE"; then
             fail "Review body contains a token-like string"
           fi
           critical=$(count Critical)
           important=$(count Important)
           minor=$(count Minor)
-          readiness=$(grep -oE '\*\*Merge readiness:\*\* *(ready with fixes|not ready|ready)' "$BODY_FILE" \
+          readiness=$(summary_section | grep -oE '\*\*Merge readiness:\*\* *(ready with fixes|not ready|ready)' \
             | sed -E 's/.*\*\* *//' | head -n 1 || true)
           if [ -z "$critical" ] || [ -z "$important" ] || [ -z "$minor" ] || [ -z "$readiness" ]; then
             fail "The review has no Summary counts or merge readiness"
@@ -417,4 +422,19 @@ jobs:
             --jq '.user.login == env.REVIEWER and .commit_id == env.HEAD_SHA
               and (.body | contains(env.MARKER)) and (.body | contains(env.SIGNATURE))')
           [ "$posted" = true ] || { post_status failure "Posted review not found"; exit 1; }
+          latest=$(gh api "repos/$REPO/commits/$HEAD_SHA/statuses" \
+            --jq '[.[] | select(.context == env.CONTEXT)][0].target_url // ""')
+          [ "$latest" = "$RUN_URL" ] || { echo "Review posted; status owned by a newer run"; exit 0; }
           post_status "$STATE" "$SUMMARY"
+
+      # A step that failed before setting a final status, a transient API error for example.
+      - name: Report an unexpected failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current=$(gh api "repos/$REPO/commits/$HEAD_SHA/statuses" \
+            --jq '[.[] | select(.context == env.CONTEXT)][0] | "\(.target_url) \(.state)"')
+          [ "$current" = "$RUN_URL pending" ] || exit 0
+          gh api "repos/$REPO/statuses/$HEAD_SHA" -f state=error -f description="Publishing the review failed" \
+            -f context="$CONTEXT" -f target_url="$RUN_URL" > /dev/null

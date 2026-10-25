@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.5] - 2026-10-26
+
+- Dispatch the reviewer in the foreground in a non-interactive run (`claude -p`, a CI
+  action) and write the result before the final message, which ends the run.
+- A closing line the caller requires stays the very last line; the CI auto-review
+  signature is now ``Reviewed with: `/cr-request` <version> skill``.
+
 ## [0.0.4] - 2026-10-22
 
 - Add a summary to the result: findings per severity and merge readiness, next to

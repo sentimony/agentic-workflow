@@ -3,7 +3,7 @@ name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>]"
 metadata:
-  version: "0.0.4"
+  version: "0.0.5"
 license: MIT
 ---
 
@@ -88,8 +88,11 @@ as security or migration safety; a second generic opinion only adds cost.
 Fill the template in [brief.md](references/brief.md) and dispatch a fresh reviewer
 (subagent or new session) with no implementation history. Name the reviewer model
 explicitly in the dispatch and in the brief; never let it fall back to an unnamed
-default. When the harness cannot isolate a reviewer, run the pass yourself, label it
-"self-review, not independent", and review from the diff alone.
+default. In a non-interactive run (`claude -p`, a CI action, any run that ends with the
+final message), dispatch the reviewer in the foreground, wait for its result, and write
+any required output file before the final message; never end the turn while the
+reviewer still runs. When the harness cannot isolate a reviewer, run the pass yourself,
+label it "self-review, not independent", and review from the diff alone.
 
 The brief stays neutral. It never tells the reviewer what not to flag or caps a
 severity, and the author's rationale does not lower one. A defect the plan itself
@@ -180,9 +183,11 @@ The last line of the result is the next step:
 | Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |
 
-CI auto-review exception: when the caller requires a closing line (the
-`claude-review.yml` comment), the last line stays `Reviewed with: cr-request skill`
-and the `Next step` line goes right before it.
+CI auto-review exception: when the caller requires a closing line, that line stays the
+very last one, in its exact text with backticks, and the `Next step` line goes right
+before it. The `claude-review.yml` workflows require
+``Reviewed with: `/cr-request` <version> skill``, where `<version>` is this skill's
+`metadata.version`.
 
 ## When not to use
 

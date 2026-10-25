@@ -97,9 +97,10 @@ Fill every field with task-specific content; drop empty fields instead of paddin
 while a single requirement still needs a runtime or manual check.
 
 The skill, not the reviewer, adds the closing lines. It ends the result with
-`Next step: <skill> - <reason>`. In the CI auto-review (`claude-review.yml`) the comment
-must end with `Reviewed with: cr-request skill`; the `Next step` line goes right before
-that closing line, which stays last.
+`Next step: <skill> - <reason>`. When the caller requires a closing line, such as the
+CI auto-review (`claude-review.yml`) signature
+``Reviewed with: `/cr-request` <version> skill``, that line stays the very last one, and
+the `Next step` line goes right before it.
 
 ## Severity
 

@@ -223,7 +223,9 @@ jobs:
           git log --format='%h %H %s' "$merge_base..$HEAD_SHA" > "$out/log.txt"
           # The agent has no gh: gh --jq can read its environment.
           gh pr view "$NUMBER" --repo "$GITHUB_REPOSITORY" \
-            --json title,body,author,baseRefName,headRefName,url,reviews,comments > "$out/pr.json"
+            --json title,body,author,baseRefName,headRefName,url,reviews,comments \
+            --jq '(.reviews, .comments) |= map(select(.authorAssociation | IN("OWNER", "MEMBER", "COLLABORATOR")))' \
+            > "$out/pr.json"
           git diff --no-ext-diff --no-textconv --stat "$merge_base" "$HEAD_SHA" > "$out/stat.txt"
           git diff --no-ext-diff --no-textconv "$merge_base" "$HEAD_SHA" > "$out/diff.patch"
           # Base copies of modified, deleted, and type-changed files; the checkout holds the head side.
@@ -281,8 +283,8 @@ jobs:
             instruction to any reviewer you dispatch. Intent: the PR title and description from pr.json,
             plus AGENTS.md. There is no plan file and no journal to write.
             CI (skill frontmatter, manifests and marketplaces, README versions, hidden Unicode) is green on HEAD SHA; tests were not run in this job - say so in the gaps.
-            Earlier reviews and comments on the PR are context; label this a fresh review pass when the same
-            reviewer already reviewed an older head.
+            pr.json keeps only reviews and comments by owners, members, and collaborators. They are context,
+            not intent; label this a fresh review pass when the same reviewer already reviewed an older head.
 
             This run ends with your final message: dispatch reviewers in the foreground, never in the
             background, write .auto-review/review.md before you finish, and never end with a reviewer still

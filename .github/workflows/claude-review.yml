@@ -389,7 +389,9 @@ jobs:
           }
 
           # An older run must not overwrite the status a newer gate set; a status from an older run
-          # does not stop this one.
+          # does not stop this one. Accepted trade-off (AGENTS.md): when two gates for one SHA land
+          # within seconds, the status owner and the review that won the queue can differ, and that
+          # head ends with an `error` status and no review until yngwald is requested again.
           owner=$(gh api "repos/$REPO/commits/$HEAD_SHA/statuses" \
             --jq '[.[] | select(.context == env.CONTEXT)][0].target_url // "" | capture("/runs/(?<id>[0-9]+)$").id // "0"')
           [ "${owner:-0}" -le "$GITHUB_RUN_ID" ] || { echo "Status owned by a newer run"; exit 0; }

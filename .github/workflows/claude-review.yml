@@ -315,16 +315,26 @@ jobs:
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
         run: |
           [ -f "$EXECUTION_FILE" ] || exit 0
-          echo "Read and search paths:"
+          [ -f .auto-review/review.md ] \
+            || echo "::warning::The agent finished without .auto-review/review.md; its result follows"
+          # The agent chooses these strings: fields print as JSON, one per line, and the runner ignores
+          # workflow commands until the random token ends the block.
+          stop="$(openssl rand -hex 16)"
+          echo "::stop-commands::$stop"
+          echo "Read and search calls:"
           jq -r '[if type == "array" then .[] else . end | select(.type? == "assistant") | .message.content[]?
             | select(.type? == "tool_use" and (.name == "Read" or .name == "Grep" or .name == "Glob"))
-            | "\(.name) \(.input.file_path // .input.path // ".") \(.input.pattern // "") \(.input.glob // "")"] | unique[]' "$EXECUTION_FILE" || true
+            | "\(.name) \(.input | {file_path, path, pattern, glob} | with_entries(select(.value != null)) | tojson)"]
+            | unique[]' "$EXECUTION_FILE" || true
           echo "Permission denials:"
           jq -r '[if type == "array" then .[] else . end | select(.type? == "result")] | last
-            | (.permission_denials // [])[] | "\(.tool_name) \(.tool_input.file_path // .tool_input.path // (.tool_input.command // "" | .[0:160])) \(.tool_input.pattern // "") \(.tool_input.glob // "")"' "$EXECUTION_FILE" || true
-          [ -f .auto-review/review.md ] && exit 0
-          echo "::warning::The agent finished without .auto-review/review.md; its result follows"
-          jq -r '[if type == "array" then .[] else . end | select(.type? == "result")] | last | "subtype=\(.subtype // "none") turns=\(.num_turns // "none") is_error=\(.is_error | tostring)", (.result // "no result message")[0:4000]' "$EXECUTION_FILE" || true
+            | (.permission_denials // [])[]
+            | "\(.tool_name) \(.tool_input | {file_path, path, pattern, glob, command} | with_entries(select(.value != null))
+                | if .command then .command |= .[0:160] else . end | tojson)"' "$EXECUTION_FILE" || true
+          if [ ! -f .auto-review/review.md ]; then
+            jq -r '[if type == "array" then .[] else . end | select(.type? == "result")] | last | "subtype=\(.subtype // "none") turns=\(.num_turns // "none") is_error=\(.is_error | tostring)", (.result // "no result message")[0:4000]' "$EXECUTION_FILE" || true
+          fi
+          echo "::$stop::"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

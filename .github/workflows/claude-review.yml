@@ -64,6 +64,7 @@ jobs:
 
           # For skips that end a requested review: a "waiting for green CI" status would stay pending.
           skip_final() {
+            [ -n "${head_sha:-}" ] || skip "$1"
             waiting=$(gh api "repos/$REPO/commits/$head_sha/statuses" \
               --jq '[.[] | select(.context == env.CONTEXT)][0] | select(.state == "pending")
                 | (.description // "") | startswith("Review requested; waiting")')
@@ -80,7 +81,8 @@ jobs:
             number="$EVENT_PR"
           fi
           [ -z "$number" ] || [[ "$number" =~ ^[0-9]+$ ]] || skip "invalid PR number '$number'"
-          [ -n "$number" ] || skip "no open PR for $RUN_SHA"
+          # The run's commit is no open PR's head any more; a waiting status on it is resolved.
+          [ -n "$number" ] || { head_sha="$RUN_SHA"; skip_final "no open PR for $RUN_SHA"; }
 
           pr=$(gh api "repos/$REPO/pulls/$number")
           head_sha=$(jq -r .head.sha <<< "$pr")
@@ -240,10 +242,10 @@ jobs:
             .auto-review/target/: identity.txt (the target identity, tree included), log.txt
             (`<short sha> <full sha> <subject>` per commit), stat.txt, diff.patch, base/ with the
             merge-base copies of modified, deleted, and type-changed files, and pr.json with the PR title,
-            description, reviews, and comments. The checkout is HEAD SHA. git diff, git log, git show, and gh
-            are not available; read these files instead, and pass the same instruction to any reviewer you
-            dispatch. Intent: the PR title and description from pr.json, plus AGENTS.md. There is no plan
-            file and no journal to write.
+            description, reviews, and comments. The checkout is HEAD SHA. No shell commands are available
+            (no git, no gh): use the tree in identity.txt and read these files instead, and pass the same
+            instruction to any reviewer you dispatch. Intent: the PR title and description from pr.json,
+            plus AGENTS.md. There is no plan file and no journal to write.
             CI (skill frontmatter, manifests and marketplaces, README versions, hidden Unicode) is green on HEAD SHA; tests were not run in this job - say so in the gaps.
             Earlier reviews and comments on the PR are context; label this a fresh review pass when the same
             reviewer already reviewed an older head.
@@ -295,12 +297,14 @@ jobs:
             body must end with it, backticks included:
             Reviewed with: `/cr-request` ${{ steps.skill.outputs.version }} skill
           # Reads stay in the workspace and the installed skill, so injected PR text cannot steer the agent
-          # to runner files or /proc and copy the OAuth token into the body. Grep and Glob follow the Read
-          # rules (Glob(path) rules never match); Write follows the Edit rule for the body file.
+          # to runner files or /proc and copy a token into the body. Grep and Glob follow the Read rules
+          # (Glob(path) rules never match); Write follows the Edit rule for the body file. Bash is denied,
+          # built-in read-only commands included: any allowed command can echo an expanded variable.
           claude_args: >-
             --model ${{ vars.CLAUDE_REVIEW_MODEL || 'claude-opus-5-5' }}
             --max-turns 60
-            --allowedTools "Skill,Agent,Task,Read(./**),Read(~/.claude/skills/**),Edit(./.auto-review/review.md),Write(./.auto-review/review.md),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git status:*),Bash(git ls-files:*)"
+            --allowedTools "Skill,Agent,Task,Read(./**),Read(~/.claude/skills/**),Edit(./.auto-review/review.md),Write(./.auto-review/review.md)"
+            --disallowedTools "Bash"
 
       # The action hides the agent's output: list the paths it read and the calls the permission rules
       # refused (paths and commands only), and the result when it wrote no body.

@@ -192,10 +192,10 @@ is this skill's `metadata.version`, and requires the `Next step` line after it,
 written with ` · ` before the reason and the skill, whichever it is, as inline code
 with a leading slash: ``Next step: `/<skill>` · <reason>``, for example
 ``Next step: `/cr-received` · 4 findings to rule on``; `none` stays plain text
-(`Next step: none · <reason>`). The workflow, not the reviewer, may append the review
-duration to the signature line as ` · In <m> min <s> sec`, with `In 0 min 42 sec`
-under a minute. Only these two CI lines use ` · `; every other `Next step` line keeps
-` - `.
+(`Next step: none · <reason>`). The skill writes the signature without a duration; the
+workflow may append the review duration to it afterwards as ` · In <m> min <s> sec`,
+with `In 0 min 42 sec` under a minute. Only these two CI lines use ` · `; every other
+`Next step` line keeps ` - `.
 
 ## When not to use
 

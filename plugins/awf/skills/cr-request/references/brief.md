@@ -105,8 +105,9 @@ signature ``Reviewed with: `/cr-request` <version> skill``, backticks included, 
 the last line, written with ` · ` before the reason and the skill as inline code with
 a leading slash: ``Next step: `/<skill>` · <reason>``, for example
 ``Next step: `/cr-received` · 4 findings to rule on``, with `none` as plain text
-(`Next step: none · <reason>`). The workflow, not the reviewer, may append
-` · In <m> min <s> sec` to the signature line (`In 0 min 42 sec` under a minute).
+(`Next step: none · <reason>`). The skill writes the signature without a duration;
+the workflow may append ` · In <m> min <s> sec` to it afterwards (`In 0 min 42 sec`
+under a minute).
 Only these two CI lines use ` · `; every other `Next step` line keeps ` - `.
 
 ## Severity

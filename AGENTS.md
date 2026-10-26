@@ -9,7 +9,10 @@
 - `plugins/awf/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - validation; `claude-review.yml` - auto review: gate, review
   (read-only agent writes the body), publish (validates it, posts a PR review as yngwald, sets
-  the `Claude review` status); also runs when yngwald is requested as a reviewer.
+  the `Claude review` status). An automatic trigger (green CI, opened, reopened, ready) reviews a
+  head when the PR has no yngwald review yet, or when the latest one has Critical or Important
+  findings, reviewed another head, and is one of fewer than 3; a request for yngwald or a
+  dispatch always reviews.
 
 ## Rules
 
@@ -26,8 +29,10 @@
 - `claude-review.yml` changes in a PR reach `workflow_run` only after merge (it uses the default
   branch copy); `pull_request` runs use the PR branch copy. `.auto-review/` is reserved for the
   review job and must not be tracked.
-- `claude-review.yml` status ownership races are an accepted trade-off, not a defect for review:
-  two gates for one SHA within seconds can leave that head with an `error` status and no review;
+- `claude-review.yml` keeps one run per head SHA (workflow-level concurrency), so automatic
+  runs for one head no longer race, and a late CI run for an older head cannot cancel the review
+  of a newer one. A `workflow_dispatch` run has its own group, and next to an event-driven run
+  for the same head only the status owner posts: an accepted trade-off, not a defect for review;
   re-requesting yngwald recovers, and the status is advisory.
 - Renaming a released skill: the new name starts at `0.0.1`, its CHANGELOG names the old one,
   and README Install says to remove the old skill or reinstall.

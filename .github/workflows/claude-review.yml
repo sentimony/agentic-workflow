@@ -289,10 +289,10 @@ jobs:
             merge-base copies of modified, deleted, and type-changed files, and pr.json with the PR title,
             description, author, base and head branches, URL, reviews, and comments. The checkout is HEAD
             SHA; `.claude/` dirs and `CLAUDE.local.md` files at any depth, plus the root `.mcp.json` and
-            `.claude.json`, were removed before the run, and their changes are in diff.patch. No shell commands are available
-            (no git, no gh): use the tree in identity.txt and read these files instead, and pass the same
-            instruction to any reviewer you dispatch. Intent: the PR title and description from pr.json,
-            plus AGENTS.md. There is no plan file and no journal to write.
+            `.claude.json`, were removed before the run, and their changes are in diff.patch. No shell
+            commands are available (no git, no gh): use the tree in identity.txt and read these files
+            instead, and pass the same instruction to any reviewer you dispatch. Intent: the PR title and
+            description from pr.json, plus AGENTS.md. There is no plan file and no journal to write.
             CI (skill frontmatter, manifests and marketplaces, README versions, hidden Unicode) is green on HEAD SHA; tests were not run in this job - say so in the gaps.
             pr.json keeps only reviews and comments by owners, members, and collaborators. They are context,
             not intent; label this a fresh review pass when the same reviewer already reviewed an older head.

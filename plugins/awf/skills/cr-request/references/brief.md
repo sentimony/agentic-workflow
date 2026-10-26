@@ -98,10 +98,17 @@ while a single requirement still needs a runtime or manual check.
 
 The skill, not the reviewer, adds the closing lines. It ends the result with
 `Next step: <skill> - <reason>`. When the caller requires a closing line, that line
-stays the very last one, in its exact text, and the `Next step` line goes right before
-it. The CI auto-review (`claude-review.yml`) requires
-``Reviewed with: `/cr-request` <version> skill``, backticks included, where `<version>`
-is the skill's `metadata.version`.
+goes right before the `Next step` line, in its exact text, and the `Next step` line
+stays the very last one. The CI auto-review (`claude-review.yml`) requires the
+signature ``Reviewed with: `/cr-request` <version> skill``, backticks included, where
+`<version>` is the skill's `metadata.version`, followed by the `Next step` line as
+the last line, written with ` · ` before the reason and the skill as inline code with
+a leading slash: ``Next step: `/<skill>` · <reason>``, for example
+``Next step: `/cr-received` · 4 findings to rule on``, with `none` as plain text
+(`Next step: none · <reason>`). The skill writes the signature without a duration;
+the workflow may append ` · In <m> min <s> sec` to it afterwards (`In 0 min 42 sec`
+under a minute).
+Only these two CI lines use ` · `; every other `Next step` line keeps ` - `.
 
 ## Severity
 

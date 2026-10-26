@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.6] - 2026-10-26
+
+- A closing line the caller requires now goes right before the `Next step` line, which
+  stays the very last line. The CI auto-review body ends with
+  ``Reviewed with: `/cr-request` <version> skill``, then
+  ``Next step: `/cr-received` · <n> findings to rule on``; the workflow may append
+  ` · In <m> min <s> sec` to the signature line.
+
 ## [0.0.5] - 2026-10-26
 
 - Dispatch the reviewer in the foreground in a non-interactive run (`claude -p`, a CI

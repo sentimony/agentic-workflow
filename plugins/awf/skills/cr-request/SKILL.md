@@ -3,7 +3,7 @@ name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>]"
 metadata:
-  version: "0.0.5"
+  version: "0.0.6"
 license: MIT
 ---
 
@@ -184,11 +184,18 @@ The last line of the result is the next step:
 | Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |
 
-CI auto-review exception: when the caller requires a closing line, that line stays the
-very last one, in its exact text, and the `Next step` line goes right before it. The CI
-auto-review (`claude-review.yml`) requires
+When the caller requires a closing line, that line goes right before the `Next step`
+line, in its exact text, and the `Next step` line stays the very last one. The CI
+auto-review (`claude-review.yml`) requires the signature
 ``Reviewed with: `/cr-request` <version> skill``, backticks included, where `<version>`
-is this skill's `metadata.version`.
+is this skill's `metadata.version`, and requires the `Next step` line after it,
+written with ` · ` before the reason and the skill, whichever it is, as inline code
+with a leading slash: ``Next step: `/<skill>` · <reason>``, for example
+``Next step: `/cr-received` · 4 findings to rule on``; `none` stays plain text
+(`Next step: none · <reason>`). The skill writes the signature without a duration; the
+workflow may append the review duration to it afterwards as ` · In <m> min <s> sec`,
+with `In 0 min 42 sec` under a minute. Only these two CI lines use ` · `; every other
+`Next step` line keeps ` - `.
 
 ## When not to use
 

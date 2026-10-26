@@ -36,6 +36,10 @@
   same head meet only in that job group, so one review cancels the other and the head can end
   with an `error` status and no review: an accepted trade-off, not a defect for review;
   re-requesting yngwald recovers, and the status is advisory.
+- The `publish` footer check accepts the signature with the measured duration followed by a
+  `Next step` line in its full format, and the pre-0.0.6 order with the signature last. Its
+  regexes have no CI test, because the workflow is self-contained; an edit to them is checked
+  by hand on sample bodies. This is an accepted trade-off, not a defect for review.
 - Renaming a released skill: the new name starts at `0.0.1`, its CHANGELOG names the old one,
   and README Install says to remove the old skill or reinstall.
 - Skills form one chain: specify -> plan-craft -> implement -> verify -> cr-request ->

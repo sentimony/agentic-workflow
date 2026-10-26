@@ -23,10 +23,11 @@ on:
 
 # One group per head SHA, so the gate that posts the latest `pending` status for a head is also the
 # run whose review survives, and a late CI run for an older head cannot cancel the review of a newer
-# one (publish reports that older run as superseded). A review request for someone else gets its own
-# group and cancels nothing. A workflow_dispatch run knows only the PR number, so it gets its own
-# group and may review alongside an event-driven run; status ownership in publish then decides which
-# result is reported.
+# one. The review job has a per-PR group on top: a newer head that passed its gate cancels the older
+# head's running review. A review request for someone else gets its own group and cancels nothing.
+# A workflow_dispatch run knows only the PR number, so it gets its own group here and meets an
+# event-driven run for the same head only in the review job's group; status ownership in publish
+# then decides which result is reported.
 concurrency:
   group: >-
     claude-review-${{ github.event.pull_request.head.repo.full_name || github.event.workflow_run.head_repository.full_name || github.repository }}-${{
@@ -172,6 +173,11 @@ jobs:
     if: needs.gate.outputs.review == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Only runs that passed the gate get here, and the gate skips a run whose head the PR moved on
+    # from, so the review that starts last is for the newest head and cancels the older one.
+    concurrency:
+      group: claude-review-job-pr-${{ needs.gate.outputs.number }}
+      cancel-in-progress: true
     permissions:
       contents: read
       pull-requests: read
@@ -239,10 +245,11 @@ jobs:
               git show "$merge_base:$path" > "$out/base/$path"
             done
           test -s "$out/diff.patch" || { echo "::error::empty diff for $merge_base..$HEAD_SHA"; exit 1; }
-          # Claude Code loads project config from the PR code, nested .claude/ dirs included, and the
-          # action restores it from base only on pull_request events. Their changes stay in diff.patch.
-          find . -path ./.git -prune -o -name .claude -prune -exec rm -rf {} +
-          rm -f .mcp.json .claude.json CLAUDE.local.md
+          # Claude Code loads project config from the PR code, nested .claude/ dirs and CLAUDE.local.md
+          # files included, and the action restores it from base only on pull_request events. Their
+          # changes stay in diff.patch. A nested .mcp.json does not load (probed on Claude Code 2.1.310).
+          find . -path ./.git -prune -o \( -name .claude -o -name CLAUDE.local.md \) -prune -exec rm -rf {} +
+          rm -f .mcp.json .claude.json
 
       # User scope: the prepare step removed every .claude/ from the checkout, and the action restores
       # .claude/ from the base branch only on pull_request events, not on workflow_run or dispatch.
@@ -435,9 +442,9 @@ jobs:
           }
 
           # Only the run whose gate set the latest status reports: an older run must not overwrite a
-          # newer gate's status. Accepted trade-off (AGENTS.md): a workflow_dispatch run has its own
-          # concurrency group, so next to an event-driven run for the same head only the status owner
-          # posts. A failed read leaves no status behind otherwise, so it reports an error under this
+          # newer gate's status. Accepted trade-off (AGENTS.md): a workflow_dispatch run and an
+          # event-driven run for the same head share only the review job's group, so one review cancels
+          # the other, and when the cancelled one belongs to the status owner that head gets no review. A failed read leaves no status behind otherwise, so it reports an error under this
           # run's URL.
           latest=$(gh api "repos/$REPO/commits/$HEAD_SHA/status?per_page=100" \
             --jq '[.statuses[] | select(.context == env.CONTEXT)][0].target_url // ""') \
@@ -450,6 +457,10 @@ jobs:
 
           if [ ! -f "$BODY_FILE" ]; then
             if [ "$REVIEW_RESULT" = cancelled ]; then
+              # The review job's per-PR group cancels an older head's review when a newer one starts.
+              head=$(gh api "repos/$REPO/pulls/$NUMBER" --jq .head.sha) \
+                || { post_status error "Could not read the PR head"; exit 1; }
+              [ "$head" = "$HEAD_SHA" ] || { post_status error "Superseded by a newer head"; exit 0; }
               post_status error "Claude review was cancelled"
               exit 0
             fi

@@ -3,13 +3,13 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the `awf`
 plugin.
 
-Version: `v0.0.5`
+Version: `v0.0.6`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [awf](plugins/awf) | 0.0.5 | specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
+| [awf](plugins/awf) | 0.0.6 | specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
 
 ## Skills
 
@@ -19,7 +19,7 @@ Version: `v0.0.5`
 | [plan-craft](plugins/awf/skills/plan-craft/SKILL.md) | 0.0.1 | `/awf:plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
 | [implement](plugins/awf/skills/implement/SKILL.md) | 0.0.1 | `/awf:implement` | Execute a plan inline or through subagents, task by task, test first, recording base, task state, and rulings in the execution record. |
 | [verify](plugins/awf/skills/verify/SKILL.md) | 0.0.1 | `/awf:verify` | Check every completion claim with fresh evidence bound to the exact tree fingerprint and return PASS, FAIL, INCOMPLETE, or BLOCKED. |
-| [cr-request](plugins/awf/skills/cr-request/SKILL.md) | 0.0.5 | `/awf:cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer that returns Intent, System, and Craft verdicts with evidence-backed findings. |
+| [cr-request](plugins/awf/skills/cr-request/SKILL.md) | 0.0.6 | `/awf:cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer that returns Intent, System, and Craft verdicts with evidence-backed findings. |
 | [cr-received](plugins/awf/skills/cr-received/SKILL.md) | 0.0.2 | `/awf:cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
 | [finalize](plugins/awf/skills/finalize/SKILL.md) | 0.0.1 | `/awf:finalize` | Integrate verified work safely: merge, pull request, squash, keep, discard, or pause, with cleanup behind explicit confirmation. |
 | [session-learnings](plugins/awf/skills/session-learnings/SKILL.md) | 0.0.2 | `/awf:session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes linked from the root instruction file, then triage them into the right instruction file after approval. |

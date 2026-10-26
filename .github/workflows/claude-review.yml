@@ -309,9 +309,10 @@ jobs:
             If the cr-request skill is not available to you, do not review and do not write
             .auto-review/review.md; stop and report that the skill is missing.
 
-            Write exactly one pull request review body in English, with plain hyphens only, to
-            .auto-review/review.md; do not write or edit any other file. Do not post it; a later step posts
-            it as a review that neither approves nor requests changes. The body must start with this exact line:
+            Write exactly one pull request review body in English, with plain hyphens only (the ` · ` of the two
+            closing lines excepted), to .auto-review/review.md; do not write or edit any other file. Do not post
+            it; a later step posts it as a review that neither approves nor requests changes. The body must start
+            with this exact line:
             <!-- claude-review sha=${{ needs.gate.outputs.head_sha }} -->
             then the target identity, the reviewed range, the commits in it, and the coverage (files read,
             what was skipped), then a `### Summary` section with two Markdown tables and one line.
@@ -365,8 +366,9 @@ jobs:
             --disallowedTools "Bash,Read(./.git/**)"
 
       # The duration is the agent step's wall time; the agent cannot measure it. Only the signature line
-      # among the last two non-blank lines is rewritten, so a quoted signature higher up stays as written,
-      # and a duration the agent wrote itself is replaced. Under a minute it reads `In 0 min 42 sec`.
+      # among the last two non-blank lines is rewritten, so a quoted signature higher up stays as written;
+      # anything the agent put after the signature and a space there is replaced by the measured duration.
+      # Under a minute it reads `In 0 min 42 sec`.
       - name: Add review duration
         env:
           START: ${{ steps.start.outputs.epoch }}
@@ -386,8 +388,7 @@ jobs:
               line = $0; sub(/[[:space:]]+$/, "", line)
               sig = ENVIRON["SIGNATURE"]; sep = ENVIRON["SEP"]
               rest = substr(line, length(sig) + 1)
-              if (substr(line, 1, length(sig)) == sig && (rest == "" \
-                || (substr(rest, 1, length(sep)) == sep && substr(rest, length(sep) + 1) ~ /^In [0-9]+ min [0-9]+ sec$/))) {
+              if (substr(line, 1, length(sig)) == sig && (rest == "" || substr(rest, 1, 1) == " ")) {
                 $0 = sig sep ENVIRON["DURATION"]
               }
             }

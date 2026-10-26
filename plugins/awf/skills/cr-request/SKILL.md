@@ -188,8 +188,9 @@ When the caller requires a closing line, that line goes right before the `Next s
 line, in its exact text, and the `Next step` line stays the very last one. The CI
 auto-review (`claude-review.yml`) requires the signature
 ``Reviewed with: `/cr-request` <version> skill``, backticks included, where `<version>`
-is this skill's `metadata.version`, and writes the `Next step` line after it with
-` · ` before the reason and the skill as inline code with a leading slash:
+is this skill's `metadata.version`, and requires the `Next step` line after it,
+written with ` · ` before the reason and the skill, whichever it is, as inline code
+with a leading slash: ``Next step: `/<skill>` · <reason>``, for example
 ``Next step: `/cr-received` · 4 findings to rule on``; `none` stays plain text
 (`Next step: none · <reason>`). The workflow, not the reviewer, may append the review
 duration to the signature line as ` · In <m> min <s> sec`, with `In 0 min 42 sec`

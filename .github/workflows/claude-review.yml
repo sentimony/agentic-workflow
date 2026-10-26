@@ -288,8 +288,8 @@ jobs:
             (`<short sha> <full sha> <subject>` per commit), stat.txt, diff.patch, base/ with the
             merge-base copies of modified, deleted, and type-changed files, and pr.json with the PR title,
             description, author, base and head branches, URL, reviews, and comments. The checkout is HEAD
-            SHA; `.claude/` dirs, `.mcp.json`, `.claude.json`, and `CLAUDE.local.md` were removed before the
-            run, and their changes are in diff.patch. No shell commands are available
+            SHA; `.claude/` dirs and `CLAUDE.local.md` files at any depth, plus the root `.mcp.json` and
+            `.claude.json`, were removed before the run, and their changes are in diff.patch. No shell commands are available
             (no git, no gh): use the tree in identity.txt and read these files instead, and pass the same
             instruction to any reviewer you dispatch. Intent: the PR title and description from pr.json,
             plus AGENTS.md. There is no plan file and no journal to write.
@@ -444,8 +444,8 @@ jobs:
           # Only the run whose gate set the latest status reports: an older run must not overwrite a
           # newer gate's status. Accepted trade-off (AGENTS.md): a workflow_dispatch run and an
           # event-driven run for the same head share only the review job's group, so one review cancels
-          # the other, and when the cancelled one belongs to the status owner that head gets no review. A failed read leaves no status behind otherwise, so it reports an error under this
-          # run's URL.
+          # the other, and when the cancelled one belongs to the status owner that head gets no review.
+          # A failed read leaves no status behind otherwise, so it reports an error under this run's URL.
           latest=$(gh api "repos/$REPO/commits/$HEAD_SHA/status?per_page=100" \
             --jq '[.statuses[] | select(.context == env.CONTEXT)][0].target_url // ""') \
             || { post_status error "Could not read the Claude review status"; exit 1; }

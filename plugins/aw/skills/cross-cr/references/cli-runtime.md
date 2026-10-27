@@ -127,7 +127,7 @@ For a `claude-code` or `antigravity` reviewer, a `range` or `working-tree` targe
 appends an `Embedded material` section: `git diff --no-ext-diff --no-textconv` of the
 tracked files in scope (never the excluded ones) and the full content of each untracked
 file in scope, each in a fence longer than any backtick run inside it. An untracked file
-that is not UTF-8 is listed as a gap instead. Material over 1 MiB (`MAX_EMBED_BYTES`) is
+that is not UTF-8 is listed as a gap instead. Material over 4 MiB (`MAX_EMBED_BYTES`) is
 exit 2 before any run directory exists; nothing is truncated. A Codex reviewer runs Git
 itself and gets the file list only.
 
@@ -420,7 +420,7 @@ other than `never`; only `codex exec` was observed as a host.
 | 0 | `review.md` holds a non-empty answer | check completeness, then hand off to `cr-received` |
 | 25 | `agy` wrote a complete answer and did not exit; the runner stopped it after `AGY_IDLE_SECONDS` and `review.md` holds the answer | check completeness as for 0 and name the stop in the run report |
 | 2 | invalid input: unknown agent, a malformed argument group, effort outside the fixed set, empty or option-like model, missing repository, invalid `--target` or `--pass-env`, unreadable `--plan` or `--spec`, unusable `--followup` or `--dispositions`, embedded
-material over 1 MiB, cr-request missing for `--mode`, a follow-up without `--brief` whose
+material over 4 MiB, cr-request missing for `--mode`, a follow-up without `--brief` whose
 previous run records no host brief, a Codex trust path that cannot be determined or holds a control character, missing or non-UTF-8 brief, empty prompt, unsafe run root, or a failure to create the run root | fix the invocation once; otherwise report unavailable |
 | 20 | `CROSS_REVIEW_DEPTH` is set: this process is already a reviewer | perform the review yourself; never retry delegation |
 | 21 | reviewer CLI not found or not executable | report unavailable and apply the fallback |

@@ -98,8 +98,9 @@ AGY_POLL_SECONDS = 1
 
 # Reviewers that cannot run Git get the diff and the untracked files in the brief.
 EMBED_REVIEWERS = ("claude-code", "antigravity")
-# Embedded material above this size fails the run instead of being truncated.
-MAX_EMBED_BYTES = 1 << 20
+# Embedded material above this size fails the run instead of being truncated. A 1.5 MB
+# Antigravity brief has completed a review, so the limit stays above that.
+MAX_EMBED_BYTES = 4 << 20
 
 # The installed cr-request skill next to this one: the source of the standard sections.
 CR_REQUEST_DIR = Path(__file__).resolve().parents[2] / "cr-request"

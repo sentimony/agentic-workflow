@@ -214,7 +214,7 @@ The runner appends the rest, so never copy or embed it by hand:
   answer, exit `23`). Always pass `--mode`; the `run.log` header records it.
 - `--target range|working-tree` for a Claude or Antigravity reviewer, which may not run
   Git: the diff of the files in scope and the full content of each untracked file in
-  scope, standard exclusions and `--exclude` paths left out. Material over 1 MiB fails
+  scope, standard exclusions and `--exclude` paths left out. Material over 4 MiB fails
   with exit `2` instead of being truncated: narrow the agreed boundary or report failure.
 - `--plan` and `--spec`: their paths, hashes, and current `Status:` lines, and for a
   Claude or Antigravity reviewer the full content of each one stored outside the

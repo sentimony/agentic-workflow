@@ -187,7 +187,7 @@ jobs:
     env:
       NUMBER: ${{ needs.gate.outputs.number }}
       HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
-      # sentimony/agentic-workflow commit of tag v0.0.6 with plugins/awf/skills/cr-request, unless the
+      # sentimony/agentic-workflow commit of tag v0.0.6 with the cr-request skill, unless the
       # REVIEW_SKILLS_REF repo variable names another full SHA; the reviewer skill comes from a released
       # tag, never from the PR head under review.
       CR_REQUEST_REF: ${{ vars.REVIEW_SKILLS_REF || '1e151554148db6086fbb6a1f17374508cc321664' }}
@@ -257,11 +257,12 @@ jobs:
         id: skill
         run: |
           [[ "$CR_REQUEST_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::REVIEW_SKILLS_REF must be a full commit SHA"; exit 1; }
-          git init -q "$RUNNER_TEMP/awf"
-          git -C "$RUNNER_TEMP/awf" fetch -q --depth 1 https://github.com/sentimony/agentic-workflow "$CR_REQUEST_REF"
-          git -C "$RUNNER_TEMP/awf" checkout -q FETCH_HEAD
+          git init -q "$RUNNER_TEMP/aw"
+          git -C "$RUNNER_TEMP/aw" fetch -q --depth 1 https://github.com/sentimony/agentic-workflow "$CR_REQUEST_REF"
+          git -C "$RUNNER_TEMP/aw" checkout -q FETCH_HEAD
           mkdir -p ~/.claude/skills .auto-review
-          cp -R "$RUNNER_TEMP/awf/plugins/awf/skills/cr-request" ~/.claude/skills/
+          # Any plugin directory: the pinned tag may predate the rename of the plugin.
+          cp -R "$RUNNER_TEMP"/aw/plugins/*/skills/cr-request ~/.claude/skills/
           test -f ~/.claude/skills/cr-request/SKILL.md
           version="$(sed -nE 's/^[[:space:]]+version:[[:space:]]*"?([0-9][0-9.]*)"?[[:space:]]*$/\1/p' ~/.claude/skills/cr-request/SKILL.md | head -n 1)"
           test -n "$version" || { echo "::error::No version in the cr-request SKILL.md"; exit 1; }

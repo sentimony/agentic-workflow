@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.2] - 2026-10-27
+
+- Rename only: the plugin `awf` is now `aw`; the text changes only that name.
+
 ## [0.0.1] - 2026-10-22
 
 - Initial release: turns an approved spec, or requirements agreed in the conversation,

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.4] - 2026-10-27
+
+- Rename only: the plugin `awf` is now `aw`; the text changes only that name.
+
 ## [0.0.3] - 2026-10-27
 
 - Description drops how the notes are linked and what each note carries; the body still

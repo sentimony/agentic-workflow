@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.7] - 2026-10-27
+
+- Rename only: the plugin `awf` is now `aw`; the text changes only that name.
+
 ## [0.0.6] - 2026-10-26
 
 - A closing line the caller requires now goes right before the `Next step` line, which

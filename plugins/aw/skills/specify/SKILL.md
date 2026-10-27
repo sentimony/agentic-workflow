@@ -3,7 +3,7 @@ name: specify
 description: You MUST use this when work has to be designed before any code is written - a new feature, a change to product or UX behavior, an architecture change, success criteria that are still unclear, or a choice between two materially different approaches - including a spec revision after a document review. A fully specified mechanical refactor, a localized fix whose expected behavior is known, or a config change with a single possible outcome gets no spec; the skill hands it to implement in one sentence. Turns the request into a spec with checkable acceptance criteria behind an explicit approval. Replaces devflow scope-triage.
 argument-hint: "[<request>]"
 metadata:
-  version: "0.0.1"
+  version: "0.0.2"
 license: MIT
 ---
 

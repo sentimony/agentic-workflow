@@ -1,9 +1,9 @@
 ---
 name: session-learnings
-description: You MUST use this when lasting learnings from the current session should be recorded for future agents - pitfalls hit, mistakes the user corrected, conventions found, or commands that finally worked, whatever the conversation language - including when the user asks to write down what the session taught and at the end of the awf chain after finalize. Records them without asking in the project's gitignored docs/session-learnings/AGENTS.md; on a separate request, triages the accumulated notes into AGENTS.md, CLAUDE.md, the user's global instructions, or a stronger enforcement such as a check or a test, applying only the approved edits. Not for auditing or restructuring instruction files (maintaining-agent-context). Not for general memory or improvement requests for skills.
+description: You MUST use this when lasting learnings from the current session should be recorded for future agents - pitfalls hit, mistakes the user corrected, conventions found, or commands that finally worked, whatever the conversation language - including when the user asks to write down what the session taught and at the end of the aw chain after finalize. Records them without asking in the project's gitignored docs/session-learnings/AGENTS.md; on a separate request, triages the accumulated notes into AGENTS.md, CLAUDE.md, the user's global instructions, or a stronger enforcement such as a check or a test, applying only the approved edits. Not for auditing or restructuring instruction files (maintaining-agent-context). Not for general memory or improvement requests for skills.
 argument-hint: "[triage]"
 metadata:
-  version: "0.0.3"
+  version: "0.0.4"
 license: MIT
 ---
 

@@ -4,9 +4,9 @@
 
 - `.claude-plugin/marketplace.json` - Claude Code marketplace.
 - `.agents/plugins/marketplace.json` - Codex marketplace.
-- `plugins/awf/.claude-plugin/plugin.json` - Claude Code manifest; lists skills.
-- `plugins/awf/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
-- `plugins/awf/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
+- `plugins/aw/.claude-plugin/plugin.json` - Claude Code manifest; lists skills.
+- `plugins/aw/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
+- `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - validation; `claude-review.yml` - auto review: gate, review
   (read-only agent writes the body), publish (validates it, posts a PR review as yngwald, sets
   the `Claude review` status). An automatic trigger (green CI, opened, reopened, ready) reviews a
@@ -21,7 +21,7 @@
 - Versions: patch bumps; manifest `version` equals the release tag without `v`; the top
   `CHANGELOG.md` entry matches `metadata.version`. README shows the repository
   version, each plugin version, and each skill version.
-- After a release tag, bump the `awf` entry `ref` in sentimony/skills
+- After a release tag, bump the `aw` entry `ref` in sentimony/skills
   `.claude-plugin/marketplace.json` with a skills patch release.
 - Releases go through the `rc-verifier` and `releaser` roles (contracts and the release
   checklist in the `skills-aiassist` workbench): `rc-verifier` approves the tree, then
@@ -46,7 +46,7 @@
   cr-received -> verify -> finalize -> session-learnings. Each runs standalone: it takes the
   previous skill's file artifact or builds a minimal one, and ends with a `Next step` line;
   no orchestrator skill.
-- awf skills replace their sentimony/skills devflow counterparts (scope-triage,
+- aw skills replace their sentimony/skills devflow counterparts (scope-triage,
   plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
   review-request, review-resolution): a description opens with `You MUST use this when`,
   as devflow's do, and names the skill it replaces. README Install keeps review-request and

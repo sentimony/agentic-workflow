@@ -33,8 +33,8 @@ What the change is for and who uses it, from the caller's side, in a few sentenc
 
 | Assumption | State | Source |
 | --- | --- | --- |
-| <claim the design rests on> | verified | <command, file, or user statement> |
-| <claim> | assumed | <why it was not checked> |
+| <claim the design rests on> | verified | <`path:line`, command and its output, or the user's words> |
+| <claim> | assumed | <why it was not checked; listed under Open questions or as a risk> |
 | <claim> | contradicted | <what disproved it> |
 | <claim> | partial: <exception> | <source> |
 
@@ -58,7 +58,8 @@ those belong to the plan.
 
 ## Open questions
 
-- <question> - recommended answer: <answer>
+- <question> - recommended answer: <answer>, because <reason>
+- <question> - decision for the user: <what each option leads to>
 (or "None.")
 
 ## Acceptance criteria
@@ -88,7 +89,36 @@ which shell commands or network calls the change makes.
   state, a value in a file), never an activity such as "tests were written".
 - Each criterion can be checked on its own, without reading the others.
 
+## Acceptance criteria coverage
+
+Check before saving the draft:
+
+- every material behavior in `Behavior` and every item in `Contract` has at least one
+  criterion;
+- critical failure and boundary cases have criteria;
+- security and permission rules have criteria when they apply;
+- every criterion traces to `Behavior`, `Contract`, or a decision;
+- no ceremonial criteria for trivial cases.
+
+## Fresh-reader checklist
+
+The fresh reader gets the spec file and this list, nothing else, and returns a verdict
+(`pass` or the defect) for each item:
+
+1. Every material behavior has an acceptance criterion.
+2. No two decisions, or a decision and a criterion, contradict each other.
+3. Inputs, outputs, errors, and edge cases are unambiguous.
+4. Every assumption the design needs is verified, or listed as an open question or risk.
+5. Security, permissions, and compatibility are covered where they apply.
+6. A plan can be written from this file alone, without the conversation.
+
+It also returns questions where a wrong guess by a builder would change the plan. It
+does not propose new scope.
+
 ## Large requests
 
-When the request holds several independent parts, the Goal lists them with a build
-order, and each part gets its own spec or its own block of criteria.
+When the request holds several parts, the Goal lists them with a build order. A part
+gets its own spec when it can be approved, built, and accepted without the others; parts
+that share a decision or a contract, or ship together, stay in one spec with a block of
+criteria each. Specify the first part in build order now; the Goal names the specs that
+follow.

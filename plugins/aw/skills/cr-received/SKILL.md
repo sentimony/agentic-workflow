@@ -137,6 +137,8 @@ Shared with `specify`, `plan-craft`, and `implement`:
 - a material change to an approved spec (a decision, behavior, contract, or criterion;
   not a typo) sets `Status: draft` again, including a revision this skill routes to
   `specify`, and the work it affects pauses until a new explicit yes;
+  after that yes, `plan-craft` revises the existing plan in place with delta tasks
+  instead of writing a second one;
 - no skill approves or replaces a spec on the user's behalf.
 
 `cr-received` never sets `Status: approved`; after the revision, `specify` asks the user

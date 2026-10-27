@@ -2,6 +2,8 @@
 
 ## [0.0.4] - 2026-10-27
 
+- The approval invariant says that after the new yes `plan-craft` revises the existing
+  plan in place instead of writing a second one (review R1-F1 on PR #14).
 - An accepted fix that materially changes an approved spec sets its `Status` back to
   `draft` in the same edit and routes to `specify`, which asks for a new explicit yes; a
   typo-level fix keeps `approved`. A new `Approval invariant` section is shared with

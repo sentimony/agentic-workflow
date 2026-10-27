@@ -2,6 +2,9 @@
 
 ## [0.0.3] - 2026-10-27
 
+- A revision after spec re-approval edits the existing plan in place: delta tasks as
+  new `Task <n>: pending` lines, record lines kept, `done` tasks never rewritten; the
+  skill takes a spec path and a plan path together (review R1-F1 on PR #14).
 - A spec with `Status: draft` is no longer planned around as `Spec: none`: the skill
   writes nothing and stops with `Next step: specify`; the standalone case is only for
   work with no spec. A new `Approval invariant` section, shared with `specify`,

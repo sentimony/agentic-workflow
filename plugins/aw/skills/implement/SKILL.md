@@ -130,10 +130,19 @@ Shared with `specify`, `plan-craft`, and `cr-received`:
 - a material change to an approved spec (a decision, behavior, contract, or criterion;
   not a typo) sets `Status: draft` again, including a revision this skill sends back to
   `specify`, and the work it affects pauses until a new explicit yes;
+  after that yes, `plan-craft` revises the existing plan in place with delta tasks
+  instead of writing a second one;
 - no skill approves or replaces a spec on the user's behalf.
 
-A plan whose `Spec` names a file with `Status: draft` does not start: stop before the
-first task with `Next step: specify - <spec path> is a draft, awaiting approval`.
+A spec with `Status: draft` stops work in two ways:
+
+- fresh start (`Base: unset`): the plan does not start; stop before the first task with
+  `Next step: specify - <spec path> is a draft, awaiting approval`;
+- resume (`Base` is set): only the tasks the spec change touches wait (each
+  `blocked - conflicting intent` task and the tasks that depend on it); independent
+  tasks continue, and once only waiting tasks remain, stop with
+  `Next step: specify - <spec path> is a draft, awaiting approval`. After the new yes,
+  `plan-craft` revises this plan in place, and its new `pending` tasks run next.
 
 ## Step 7. Blockers and loops
 

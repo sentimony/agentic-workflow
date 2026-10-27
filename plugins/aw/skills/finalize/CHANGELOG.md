@@ -2,6 +2,10 @@
 
 ## [0.0.3] - 2026-10-27
 
+- Squash: `UNKNOWN` merge state is read again up to five times, `HAS_HOOKS` goes on,
+  `--delete-branch` is not used and the branch is deleted only after the journal and
+  base steps, and the worktree always ends on the base or detached on `origin/<base>`
+  (review R1-F3, F6 on PR #14).
 - After a squash the worktree always ends on the fresh base, with or without branch
   deletion, or detached on `origin/<base>` when another worktree holds the base; the
   report gives the branch, `HEAD`, and whether it equals `origin/<base>`

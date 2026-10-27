@@ -1,7 +1,7 @@
 ---
 name: plan-craft
 description: You MUST use this when a spec the user approved, an accepted design, or requirements already agreed in the conversation have to be turned into an ordered, multi-step implementation plan before any code is written - including a spec from specify, work with no spec yet, and a plan revision after a document review. Replaces devflow plan-crafting. Covers whether a plan is needed, task order, acceptance-criteria coverage, and the execution choice. Not for open design (specify) or executing a plan (implement).
-argument-hint: "[<spec-path>|<plan-path>]"
+argument-hint: "[<spec-path>] [<plan-path>]"
 metadata:
   version: "0.0.3"
 license: MIT
@@ -17,14 +17,14 @@ makes observable, and a journal where execution leaves its evidence.
 input -> plan needed? -> path -> header -> tasks -> self-check -> save -> execution choice
 ```
 
-The optional argument is the path to a spec, or to a plan to revise. Without it, step 1
-finds the input.
+The optional arguments are the path to a spec, the path to a plan to revise, or both
+(`specify` passes both after a re-approval). Without them, step 1 finds the input.
 
 ## 1. Find the input
 
 Take the first that applies:
 
-- the path in the argument: a spec, or a plan to revise in place (step 3);
+- the paths in the arguments: a spec, a plan to revise in place (step 3), or both;
 - a plan routed back by `cr-received` (`Route: plan-craft`) after its review: revise it
   in place (step 3);
 - a spec whose topic matches the request in the project's spec folder (else
@@ -53,6 +53,8 @@ Shared with `specify`, `implement`, and `cr-received`:
 - a material change to an approved spec (a decision, behavior, contract, or criterion;
   not a typo) sets `Status: draft` again, including a revision this skill sends back to
   `specify`, and the work it affects pauses until a new explicit yes;
+  after that yes, `plan-craft` revises the existing plan in place with delta tasks
+  instead of writing a second one;
 - no skill approves or replaces a spec on the user's behalf.
 
 This skill never edits an approved spec's content, not even a section it judges minor
@@ -77,19 +79,28 @@ interface).
 Path: the project's plan folder when instructions or existing files define one, else
 `docs/plans/YYYYMMDD-HHMM-<topic>.md`, with the same topic as the spec.
 
-Before writing, look for an existing plan on the same topic and read its
-`## Execution record`:
+Before writing, look for an existing plan on the same topic (the plan passed in, or one
+whose `Spec` names this spec) and read its `## Execution record`:
 
 - no plan, or the existing one is finished (every `Task` line `done`): write a new file;
 - an unfinished record (any task not `done`, even with `Base: unset`): never replace that
   file with a different plan. A new plan is a new file, and the report names both paths;
+  the two revisions below are edits of that plan, not a different plan;
 - a revision of this plan after review: edit the sections the findings name, keep every
   record line as it is, and add `Task <n>: pending` lines only for new tasks. A change
   to a task already `done` becomes a new task with only the delta, because `implement`
   keeps a `done` task whose commit exists. A section `cr-received` already edited (it
   fixes the cited section itself) is not edited again;
   plan-craft adds the task changes the findings need, then reruns step 6 on the whole
-  plan. `Execution` keeps its value.
+  plan. `Execution` keeps its value;
+- a revision after spec re-approval (the plan's spec went back to draft and is now
+  approved again): edit this plan in place, never a new file. Update `Global constraints`
+  and the sections the spec change touches, keep every record line as it is, and add
+  the delta as new `Task <n>: pending` lines; a task already `done` is never rewritten,
+  its change becomes a new task. A task marked `blocked - conflicting intent: spec <path>
+  back to draft` gets a `Ruling` naming the re-approval and a new
+  `Task <n>: pending` line when the revised plan still needs it. Then rerun step 6 on
+  the whole plan; `Execution` keeps its value.
 
 ## 4. Write the header
 

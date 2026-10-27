@@ -154,8 +154,8 @@ what was integrated, pushed, or deleted, and what was kept. After a `squash`, al
 which checks were read (required, or all when the branch has none required), the merge
 refusal reason when there was one, the branch and `HEAD` the worktree ended on and
 whether `HEAD` equals `origin/<base>`, and the fate of the plan's journal: merged with the
-change, or left uncommitted on the base with the question whether to commit it. The last line follows the
-table below.
+change, or left uncommitted on the base with the question whether to commit it. The
+last line follows the table below.
 
 | Outcome | Next step |
 | --- | --- |

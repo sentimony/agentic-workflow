@@ -45,8 +45,10 @@
 - Skills form one chain: specify -> plan-craft -> implement -> verify -> cr-request ->
   cr-received -> verify -> finalize -> session-learnings. Each runs standalone: it takes the
   previous skill's file artifact or builds a minimal one, and ends with a `Next step` line;
-  no orchestrator skill. `cross-cr` stays outside the chain: it runs only on request, next
-  to or in place of the cr-request step, and hands findings to cr-received.
+  no orchestrator skill. One exception: on the user's explicit yes to a spec, `specify`
+  gives its result without a `Next step` line and starts `plan-craft` in the same turn,
+  whose result ends the turn. `cross-cr` stays outside the chain: it runs only on request,
+  next to or in place of the cr-request step, and hands findings to cr-received.
 - aw skills replace their sentimony/skills devflow counterparts (scope-triage,
   plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
   review-request, review-resolution, cross-review): a description opens with

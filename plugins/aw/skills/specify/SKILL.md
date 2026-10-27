@@ -22,7 +22,8 @@ conversation.
 
 ## Step 0. Pick a provisional route
 
-Pick one route before any other work; Step 2 confirms or revises it:
+Pick one route before any other work; for `note` and `design`, Step 2 confirms or
+revises it:
 
 - `direct` - only when every condition holds at once: the change is a mechanical
   refactor that is fully specified, a localized fix whose expected behavior is already
@@ -74,10 +75,9 @@ keeps it in the conversation. Before approval, every material entry still `assum
 becomes an open question or a named risk in the spec.
 
 Then confirm or revise the route, and say so with the reason. A `contradicted` entry, or
-evidence that brings up an item of the design list, moves `note` to `design` (and
-`direct` to `note` or `design`). Evidence that removes the only ambiguity may move a
-route lighter, but only when no item of the design list remains and no decision the
-user still has to make is skipped.
+evidence that brings up an item of the design list, moves `note` to `design`. Evidence
+that removes the only ambiguity may move a route lighter, but only when no item of the
+design list remains and no decision the user still has to make is skipped.
 
 ## Step 3. Ask in rounds
 
@@ -158,9 +158,12 @@ user says an explicit yes to this spec. These are not approval:
 - "we already discussed this", unless the approval is recorded in the file.
 
 On requested changes, edit, save, and ask again. On an explicit yes, set
-`Status: approved`, save, and in the same turn start `plan-craft` on this spec path,
-without asking whether to plan; the result of `plan-craft` then ends the turn. When
-`plan-craft` is not installed, end with the result below instead.
+`Status: approved`, save, give the result below without its `Next step` line, and in
+the same turn start `plan-craft` on this spec path, without asking whether to plan.
+When a plan whose `Spec` names this spec already exists (the spec went back to draft
+and is approved again), pass that plan's path too, so `plan-craft` revises it instead
+of writing a second plan. The result of `plan-craft`, with its own `Next step` line,
+ends the turn. When `plan-craft` is not installed, end with the full result instead.
 
 ### Approval invariant
 
@@ -170,6 +173,8 @@ Shared with `plan-craft`, `implement`, and `cr-received`:
 - a material change to an approved spec (a decision, behavior, contract, or criterion;
   not a typo) sets `Status: draft` again, including a revision `cr-received` routes back
   here, and the work it affects pauses until a new explicit yes;
+  after that yes, `plan-craft` revises the existing plan in place with delta tasks
+  instead of writing a second one;
 - no skill approves or replaces a spec on the user's behalf.
 
 ## Result
@@ -185,6 +190,7 @@ Next step: <skill> - <one-line reason>
 | Situation | Next step |
 | --- | --- |
 | Spec saved, `Status: draft` | `Next step: none - awaiting approval` |
+| Spec approved, `plan-craft` installed | none of its own: `plan-craft` runs in the same turn and its `Next step` line ends it |
 | Spec approved, `plan-craft` not installed | `Next step: plan-craft - <reason>` |
 | Route `direct` | `Next step: implement - <the handoff sentence>` |
 

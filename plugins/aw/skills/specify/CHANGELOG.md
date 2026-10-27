@@ -2,6 +2,12 @@
 
 ## [0.0.3] - 2026-10-27
 
+- After a re-approval of a spec that already has a plan, `specify` passes that plan's
+  path to `plan-craft`, which revises it in place; the approval invariant says so in
+  every copy. The Result table has a row for an approved spec with `plan-craft`
+  installed, and `specify` gives its result before `plan-craft` runs. The Step 2 route
+  check covers only `note` and `design`: the `direct` route ends at Step 0 (review
+  R1-F1, F4, F5 on PR #14).
 - Questions come in rounds: round 1 asks every open decision, each later round only what
   the answers left unclear, at most eight, each opened by `Round <k>/8`. After a round
   with nothing unclear the skill goes on to the draft spec itself, without asking leave;

@@ -2,6 +2,10 @@
 
 ## [0.0.8] - 2026-10-27
 
+- The CI footer grammar follows the `claude-review.yml` validator: every `\r` removed,
+  blank lines dropped, trailing whitespace stripped, the regexes stated for bash with a
+  note on other dialects, and the fixture table matches the validator (review R1-F2 on
+  PR #14).
 - `references/brief.md` gives the CI footer grammar: POSIX extended regular expressions
   for the signature and the `Next step` line, and accepted and rejected samples a
   workflow validator can use as fixtures. The grammar is part of the contract: a change

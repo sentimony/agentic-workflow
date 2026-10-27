@@ -2,6 +2,9 @@
 
 ## [0.0.3] - 2026-10-27
 
+- A draft spec stops a fresh start, while on resume only the tasks the spec change
+  touches wait and independent tasks continue; after the new yes `plan-craft` revises
+  the plan in place (review R1-F1 on PR #14).
 - A deviation that would materially change an approved spec no longer updates the spec
   in the same pass: the skill sets the spec's `Status` back to `draft`, blocks the
   affected tasks, and ends with `Next step: specify` until a new explicit yes; a plan whose

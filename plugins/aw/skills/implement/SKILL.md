@@ -28,6 +28,16 @@ evidence is written). Read the plan
 header (`Spec`, `Goal`, `Global constraints`, `Execution`) and, when `Spec` names a file,
 the spec too.
 
+Check the spec's `Status` here, before `Base` is written. When it is not `approved`:
+
+- fresh start (`Base: unset`): do not start; write nothing and stop with
+  `Next step: specify - <spec path> is a draft, awaiting approval`;
+- resume (`Base` is set) with no task marked `blocked - conflicting intent` for this
+  spec: stop the same way, since nothing says which tasks the change touches;
+- resume with marked tasks: those tasks and the tasks that depend on them wait,
+  independent tasks continue, and once only waiting tasks remain, stop with the same
+  line.
+
 No plan at all (standalone call, or the `direct` route of `specify`):
 
 - one or two edits whose approach is obvious - write a plan-journal and work from it;
@@ -74,7 +84,9 @@ reported, not fixed silently: the tasks still go ahead, the report lists the fai
 and with no other blocker the next step is still `verify`.
 
 On resume (`Base` is set), follow the resume rule in [journal.md](references/journal.md):
-a task marked `done` with no trace in the tree or the history goes back to `pending`.
+a task marked `done` with no trace in the tree or the history goes back to `pending`,
+and a task `blocked - conflicting intent` whose spec reads `Status: approved` again
+goes back to `pending` too.
 Round counters continue from the journal; they do not restart at zero.
 
 ## Step 4. Before each task
@@ -134,15 +146,10 @@ Shared with `specify`, `plan-craft`, and `cr-received`:
   instead of writing a second one;
 - no skill approves or replaces a spec on the user's behalf.
 
-A spec with `Status: draft` stops work in two ways:
-
-- fresh start (`Base: unset`): the plan does not start; stop before the first task with
-  `Next step: specify - <spec path> is a draft, awaiting approval`;
-- resume (`Base` is set): only the tasks the spec change touches wait (each
-  `blocked - conflicting intent` task and the tasks that depend on it); independent
-  tasks continue, and once only waiting tasks remain, stop with
-  `Next step: specify - <spec path> is a draft, awaiting approval`. After the new yes,
-  `plan-craft` revises this plan in place, and its new `pending` tasks run next.
+Step 1 checks the spec's `Status` before any task runs. After the new yes, `plan-craft`
+adds the delta as new `pending` tasks and edits no record line; on resume this skill
+returns each `blocked - conflicting intent` task of that spec to `pending`
+([journal.md](references/journal.md), Resume), so every task can reach `done`.
 
 ## Step 7. Blockers and loops
 

@@ -160,10 +160,11 @@ user says an explicit yes to this spec. These are not approval:
 On requested changes, edit, save, and ask again. On an explicit yes, set
 `Status: approved`, save, give the result below without its `Next step` line, and in
 the same turn start `plan-craft` on this spec path, without asking whether to plan.
-When a plan whose `Spec` names this spec already exists (the spec went back to draft
-and is approved again), pass that plan's path too, so `plan-craft` revises it instead
-of writing a second plan. The result of `plan-craft`, with its own `Next step` line,
-ends the turn. When `plan-craft` is not installed, end with the full result instead.
+When a plan whose `Spec` names this spec already exists, finished or not (the spec
+went back to draft and is approved again), pass that plan's path too, so `plan-craft`
+revises it in place instead of writing a second plan. The result of `plan-craft`, with
+its own `Next step` line, ends the turn. When `plan-craft` is not installed, end with the
+full result instead.
 
 ### Approval invariant
 

@@ -80,27 +80,28 @@ Path: the project's plan folder when instructions or existing files define one, 
 `docs/plans/YYYYMMDD-HHMM-<topic>.md`, with the same topic as the spec.
 
 Before writing, look for an existing plan on the same topic (the plan passed in, or one
-whose `Spec` names this spec) and read its `## Execution record`:
+whose `Spec` names this spec) and read its `## Execution record`. The first case that
+applies wins:
 
+- a revision after spec re-approval (the plan's spec went back to draft and is now
+  approved again), whether the plan is finished or not: edit this plan in place, never
+  a new file. Update `Global constraints` and the task sections the spec change
+  touches, and add the delta as new `Task <n>: pending` lines with new numbers after
+  the last task. Never edit a record line: a task already `done` keeps its line and its
+  change becomes a new task, and a task `blocked - conflicting intent` keeps its line;
+  `implement` returns it to `pending` on resume (its `references/journal.md`, Resume).
+  Then rerun step 6 on the whole plan; `Execution` keeps its value;
 - no plan, or the existing one is finished (every `Task` line `done`): write a new file;
 - an unfinished record (any task not `done`, even with `Base: unset`): never replace that
   file with a different plan. A new plan is a new file, and the report names both paths;
-  the two revisions below are edits of that plan, not a different plan;
+  the revision above and the one below are edits of that plan, not a different plan;
 - a revision of this plan after review: edit the sections the findings name, keep every
   record line as it is, and add `Task <n>: pending` lines only for new tasks. A change
   to a task already `done` becomes a new task with only the delta, because `implement`
   keeps a `done` task whose commit exists. A section `cr-received` already edited (it
   fixes the cited section itself) is not edited again;
   plan-craft adds the task changes the findings need, then reruns step 6 on the whole
-  plan. `Execution` keeps its value;
-- a revision after spec re-approval (the plan's spec went back to draft and is now
-  approved again): edit this plan in place, never a new file. Update `Global constraints`
-  and the sections the spec change touches, keep every record line as it is, and add
-  the delta as new `Task <n>: pending` lines; a task already `done` is never rewritten,
-  its change becomes a new task. A task marked `blocked - conflicting intent: spec <path>
-  back to draft` gets a `Ruling` naming the re-approval and a new
-  `Task <n>: pending` line when the revised plan still needs it. Then rerun step 6 on
-  the whole plan; `Execution` keeps its value.
+  plan. `Execution` keeps its value.
 
 ## 4. Write the header
 

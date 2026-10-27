@@ -2,6 +2,10 @@
 
 ## [0.0.3] - 2026-10-27
 
+- The spec's `Status` is checked in Step 1, before `Base` is written; a resume against a
+  draft spec with no marked task stops too. On resume, a `blocked - conflicting intent`
+  task whose spec is approved again goes back to `pending` (journal Resume rule), so
+  the plan can reach all tasks `done` (review R2-F1, F2 on PR #14).
 - A draft spec stops a fresh start, while on resume only the tasks the spec change
   touches wait and independent tasks continue; after the new yes `plan-craft` revises
   the plan in place (review R1-F1 on PR #14).

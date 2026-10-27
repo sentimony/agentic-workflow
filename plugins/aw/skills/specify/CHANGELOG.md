@@ -2,6 +2,8 @@
 
 ## [0.0.3] - 2026-10-27
 
+- The existing plan path is passed to `plan-craft` after a re-approval whether that
+  plan is finished or not (review R2-F3 on PR #14).
 - After a re-approval of a spec that already has a plan, `specify` passes that plan's
   path to `plan-craft`, which revises it in place; the approval invariant says so in
   every copy. The Result table has a row for an approved spec with `plan-craft`

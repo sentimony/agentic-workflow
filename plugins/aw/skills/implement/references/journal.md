@@ -128,3 +128,13 @@ When `Base` is already set, execution is being resumed:
 4. Continue `Round` counters from the last recorded number for each loop.
 5. A `Ruling` awaiting the user stays open until the user answers; do not decide it
    because the session is new.
+6. A task `blocked - conflicting intent: spec <path> back to draft` whose spec now reads
+   `Status: approved` goes back to `pending`: change the state of its own line in place
+   and add a `Ruling`. It then runs as its task section now reads, after `plan-craft`
+   revised the plan; the delta tasks `plan-craft` added are ordinary `pending` lines.
+   While the spec is still a draft, the line stays `blocked`.
+
+   ```text
+   Task 3: pending
+   Ruling: Task 3 back to pending - spec docs/specs/x.md approved again - low, the task section was revised
+   ```

@@ -2,6 +2,9 @@
 
 ## [0.0.3] - 2026-10-27
 
+- The revision after spec re-approval comes first in step 3 and applies to a finished
+  plan too; it adds delta tasks with new numbers and never edits a record line, and a
+  blocked task is returned to `pending` by `implement` (review R2-F1, F3 on PR #14).
 - A revision after spec re-approval edits the existing plan in place: delta tasks as
   new `Task <n>: pending` lines, record lines kept, `done` tasks never rewritten; the
   skill takes a spec path and a plan path together (review R1-F1 on PR #14).

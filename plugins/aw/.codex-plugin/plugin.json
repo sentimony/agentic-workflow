@@ -1,0 +1,43 @@
+{
+  "name": "aw",
+  "version": "0.0.8",
+  "description": "Agentic workflow skills for one change from request to merge: specify the design, craft the plan, implement it, verify with evidence, request and resolve an independent code review, finalize the branch, and record session learnings.",
+  "author": {
+    "name": "Ihor Orlovskyi",
+    "email": "ihororlovskyi@gmail.com",
+    "url": "https://github.com/sentimony"
+  },
+  "repository": "https://github.com/sentimony/agentic-workflow",
+  "license": "MIT",
+  "keywords": [
+    "agentic-workflow",
+    "spec",
+    "plan",
+    "implement",
+    "verify",
+    "code-review",
+    "finalize",
+    "engineering",
+    "best-practices"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Sentimony Agentic Workflow",
+    "shortDescription": "Spec, plan, implement, verify, review, and finalize a change",
+    "longDescription": "Turn a request into an approved spec and a task plan, execute it inline or through subagents, and verify every claim with fresh evidence bound to the exact tree. Request an independent read-only review, resolve its findings with evidence, finalize the branch safely, and record what the session taught.",
+    "developerName": "Ihor Orlovskyi",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Specify this feature before we write any code.",
+      "Implement the approved plan.",
+      "Review my changes since main against the spec.",
+      "Finalize this branch with a pull request."
+    ],
+    "websiteURL": "https://github.com/sentimony/agentic-workflow"
+  }
+}

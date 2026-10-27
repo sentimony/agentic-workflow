@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "awf",
+      "name": "aw",
       "source": {
         "source": "local",
-        "path": "./plugins/awf"
+        "path": "./plugins/aw"
       },
       "policy": {
         "installation": "AVAILABLE",

@@ -7,8 +7,8 @@
   "description": "Agentic workflow skills by Sentimony, as an installable Claude Code and Codex plugin.",
   "plugins": [
     {
-      "name": "awf",
-      "source": "./plugins/awf",
+      "name": "aw",
+      "source": "./plugins/aw",
       "description": "Agentic workflow skills for one change from request to merge: specify the design, craft the plan, implement it, verify with evidence, request and resolve an independent code review, finalize the branch, and record session learnings.",
       "category": "development",
       "keywords": [

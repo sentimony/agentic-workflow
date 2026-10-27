@@ -477,18 +477,22 @@ def _paths(raw: bytes) -> list:
 
 # Key and credential file names that never enter a brief, besides env files and local
 # overrides; matched on the lowercased base name.
-_SECRET_NAMES = (".npmrc", ".netrc", ".pypirc", ".pgpass", "credentials",
-                 "credentials.json", "secrets.json", "secrets.yaml", "secrets.yml")
-_SECRET_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".jks", ".keystore", ".ppk")
+_SECRET_NAMES = (".npmrc", ".netrc", ".pypirc", ".pgpass", ".envrc", ".git-credentials",
+                 "kubeconfig", "credentials", "credentials.json", "secrets.json",
+                 "secrets.yaml", "secrets.yml")
+_SECRET_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".jks", ".keystore", ".ppk",
+                    ".tfvars")
 _SECRET_PREFIXES = ("id_rsa", "id_dsa", "id_ecdsa", "id_ed25519")
 
 
 def is_standard_exclusion(path: str) -> bool:
     """True for paths the brief must never cover: env files, local overrides, and key or
     credential files."""
-    name = path.rsplit("/", 1)[-1]
-    lower = name.lower()
-    return (name == ".env" or name.startswith(".env.") or ".local" in name
+    parts = path.lower().split("/")
+    lower = parts[-1]
+    # A .local directory (local overrides) excludes everything under it.
+    return (lower == ".env" or lower.startswith(".env.")
+            or any(".local" in part for part in parts)
             or lower in _SECRET_NAMES or lower.endswith(_SECRET_SUFFIXES)
             or lower.startswith(_SECRET_PREFIXES))
 
@@ -587,7 +591,11 @@ def compute_target(repo: Path, kind: str, ref: Optional[str], exclude=()) -> dic
                 untracked_hashes[path] = None
                 continue
             try:
-                untracked_hashes[path] = hashlib.sha256(full.read_bytes()).hexdigest()
+                digest = hashlib.sha256()
+                with open(full, "rb") as fh:
+                    for chunk in iter(lambda: fh.read(1 << 20), b""):
+                        digest.update(chunk)
+                untracked_hashes[path] = digest.hexdigest()
             except OSError:
                 untracked_hashes[path] = None
             files.append(path)
@@ -619,6 +627,11 @@ def format_target(repo: Path, info: Mapping) -> str:
               % len(info["excluded"])]
     lines += ["- %s" % path for path in info["excluded"]] or ["- none"]
     return "\n".join(lines) + "\n"
+
+
+def _utf8(text: str) -> bytes:
+    """Brief text as UTF-8; a path that is not UTF-8 shows replacement characters."""
+    return text.encode("utf-8", "replace")
 
 
 def _fence(text: str) -> str:
@@ -658,8 +671,15 @@ def embed_material(repo: Path, info: Mapping) -> str:
              "### Diff", ""]
     lines += _fenced(diff, "diff") if diff.strip() else ["No tracked changes in scope."]
     gaps = []
+    budget = MAX_EMBED_BYTES - len(_utf8("\n".join(lines)))
     for path in untracked:
         try:
+            # Too large to fit: fail before reading it whole.
+            if (repo / path).stat().st_size > budget:
+                raise CrossReviewError(EXIT_INVALID_INPUT,
+                                       "untracked %s alone exceeds the %d-byte embedding "
+                                       "limit; narrow the boundary with --exclude"
+                                       % (path, MAX_EMBED_BYTES))
             content = (repo / path).read_bytes().decode("utf-8")
         except (OSError, UnicodeDecodeError):
             gaps.append(path)
@@ -669,7 +689,7 @@ def embed_material(repo: Path, info: Mapping) -> str:
         lines += ["", "Untracked files not embedded (binary or unreadable; coverage gaps):"]
         lines += ["- %s" % path for path in gaps]
     text = "\n".join(lines) + "\n"
-    size = len(text.encode("utf-8"))
+    size = len(_utf8(text))
     if size > MAX_EMBED_BYTES:
         raise CrossReviewError(EXIT_INVALID_INPUT,
                                "embedded material is %d bytes, over the %d-byte limit; narrow "
@@ -808,13 +828,16 @@ def _previous_documents(meta: Mapping) -> dict:
     return paths
 
 
+REUSED_BRIEF_NOTE = (
+    "\nThe host part of this brief is the one of round {previous_round}: a round number,"
+    "\nfinding ID prefix, or Tree stated in it belongs to that round, and the target"
+    "\nsection the runner computed above is the current target.")
+
 FOLLOWUP_SECTION = """
 ## Previous round
 
 This is review round {round} of the same target. Use finding IDs R{round}-<reviewer>-F<k>
-for new findings and keep the previous IDs. A round number, finding ID prefix, or Tree
-stated earlier in this brief belongs to round {previous_round}; the target section the
-runner computed above is the current target. Below are the previous round's review
+for new findings and keep the previous IDs.{reused} Below are the previous round's review
 and the host's disposition of each finding. For every previous finding, state its status
 on the current target: ADDRESSED or NOT ADDRESSED, with evidence; a partial fix is NOT
 ADDRESSED. A finding the host rejected stays closed unless you bring evidence its ruling
@@ -1882,7 +1905,7 @@ def run_review(reviewer: Optional[str], repo: Path, brief: Path, model: Optional
             if not any(_excluded_by_user(path, [item]) for path in info["excluded"]):
                 raise CrossReviewError(EXIT_INVALID_INPUT,
                                        "--exclude %s matches no path of the target" % item)
-        brief_data += format_target(repo, info).encode("utf-8")
+        brief_data += _utf8(format_target(repo, info))
         if embed and info["kind"] != "tree":
             material = embed_material(repo, info)
         extra["target"] = {key: value for key, value in info.items()
@@ -1897,7 +1920,7 @@ def run_review(reviewer: Optional[str], repo: Path, brief: Path, model: Optional
         brief_data += format_documents(extra["documents"]).encode("utf-8")
         if embed:
             brief_data += embed_documents(repo, extra["documents"]).encode("utf-8")
-    brief_data += material.encode("utf-8")
+    brief_data += _utf8(material)
     if mode is not None:
         brief_data += standard_sections(mode, reviewer).encode("utf-8")
     if followup is not None:
@@ -1911,8 +1934,10 @@ def run_review(reviewer: Optional[str], repo: Path, brief: Path, model: Optional
         disposition_text = _read_brief(dispositions).decode("utf-8")
         if not disposition_text.strip():
             raise CrossReviewError(EXIT_INVALID_INPUT, "the dispositions file is empty")
+        reused = REUSED_BRIEF_NOTE.format(previous_round=round_no - 1) if brief is None else ""
         brief_data += FOLLOWUP_SECTION.format(
-            round=round_no, previous_round=round_no - 1, review=review.rstrip("\n"),
+            round=round_no, previous_round=round_no - 1, reused=reused,
+            review=review.rstrip("\n"),
             dispositions=disposition_text.rstrip("\n")).encode("utf-8")
         extra["followup_of"] = str(followup)
         if ((extra.get("target") or extra.get("documents"))

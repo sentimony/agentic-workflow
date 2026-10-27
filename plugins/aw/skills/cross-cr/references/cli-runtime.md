@@ -113,12 +113,14 @@ fingerprint.
 | `working-tree` | tracked changes against `HEAD` plus untracked files that gitignore keeps | `HEAD`, a SHA-256 of `git diff --binary HEAD`, and a SHA-256 per untracked file |
 | `working-tree BASE` | `git diff BASE` (committed, staged, and unstaged) plus untracked files that gitignore keeps | `BASE`, `HEAD`, a SHA-256 of `git diff --binary BASE`, and a SHA-256 per untracked file |
 
-Standard exclusions: `.env`, `.env.*`, any name containing `.local`, untracked files
-that cannot be read, key and credential names (`*.pem`, `*.key`, `*.p12`,
-`*.pfx`, `*.jks`, `*.keystore`, `*.ppk`, `id_rsa*`, `id_dsa*`, `id_ecdsa*`, `id_ed25519*`,
-`.npmrc`, `.netrc`, `.pypirc`, `.pgpass`, `credentials`, `credentials.json`,
-`secrets.json`, `secrets.yaml`, `secrets.yml`), and every untracked symlink, which the
-runner never follows. `--exclude <path>` (repeatable) adds a file, or a directory with
+Standard exclusions, matched without regard to case: `.env`, `.env.*`, any path with
+`.local` in a name or directory, untracked files that cannot be read, key and credential
+names (`*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, `*.ppk`, `*.tfvars`,
+`id_rsa*`, `id_dsa*`, `id_ecdsa*`, `id_ed25519*`, `.npmrc`, `.netrc`, `.pypirc`,
+`.pgpass`, `.envrc`, `.git-credentials`, `kubeconfig`, `credentials`,
+`credentials.json`, `secrets.json`, `secrets.yaml`, `secrets.yml`), and every untracked
+symlink, which the runner never follows. An untracked file larger than what is left of
+the 4 MiB budget fails before it is read; untracked files are hashed in chunks. `--exclude <path>` (repeatable) adds a file, or a directory with
 everything under it, relative to the repository root or absolute inside it; one that
 matches no path of the target, or lies outside the repository, is exit 2. The `run.log`
 header records the list. File lists and the embedded diff use `--no-renames`, so a
@@ -171,8 +173,8 @@ hashes, and the `Status:` lines are those of the new round. The runner reads the
 run's header and `review.md` (both must be private files of a private run directory),
 appends the previous review and the host's dispositions to the brief, and asks for a
 status of every previous finding: `ADDRESSED` or `NOT ADDRESSED`. It also states the new
-round's finding IDs and that a round, ID prefix, or `Tree` in the host part belongs to the
-previous round. The round
+round's finding IDs and, when it reused the host part, that a round, ID prefix, or `Tree`
+in it belongs to the previous round. The round
 number is the previous one plus one. When the target and documents match the previous
 round's header, the runner prints `cross-review: target and documents unchanged since
 round N` on stderr and still runs. Both flags go together, and an unreadable previous

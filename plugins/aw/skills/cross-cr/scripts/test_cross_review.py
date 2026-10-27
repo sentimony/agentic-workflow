@@ -2708,6 +2708,10 @@ class ReviewRoundOneTests(GitRunnerTestCase):
                      "credentials.json", "app/.netrc"):
             with self.subTest(name=name):
                 self.assertTrue(cr.is_standard_exclusion(name))
+        for name in (".envrc", ".git-credentials", "prod.tfvars", "kubeconfig", ".ENV",
+                     ".Env.prod", ".local/share/token.txt"):
+            with self.subTest(name=name):
+                self.assertTrue(cr.is_standard_exclusion(name))
         self.assertFalse(cr.is_standard_exclusion("keyboard.py"))
         (self.repo / "server.pem").write_text("PRIVATE KEY BODY\n")
         self.run_target("claude-code")
@@ -2741,7 +2745,10 @@ class ReviewRoundOneTests(GitRunnerTestCase):
                       dispositions=self.dispositions)
         stdin = last_record(self)["stdin"]
         self.assertIn("Use finding IDs R2-<reviewer>-F<k>", stdin)
-        self.assertIn("belongs to round 1", stdin)
+        self.assertIn("belongs to that round", stdin)
+        cr.run_review(None, self.repo, self.brief, None, None, self.env, followup=first,
+                      dispositions=self.dispositions)
+        self.assertNotIn("belongs to that round", last_record(self)["stdin"])
 
     def test_followup_does_not_reuse_a_commit_pinned_range(self):
         self.commit("work")
@@ -2757,12 +2764,40 @@ class ReviewRoundOneTests(GitRunnerTestCase):
                       dispositions=self.dispositions)
 
     def test_rename_embeds_as_delete_and_add(self):
+        # Long unchanged content: git would detect this rename without --no-renames.
+        (self.repo / "app.py").write_text("".join("line %d\n" % i for i in range(50)))
         self.commit("work")
+        self.base = subprocess.run(["git", "-C", str(self.repo), "rev-parse", "HEAD"],
+                                   check=True, stdout=subprocess.PIPE,
+                                   text=True).stdout.strip()
         git("-C", str(self.repo), "mv", "app.py", "renamed.py")
+        info = cr.compute_target(self.repo, "working-tree", self.base)
+        self.assertIn("app.py", info["files"])
         self.run_target("claude-code")
         stdin = last_record(self)["stdin"]
         self.assertIn("deleted file mode", stdin)
         self.assertIn("+++ b/renamed.py", stdin)
+
+    def test_non_utf8_file_name_does_not_crash(self):
+        name = os.fsdecode(b"caf\xe9.txt")
+        text = cr.format_target(self.repo, {"kind": "working-tree", "head": "0" * 40,
+                                            "files": [name], "excluded": []})
+        self.assertIn(b"caf", cr._utf8(text))
+        if sys.platform == "darwin":
+            self.skipTest("APFS rejects file names that are not UTF-8")
+        name = os.fsdecode(b"caf\xe9.txt")
+        (self.repo / name).write_text("latin name\n")
+        self.run_target("claude-code")
+        self.assertIn("latin name", last_record(self)["stdin"])
+
+    def test_untracked_file_over_the_limit_is_not_read(self):
+        (self.repo / "dump.sql").write_text("x" * 5000)
+        with mock.patch.object(cr, "MAX_EMBED_BYTES", 2000):
+            with self.assertRaises(cr.CrossReviewError) as caught:
+                self.run_target("claude-code")
+        self.assertEqual(caught.exception.code, 2)
+        # The size check before the read, not the one after it.
+        self.assertIn("untracked dump.sql alone exceeds", caught.exception.message)
 
     def test_status_needs_a_colon_and_whitespace(self):
         spec = Path(self._tmp.name) / "status.md"

@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.0.3] - 2026-10-27
+
+- The existing plan path is passed to `plan-craft` after a re-approval whether that
+  plan is finished or not (review R2-F3 on PR #14).
+- After a re-approval of a spec that already has a plan, `specify` passes that plan's
+  path to `plan-craft`, which revises it in place; the approval invariant says so in
+  every copy. The Result table has a row for an approved spec with `plan-craft`
+  installed, and `specify` gives its result before `plan-craft` runs. The Step 2 route
+  check covers only `note` and `design`: the `direct` route ends at Step 0 (review
+  R1-F1, F4, F5 on PR #14).
+- Questions come in rounds: round 1 asks every open decision, each later round only what
+  the answers left unclear, at most eight, each opened by `Round <k>/8`. After a round
+  with nothing unclear the skill goes on to the draft spec itself, without asking leave;
+  after round 8 the rest goes under `Open questions`.
+- After the user's explicit yes the skill sets `Status: approved` and starts `plan-craft`
+  on the spec in the same turn, without asking whether to plan; the result of
+  `plan-craft` ends the turn, and the `Next step: plan-craft` line remains only when
+  `plan-craft` is not installed (request 20261027-0303).
+- No longer calls `scope-check`.
+- External audit (request 20261027-0206):
+  - an `Approval invariant` shared with `plan-craft`, `implement`, and `cr-received`: a
+    draft spec is never planned around as `Spec: none`, a material change to an approved
+    spec returns it to draft, and no skill approves on the user's behalf;
+  - the route from Step 0 is provisional: after the evidence register the skill confirms
+    or revises it, heavier on a contradiction, lighter only when no design item and no
+    user decision remain;
+  - approaches are compared only when more than one is viable; otherwise the spec says
+    why the alternatives were ruled out instead of inventing a second;
+  - a recommended answer comes with its reason only when evidence or a constraint
+    supports it; a choice that rests on the user's priorities gets the consequences of
+    each option instead;
+  - every register entry has an exact source (`path:line`, command output, or the
+    user's words); a user statement verifies a requirement, not a technical fact; a
+    material `assumed` entry becomes an open question or a risk before approval;
+  - an acceptance-criteria coverage check before saving, and a six-item fresh-reader
+    checklist with a verdict per item, defects, and questions, without new scope;
+  - a large request splits into separate specs only where a part can be approved,
+    built, and accepted alone;
+  - a shorter description.
+
 ## [0.0.2] - 2026-10-27
 
 - Rename only: the plugin `awf` is now `aw`; version bump only, the text is unchanged.

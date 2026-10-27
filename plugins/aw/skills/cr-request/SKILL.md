@@ -3,7 +3,7 @@ name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>]"
 metadata:
-  version: "0.0.7"
+  version: "0.0.8"
 license: MIT
 ---
 
@@ -152,7 +152,8 @@ identity; after any change to the target, the review is stale.
 ## 7. Record and hand off
 
 When the plan is known, append to its `## Execution record` after the result is
-accepted, in this format:
+accepted, at the end of the record (inside its ```` ```text ```` block, before the closing
+fence, when it has one), in this format:
 
 ```text
 Review R<n>: <Summary line> tree <tree SHA> reviewer <model> mode <code|document|re-review>
@@ -195,7 +196,9 @@ with a leading slash: ``Next step: `/<skill>` · <reason>``, for example
 (`Next step: none · <reason>`). The skill writes the signature without a duration; the
 workflow may append the review duration to it afterwards as ` · In <m> min <s> sec`,
 with `In 0 min 42 sec` under a minute. Only these two CI lines use ` · `; every other
-`Next step` line keeps ` - `.
+`Next step` line keeps ` - `. The exact grammar of both lines, as regular expressions a
+workflow validator uses, and the accepted and rejected samples are in
+[brief.md](references/brief.md) "CI footer grammar"; the grammar is part of the contract.
 
 ## When not to use
 

@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.0.3] - 2026-10-27
+
+- The journal reference names every record line plan-craft writes, matching its list
+  (review R4-F1 on PR #14).
+- The journal names the record lines `plan-craft` writes on a revision after spec
+  re-approval (the marker and the delta tasks) and where they go (review R3-F1, F2 on
+  PR #14).
+- The spec's `Status` is checked in Step 1, before `Base` is written; a resume against a
+  draft spec with no marked task stops too. On resume, a `blocked - conflicting intent`
+  task whose spec is approved again goes back to `pending` (journal Resume rule), so
+  the plan can reach all tasks `done` (review R2-F1, F2 on PR #14).
+- A draft spec stops a fresh start, while on resume only the tasks the spec change
+  touches wait and independent tasks continue; after the new yes `plan-craft` revises
+  the plan in place (review R1-F1 on PR #14).
+- A deviation that would materially change an approved spec no longer updates the spec
+  in the same pass: the skill sets the spec's `Status` back to `draft`, blocks the
+  affected tasks, and ends with `Next step: specify` until a new explicit yes; a plan whose
+  spec is a draft does not start. A new `Approval invariant` section is shared with
+  `specify`, `plan-craft`, and `cr-received` (request 20261027-0206).
+- Journal lines go inside the record's `text` block, before its closing fence, never
+  after it (request 20261025-1800).
+
 ## [0.0.2] - 2026-10-27
 
 - Rename only: the plugin `awf` is now `aw`; version bump only, the text is unchanged.

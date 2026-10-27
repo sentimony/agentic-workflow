@@ -3,7 +3,7 @@ name: verify
 description: You MUST use this when anyone - you, a subagent, or the user - is about to state that work is done, fixed, ready, or mergeable, and before the commit that completes it, a merge, opening a pull request, or a handoff report, including work that has no plan. Covers every promise behind the claim - spec criteria, plan tasks, journal entries, accepted review fixes, and the caller's words - proven with fresh checks on the current tree and given one verdict, without editing code. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-path>]"
 metadata:
-  version: "0.0.2"
+  version: "0.0.3"
 license: MIT
 ---
 
@@ -33,7 +33,10 @@ Write the claims down before running anything, numbered `C1`, `C2`, and so on. T
 them from every source present - the spec's `AC<n>` (via `Spec:` in the plan header),
 the plan's tasks with `Produces` and `Covers`, the journal's `Task`, `Ruling`, and
 `Deferred` lines, each `ACCEPT` or `PARTIAL` finding of the last review round, and the
-caller's words; the list and source tags are in [report.md](references/report.md).
+caller's words; the list and source tags are in [report.md](references/report.md). The
+marker `Ruling: plan revised after spec re-approval - <spec path>` is checked as a
+claim this way: the plan's `Spec` names that path, and that spec reads
+`Status: approved`.
 
 The caller's words alone are never the full list when a spec or plan exists. A `Task`
 line with evidence is a claim to recheck, not proof: nobody confirms their own work.
@@ -52,7 +55,10 @@ or any `ESCALATE`; `ACCEPT` and `PARTIAL` fixes are proven as claims (step 2). R
 
 Each claim gets a check run now, on this fingerprint. Take commands from the project
 itself: its README, CI workflow, scripts, and package manifests, confirmed with `--help`
-when unsure. These are not evidence:
+when unsure. When the project runs its checks in a fresh clone and the tree is
+uncommitted, rebuild that exact tree in the clone with
+[clean-clone.md](references/clean-clone.md); a copy of the files without `.git` is not a
+clean checkout. These are not evidence:
 
 - a run from before the last edit, or CI on another commit or tree;
 - a report by the implementer, a subagent, or a reviewer;
@@ -105,12 +111,16 @@ an intermediate check. Both shapes are in [report.md](references/report.md).
 
 ## 8. Journal and loop
 
-When a plan is known, append one line at the bottom of its `## Execution record`, in
-the format the journal uses, with the fingerprint from step 7:
+When a plan is known, append one line at the end of its `## Execution record` (inside
+the record's ```` ```text ```` block, before the closing fence, when it has one), in the
+format the journal uses, with the fingerprint from step 7:
 
 ```text
 Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM>
 ```
+
+The time is the output of `date '+%Y-%m-%d %H:%M'`, run right after the re-pin of step 7;
+never write it from memory or estimate it.
 
 Besides this line, `verify` writes only the round counter below and, with no plan, the
 new plan-journal of step 9. It never edits code, tests, the spec, or the plan body. A
@@ -149,9 +159,22 @@ one-sentence `Goal`, `Execution: inline`, and `## Execution record`, using the s
 
 The result ends with exactly one line `Next step: <skill> - <one-line reason>`:
 
+Only `Review` lines whose mode is `code`, or `re-review` after a code review, count as a
+review of the implementation in this table. A `Review` line with `mode document` (a spec
+or plan review) and the `Finding` and `Received` lines of that round count as no
+implementation review yet: when the journal has no code review after `Base`, the `PASS`
+row is the first one, whatever document reviews it holds. Step 3 still reads every round,
+document ones included, for open blockers.
+
+When the journal holds the marker line
+`Ruling: plan revised after spec re-approval - <spec path>` (written by `plan-craft`
+when it revises the plan in place after the spec is approved again), only the code `Review`, `Finding`, and `Received` lines after the last marker
+count in this table, and "after `Base`" reads "after the last marker": with no code
+review after it, the `PASS` row is the first one, `cr-request`.
+
 | Condition | Next step |
 | --- | --- |
-| `PASS`, no `Review` line in the journal yet | `cr-request` |
+| `PASS`, no code review line in the journal after `Base` | `cr-request` (code mode) |
 | `PASS`, the last `Review` line has no `Finding` lines and no `Received` line follows it | `finalize` |
 | `PASS`, the last `Review` line has `Finding` lines (all `Minor`) and no `Received` line follows it | `cr-received` |
 | `PASS`, the last `Received` line says `Re-review: needed` and no `Review` follows it | `cr-request` (re-review mode) |
@@ -159,7 +182,7 @@ The result ends with exactly one line `Next step: <skill> - <one-line reason>`:
 | `FAIL` | `implement` (or `cr-received` when a claim tagged `R<n>-F<k>` fails) |
 | `INCOMPLETE` or `BLOCKED` | `none - <owner and next action>` |
 
-A fix after a review changes the tree, so the order of the journal's `Review` and
+A fix after a review changes the tree, so the order of the journal's code `Review` and
 `Received` lines picks the `PASS` row; the tree SHA a `Review` line records does not.
 When the Round rule stops the loop, the line is `Next step: none - <cause> needs the
 user`.
@@ -196,3 +219,4 @@ network gives `not verified`.
 
 - [Report format, statuses, verdicts, blockers, journal lines](references/report.md)
 - [Tree fingerprint recipe and validity](references/tree-fingerprint.md)
+- [Clean clone of an uncommitted tree](references/clean-clone.md)

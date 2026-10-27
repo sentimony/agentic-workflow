@@ -110,6 +110,45 @@ the workflow may append ` · In <m> min <s> sec` to it afterwards (`In 0 min 42 
 under a minute).
 Only these two CI lines use ` · `; every other `Next step` line keeps ` - `.
 
+### CI footer grammar
+
+The two closing lines of a CI review body match these POSIX extended regular
+expressions, as bash `[[ =~ ]]` reads them; a port to another regex dialect replaces
+`[^[:space:]]` with its own class (`\S` in a JavaScript `RegExp`). `<version>` is the
+skill's `metadata.version` with each `.` escaped. Before the match, the validator in
+`claude-review.yml`, the source of truth, removes every `\r`, drops the lines that hold
+only whitespace, takes the last two remaining lines, and strips trailing whitespace
+from each.
+
+```text
+signature: ^Reviewed with: `/cr-request` <version> skill( · In [0-9]+ min [0-9]+ sec)?$
+next step: ^Next step: (`/[a-z0-9-]+` · [^[:space:]].*|none( · [^[:space:]].*)?)$
+```
+
+The signature is the last non-blank line before `Next step`, and `Next step` is the
+last non-blank line.
+A workflow that appends the duration requires the suffix in its own check. Samples a
+validator can use as fixtures (`v` stands for the version):
+
+| Body ends with | Result |
+| --- | --- |
+| ``Reviewed with: `/cr-request` v skill · In 3 min 12 sec`` then ``Next step: `/cr-received` · 4 findings to rule on`` | accepted |
+| the same two lines with CRLF line ends | accepted |
+| signature, then `Next step: none` | accepted |
+| signature, then `Next step: none · nothing to rule on` | accepted |
+| `Next step` line, then the signature last (the order before 0.0.6) | accepted only while a workflow keeps the transition branch |
+| signature, then `Next step: cr-received - 4 findings` | rejected |
+| signature, then `Next step: ` (empty) | rejected |
+| signature, then ``Next step: `/cr-received` - 4 findings`` | rejected |
+| signature, then `Next step: none - nothing to rule on` | rejected |
+| signature with a glued suffix (``skill· In 3 min 12 sec``) | rejected |
+| signature, a blank line, then `Next step` | accepted |
+| the two lines with trailing spaces | accepted |
+| signature, another non-blank line, then `Next step` | rejected |
+
+A change to this grammar is a change to the contract: the review workflow updates its
+validator and raises its pinned skill revision in the same change.
+
 ## Severity
 
 - **Critical** - wrong results, data loss, security exposure, or a broken build or

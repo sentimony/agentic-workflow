@@ -2,8 +2,6 @@
 
 ## Layout
 
-- `.claude-plugin/marketplace.json` - Claude Code marketplace.
-- `.agents/plugins/marketplace.json` - Codex marketplace.
 - `plugins/aw/.claude-plugin/plugin.json` - Claude Code manifest; lists skills.
 - `plugins/aw/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
 - `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
@@ -21,8 +19,10 @@
 - Versions: patch bumps; manifest `version` equals the release tag without `v`; the top
   `CHANGELOG.md` entry matches `metadata.version`. README shows the repository
   version, each plugin version, and each skill version.
-- After a release tag, bump the `aw` entry `ref` in sentimony/skills
-  `.claude-plugin/marketplace.json` with a skills patch release.
+- No marketplace of its own: the `aw` entry lives in sentimony/marketplace (both
+  `marketplace.json` files), and CI fails if `.claude-plugin/marketplace.json` or
+  `.agents/plugins/marketplace.json` comes back. After a release tag, bump that entry's `ref`
+  with a sentimony/marketplace patch release.
 - Releases go through the `rc-verifier` and `releaser` roles (contracts and the release
   checklist in the `skills-aiassist` workbench): `rc-verifier` approves the tree, then
   `releaser` commits, squash-merges the PR, and pushes the annotated tag.
@@ -45,8 +45,10 @@
 - Skills form one chain: specify -> plan-craft -> implement -> verify -> cr-request ->
   cr-received -> verify -> finalize -> session-learnings. Each runs standalone: it takes the
   previous skill's file artifact or builds a minimal one, and ends with a `Next step` line;
-  no orchestrator skill. `cross-cr` stays outside the chain: it runs only on request, next
-  to or in place of the cr-request step, and hands findings to cr-received.
+  no orchestrator skill. One exception: on the user's explicit yes to a spec, `specify`
+  gives its result without a `Next step` line and starts `plan-craft` in the same turn,
+  whose result ends the turn. `cross-cr` stays outside the chain: it runs only on request,
+  next to or in place of the cr-request step, and hands findings to cr-received.
 - aw skills replace their sentimony/skills devflow counterparts (scope-triage,
   plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
   review-request, review-resolution, cross-review): a description opens with

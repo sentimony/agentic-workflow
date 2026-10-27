@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.0.8] - 2026-10-27
+
+- The CI footer grammar follows the `claude-review.yml` validator: every `\r` removed,
+  blank lines dropped, trailing whitespace stripped, the regexes stated for bash with a
+  note on other dialects, and the fixture table matches the validator (review R1-F2 on
+  PR #14).
+- `references/brief.md` gives the CI footer grammar: POSIX extended regular expressions
+  for the signature and the `Next step` line, and accepted and rejected samples a
+  workflow validator can use as fixtures. The grammar is part of the contract: a change
+  to it changes the contract, and the review workflow updates its validator and pinned
+  revision with it (request 20261026-2315).
+- The invocable `Next step` form (``Next step: `/<skill>` · <reason>``), introduced in
+  0.0.6 for the CI body, is now fixed by that grammar; the switch of every aw skill's
+  local `Next step` lines is left for a separate decision (request 20261024-2217).
+- Journal lines go inside the record's `text` block, before its closing fence, never
+  after it (request 20261025-1800).
+
 ## [0.0.7] - 2026-10-27
 
 - Rename only: the plugin `awf` is now `aw`; version bump only, the text is unchanged.

@@ -7,8 +7,10 @@ Contents: line format, lines this skill writes, plan-journal, resume.
 
 ## Line format
 
-The whole chain uses one format. Lines are appended at the bottom; existing lines are not
-rewritten, except the state of a `Task` line.
+The whole chain uses one format. New lines go at the end of the record: inside its
+```` ```text ```` block when it has one, right before the closing fence and never after it
+(plan-craft's `references/plan-template.md`, "Execution record format"). Existing lines
+are not rewritten, except the state of a `Task` line.
 
 ```text
 Base: <full SHA>   Root: <path>   Branch: <name>
@@ -27,7 +29,13 @@ Round <loop> <n>: <cause>
 
 `implement` writes `Base`, `Root`, `Branch`, `Initial dirty state`, `Task`, `Ruling`,
 `Deferred`, and its own `Round` lines. `Verify`, `Review`, `Finding`, and `Received`
-belong to other skills; read them, never write them.
+belong to other skills; read them, never write them. `plan-craft` writes only these
+record lines (its SKILL.md, step 5): `Base: unset` and `Task <n>: pending` placeholders
+of a new plan, `Task <n>: pending` for the new tasks of a revision after review, and,
+on a revision after spec re-approval, the marker
+`Ruling: plan revised after spec re-approval - <spec path>` followed by the delta
+`Task <n>: pending` lines, appended at the end of the record right before the closing
+fence like every new line. `verify` counts only the code reviews after the last marker.
 
 - **Start.** `plan-craft` leaves the placeholder `Base: unset`, meaning execution has not
   begun. Fill that placeholder line with the real values (it is a placeholder, like a
@@ -126,3 +134,13 @@ When `Base` is already set, execution is being resumed:
 4. Continue `Round` counters from the last recorded number for each loop.
 5. A `Ruling` awaiting the user stays open until the user answers; do not decide it
    because the session is new.
+6. A task `blocked - conflicting intent: spec <path> back to draft` whose spec now reads
+   `Status: approved` goes back to `pending`: change the state of its own line in place
+   and add a `Ruling`. It then runs as its task section now reads, after `plan-craft`
+   revised the plan; the delta tasks `plan-craft` added are ordinary `pending` lines.
+   While the spec is still a draft, the line stays `blocked`.
+
+   ```text
+   Task 3: pending
+   Ruling: Task 3 back to pending - spec docs/specs/x.md approved again - low, the task section was revised
+   ```

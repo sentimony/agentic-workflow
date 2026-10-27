@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.4] - 2026-10-27
+
+- The approval invariant says that after the new yes `plan-craft` revises the existing
+  plan in place instead of writing a second one (review R1-F1 on PR #14).
+- An accepted fix that materially changes an approved spec sets its `Status` back to
+  `draft` in the same edit and routes to `specify`, which asks for a new explicit yes; a
+  typo-level fix keeps `approved`. A new `Approval invariant` section is shared with
+  `specify`, `plan-craft`, and `implement` (request 20261027-0206).
+- Journal lines go inside the record's `text` block, before its closing fence, never
+  after it (request 20261025-1800).
+
 ## [0.0.3] - 2026-10-27
 
 - Rename only: the plugin `awf` is now `aw`; version bump only, the text is unchanged.

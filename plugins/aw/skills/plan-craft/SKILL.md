@@ -88,8 +88,8 @@ applies wins:
   a new file. Update `Global constraints` and the task sections the spec change
   touches. Then append to the record, at its end right before the closing fence, the
   marker line `Ruling: plan revised after spec re-approval - <spec path>`
-  followed by the delta as new `Task <n>: pending` lines with new numbers. These are the
-  only record lines plan-craft writes, and it never edits an existing one: a task
+  followed by the delta as new `Task <n>: pending` lines with new numbers (the record
+  lines this skill writes are listed in step 5). It never edits an existing one: a task
   already `done` keeps its line and its change becomes a new task, and a task
   `blocked - conflicting intent` keeps its line; `implement` returns it to `pending` on
   resume (its `references/journal.md`, Resume). `verify` counts only the code reviews
@@ -157,9 +157,16 @@ Content:
   such as `<API_TOKEN>`, never as values.
 
 Finish the plan with `## Execution record` holding `Base: unset` and one
-`Task <n>: pending` line per task, in task order. These placeholders are the only record
-lines this skill writes; `Base: unset` means execution has not started. The line format
-for later skills is in the template.
+`Task <n>: pending` line per task, in task order; `Base: unset` means execution has not
+started. The line format for later skills is in the template.
+
+The record lines this skill writes, and no others, each appended and never edited:
+
+- a new plan: the placeholders `Base: unset` and one `Task <n>: pending` per task;
+- a revision after review (step 3): `Task <n>: pending` for each new task;
+- a revision after spec re-approval (step 3): the marker
+  `Ruling: plan revised after spec re-approval - <spec path>`, then the delta tasks as
+  `Task <n>: pending` lines with new numbers.
 
 ## 6. Check the plan before handoff
 

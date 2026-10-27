@@ -120,7 +120,7 @@ Round <loop> <n>: <cause>
 
 | Writer | Lines |
 | --- | --- |
-| `plan-craft` | `Base: unset`, `Task <n>: pending` (placeholders only) |
+| `plan-craft` | `Base: unset`, `Task <n>: pending` (placeholders of a new plan, new tasks of a revision); on a revision after spec re-approval, `Ruling: plan revised after spec re-approval - <spec path>` before the delta tasks |
 | `implement` | `Base`, `Root`, `Branch`, `Initial dirty state`, `Task`, `Ruling`, `Deferred` |
 | `verify` | `Verify`; with no plan, a new plan-journal with `Branch` and `Verify` |
 | `cr-request` | `Review`, `Finding` |

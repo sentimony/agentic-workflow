@@ -2,6 +2,9 @@
 
 ## [0.0.3] - 2026-10-27
 
+- The re-approval marker is checked as a claim: the plan's `Spec` names that path and
+  the spec reads `Status: approved`; `references/report.md` counts only the code
+  reviews after the last marker for the next step (review R4-F1, F2 on PR #14).
 - The `Next step` table counts only the code `Review`, `Finding`, and `Received` lines
   after the last `Ruling: plan revised after spec re-approval` marker; with no code
   review after it, the next step is `cr-request` (review R3-F1 on PR #14).

@@ -108,7 +108,9 @@ Read the journal of the plan:
 Blockers come from every round, document reviews included. The choice of the next step
 (SKILL.md step 10) is different: there only a `Review` line with `mode code`, or
 `mode re-review` after a code review, counts as a review of the implementation, so a
-journal with only spec or plan reviews leads to `cr-request`, not `finalize`.
+journal with only spec or plan reviews leads to `cr-request`, not `finalize`. When the
+journal holds the marker `Ruling: plan revised after spec re-approval - <spec path>`,
+only the code reviews after the last marker count for that choice.
 
 ## Journal lines
 

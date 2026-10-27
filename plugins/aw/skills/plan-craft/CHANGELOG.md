@@ -2,6 +2,9 @@
 
 ## [0.0.3] - 2026-10-27
 
+- One list of the record lines plan-craft writes (step 5 and the template's writer
+  table): placeholders of a new plan, new tasks of a review revision, and the
+  re-approval marker with its delta tasks (review R4-F1 on PR #14).
 - The revision after spec re-approval appends the marker
   `Ruling: plan revised after spec re-approval - <spec path>` and then the delta tasks,
   at the end of the record before the closing fence; these are the only record lines

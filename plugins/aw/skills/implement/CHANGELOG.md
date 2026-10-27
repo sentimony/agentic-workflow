@@ -2,6 +2,8 @@
 
 ## [0.0.3] - 2026-10-27
 
+- The journal reference names every record line plan-craft writes, matching its list
+  (review R4-F1 on PR #14).
 - The journal names the record lines `plan-craft` writes on a revision after spec
   re-approval (the marker and the delta tasks) and where they go (review R3-F1, F2 on
   PR #14).

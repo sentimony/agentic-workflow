@@ -33,7 +33,10 @@ Write the claims down before running anything, numbered `C1`, `C2`, and so on. T
 them from every source present - the spec's `AC<n>` (via `Spec:` in the plan header),
 the plan's tasks with `Produces` and `Covers`, the journal's `Task`, `Ruling`, and
 `Deferred` lines, each `ACCEPT` or `PARTIAL` finding of the last review round, and the
-caller's words; the list and source tags are in [report.md](references/report.md).
+caller's words; the list and source tags are in [report.md](references/report.md). The
+marker `Ruling: plan revised after spec re-approval - <spec path>` is checked as a
+claim this way: the plan's `Spec` names that path, and that spec reads
+`Status: approved`.
 
 The caller's words alone are never the full list when a spec or plan exists. A `Task`
 line with evidence is a claim to recheck, not proof: nobody confirms their own work.

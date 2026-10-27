@@ -2,8 +2,6 @@
 
 ## Layout
 
-- `.claude-plugin/marketplace.json` - Claude Code marketplace.
-- `.agents/plugins/marketplace.json` - Codex marketplace.
 - `plugins/aw/.claude-plugin/plugin.json` - Claude Code manifest; lists skills.
 - `plugins/aw/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
 - `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
@@ -21,8 +19,10 @@
 - Versions: patch bumps; manifest `version` equals the release tag without `v`; the top
   `CHANGELOG.md` entry matches `metadata.version`. README shows the repository
   version, each plugin version, and each skill version.
-- After a release tag, bump the `aw` entry `ref` in sentimony/skills
-  `.claude-plugin/marketplace.json` with a skills patch release.
+- No marketplace of its own: the `aw` entry lives in sentimony/marketplace (both
+  `marketplace.json` files), and CI fails if `.claude-plugin/marketplace.json` or
+  `.agents/plugins/marketplace.json` comes back. After a release tag, bump that entry's `ref`
+  with a sentimony/marketplace patch release.
 - Releases go through the `rc-verifier` and `releaser` roles (contracts and the release
   checklist in the `skills-aiassist` workbench): `rc-verifier` approves the tree, then
   `releaser` commits, squash-merges the PR, and pushes the annotated tag.

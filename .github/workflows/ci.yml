@@ -70,7 +70,7 @@ jobs:
           sys.exit(1 if errors else 0)
           PY
 
-      - name: Check manifests, marketplaces, and README versions
+      - name: Check manifests, no own marketplace, and README versions
         run: |
           python3 - <<'PY'
           import json, pathlib, re, sys
@@ -86,16 +86,10 @@ jobs:
               errors.append("README.md: missing 'Version: `vX.Y.Z`' line")
 
           plugin_dirs = sorted(p.name for p in root.iterdir() if p.is_dir())
-          claude_market = {e["name"]: e.get("source") for e in load(".claude-plugin/marketplace.json")["plugins"]}
-          codex_market = {e["name"]: e.get("source", {}).get("path") for e in load(".agents/plugins/marketplace.json")["plugins"]}
-          if sorted(claude_market) != plugin_dirs:
-              errors.append(f".claude-plugin/marketplace.json plugins {sorted(claude_market)} != plugins/ {plugin_dirs}")
-          if sorted(codex_market) != plugin_dirs:
-              errors.append(f".agents/plugins/marketplace.json plugins {sorted(codex_market)} != plugins/ {plugin_dirs}")
-          for name in plugin_dirs:
-              for label, source in (("Claude", claude_market.get(name)), ("Codex", codex_market.get(name))):
-                  if source is not None and source != f"./plugins/{name}":
-                      errors.append(f"{label} marketplace plugin {name}: source {source!r} != './plugins/{name}'")
+          # The marketplace lives in sentimony/marketplace; this repository has none of its own.
+          for market in (".claude-plugin/marketplace.json", ".agents/plugins/marketplace.json"):
+              if pathlib.Path(market).exists():
+                  errors.append(f"{market}: the aw marketplace entry lives in sentimony/marketplace; remove this file")
 
           owner = {}
           for name in plugin_dirs:

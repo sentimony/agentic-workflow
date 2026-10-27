@@ -2527,8 +2527,8 @@ class ResolveTests(unittest.TestCase):
         self.assertEqual(json.loads(out.getvalue())["agent"], "claude-code")
 
 
-class BasketRunTests(RunnerTestCase):
-    """Runner-built brief: embedded material, standard sections, follow-up refresh."""
+class GitRunnerTestCase(RunnerTestCase):
+    """A git repository with a tracked edit, a tracked .env change, and an untracked file."""
 
     def setUp(self):
         super().setUp()
@@ -2555,6 +2555,11 @@ class BasketRunTests(RunnerTestCase):
         kwargs.setdefault("target", ["working-tree", self.base])
         return cr.run_review(reviewer, self.repo, kwargs.pop("brief", self.brief), None,
                              None, self.env, **kwargs)
+
+
+
+class BasketRunTests(GitRunnerTestCase):
+    """Runner-built brief: embedded material, standard sections, follow-up refresh."""
 
     def test_claude_and_antigravity_briefs_embed_diff_and_untracked_files(self):
         for reviewer in ("claude-code", "antigravity"):
@@ -2676,6 +2681,104 @@ class AgyIdleTests(RunnerTestCase):
     def test_agy_that_exits_is_unaffected(self):
         run_dir = cr.run_review("antigravity", self.repo, self.brief, None, None, self.env)
         self.assertNotIn("exit_reason", json.loads((run_dir / "usage.json").read_text()))
+
+
+class ReviewRoundOneTests(GitRunnerTestCase):
+    """Fixes for the yngwald review round 1 findings on PR #13."""
+
+    def test_non_utf8_tracked_diff_is_embedded_without_crash(self):
+        (self.repo / "latin.txt").write_bytes(b"caf\xe9\n")
+        self.commit("latin")
+        self.base = subprocess.run(["git", "-C", str(self.repo), "rev-parse", "HEAD~1"],
+                                   check=True, stdout=subprocess.PIPE,
+                                   text=True).stdout.strip()
+        (self.repo / "latin.txt").write_bytes(b"caf\xe9 au lait\n")
+        self.run_target("claude-code")
+        self.assertIn("au lait", last_record(self)["stdin"])
+
+    def test_untracked_symlink_inside_the_repo_is_never_read(self):
+        os.symlink(".env", self.repo / "env-link")
+        info = cr.compute_target(self.repo, "working-tree", None)
+        self.assertIn("env-link", info["excluded"])
+        self.run_target("antigravity")
+        self.assertNotIn("new-secret", last_record(self)["stdin"])
+
+    def test_key_and_credential_names_are_standard_exclusions(self):
+        for name in ("id_rsa", "deploy/id_ed25519.pub", "server.pem", "tls.key", ".npmrc",
+                     "credentials.json", "app/.netrc"):
+            with self.subTest(name=name):
+                self.assertTrue(cr.is_standard_exclusion(name))
+        self.assertFalse(cr.is_standard_exclusion("keyboard.py"))
+        (self.repo / "server.pem").write_text("PRIVATE KEY BODY\n")
+        self.run_target("claude-code")
+        self.assertNotIn("PRIVATE KEY BODY", last_record(self)["stdin"])
+
+    def test_exclude_is_normalized_and_an_unmatched_one_fails(self):
+        for item in ("./new_module.py", str(self.repo / "new_module.py")):
+            with self.subTest(item=item):
+                self.run_target("claude-code", exclude=[item])
+                self.assertNotIn("untracked body", last_record(self)["stdin"])
+        runs = len(self.run_dirs())
+        for item in ("new_modul.py", "/elsewhere/x.py"):
+            with self.subTest(item=item):
+                with self.assertRaises(cr.CrossReviewError) as caught:
+                    self.run_target("claude-code", exclude=[item])
+                self.assertEqual(caught.exception.code, 2)
+        self.assertEqual(len(self.run_dirs()), runs)
+
+    def test_followup_exclusions_add_to_the_previous_ones(self):
+        (self.repo / "notes.md").write_text("private notes\n")
+        first = self.run_target("claude-code", exclude=["new_module.py"])
+        cr.run_review(None, self.repo, None, None, None, self.env, followup=first,
+                      dispositions=self.dispositions, exclude=["notes.md"])
+        stdin = last_record(self)["stdin"]
+        self.assertNotIn("untracked body", stdin)
+        self.assertNotIn("private notes", stdin)
+
+    def test_followup_states_the_new_round_ids(self):
+        first = self.run_target("claude-code")
+        cr.run_review(None, self.repo, None, None, None, self.env, followup=first,
+                      dispositions=self.dispositions)
+        stdin = last_record(self)["stdin"]
+        self.assertIn("Use finding IDs R2-<reviewer>-F<k>", stdin)
+        self.assertIn("belongs to round 1", stdin)
+
+    def test_followup_does_not_reuse_a_commit_pinned_range(self):
+        self.commit("work")
+        head = subprocess.run(["git", "-C", str(self.repo), "rev-parse", "HEAD"], check=True,
+                              stdout=subprocess.PIPE, text=True).stdout.strip()
+        first = self.run_target("codex", target=["range", "%s..%s" % (self.base, head)])
+        with self.assertRaises(cr.CrossReviewError) as caught:
+            cr.run_review(None, self.repo, None, None, None, self.env, followup=first,
+                          dispositions=self.dispositions)
+        self.assertEqual(caught.exception.code, 2)
+        symbolic = self.run_target("codex", target=["range", "%s..HEAD" % self.base])
+        cr.run_review(None, self.repo, None, None, None, self.env, followup=symbolic,
+                      dispositions=self.dispositions)
+
+    def test_rename_embeds_as_delete_and_add(self):
+        self.commit("work")
+        git("-C", str(self.repo), "mv", "app.py", "renamed.py")
+        self.run_target("claude-code")
+        stdin = last_record(self)["stdin"]
+        self.assertIn("deleted file mode", stdin)
+        self.assertIn("+++ b/renamed.py", stdin)
+
+    def test_status_needs_a_colon_and_whitespace(self):
+        spec = Path(self._tmp.name) / "status.md"
+        spec.write_text("Statuses are listed below.\n\nStatus: approved\n")
+        self.assertEqual(cr.compute_documents({"spec": str(spec)})["spec"]["status"],
+                         "approved")
+        spec.write_text("**Status:** draft\n")
+        self.assertEqual(cr.compute_documents({"spec": str(spec)})["spec"]["status"], "draft")
+
+    def test_standard_sections_drop_subsections_that_do_not_apply(self):
+        text = cr.standard_sections("implementation", "codex")
+        self.assertNotIn("### Re-review kind", text)
+        self.assertNotIn("### Document kind", text)
+        text = cr.standard_sections("plan", "codex")
+        self.assertIn("### Document kind", text)
+        self.assertNotIn("### Re-review kind", text)
 
 
 if __name__ == "__main__":

@@ -127,7 +127,11 @@ reviewer's reads leave this machine for another vendor's API.
 
 - Name selected and excluded paths; never print file contents or values while selecting.
 - Exclude `.env`, `.env.*`, credential files, private keys, and unrelated untracked files.
-  Keep gitignore rules; never read every untracked file automatically.
+  Keep gitignore rules. With `--target working-tree`, the runner takes every untracked file
+  that gitignore keeps, except its standard exclusions (env files, local overrides, key
+  and credential names such as `*.pem`, `id_rsa*`, `.npmrc`) and untracked symlinks, and
+  embeds it for a Claude or Antigravity reviewer: pass `--exclude` for every other
+  untracked file that is not part of the change.
 - Do not follow a symlink that resolves outside the repository.
 - Check the selected diff for secret-shaped values by pattern, reporting only path and line.
 - If material that may be sensitive is needed for a verdict, stop and agree the boundary
@@ -167,9 +171,10 @@ standard exclusions, and the fingerprint and appends them to the brief:
   change made from conversation requests;
 - `--target tree HEAD` - the whole tree.
 
-`--exclude <path>` (repeatable, a file or a directory) drops a path from the material, for
-example the user's untracked file that is not part of the change; the brief lists it as
-excluded. Never commit only to get a boundary the runner accepts.
+`--exclude <path>` (repeatable, a file or a directory, relative to the repository root or
+absolute inside it) drops a path from the material, for example the user's untracked file
+that is not part of the change; the brief lists it as excluded, and one that matches no
+path of the target is exit `2`. Never commit only to get a boundary the runner accepts.
 
 ### 4. Record the target fingerprint
 
@@ -214,8 +219,9 @@ The runner appends the rest, so never copy or embed it by hand:
   answer, exit `23`). Always pass `--mode`; the `run.log` header records it.
 - `--target range|working-tree` for a Claude or Antigravity reviewer, which may not run
   Git: the diff of the files in scope and the full content of each untracked file in
-  scope, standard exclusions and `--exclude` paths left out. Material over 4 MiB fails
-  with exit `2` instead of being truncated: narrow the agreed boundary or report failure.
+  scope, standard exclusions and `--exclude` paths left out. This diff and these files
+  over 4 MiB fail with exit `2` instead of being truncated: narrow the agreed boundary or
+  report failure.
 - `--plan` and `--spec`: their paths, hashes, and current `Status:` lines, and for a
   Claude or Antigravity reviewer the full content of each one stored outside the
   repository root, because its file reads cannot leave the repository.
@@ -318,8 +324,11 @@ Automatic rounds:
   start the next `cross-cr` round of the same mode yourself, without asking, up to
   and including round 3 of the same target. Each round is a fresh
   `run --followup <previous-run-dir> --dispositions <file>` without `--brief`: the runner
-  reuses the host part of the previous brief, its target, mode, and exclusions, and
-  rebuilds the diff, untracked files, hashes, and `Status:` lines from the current files.
+  reuses the host part of the previous brief, its target, mode, and exclusions (a new
+  `--exclude` adds to them), rebuilds the diff, untracked files, hashes, and `Status:`
+  lines from the current files, and states the new round's finding IDs. A previous target
+  pinned to a commit id (`range BASE..<sha>`, `tree <sha>`) is exit `2`: pass `--target`
+  with the head that holds the fixes.
   Pass a new `--brief` only when a fact the host wrote has changed (a requirement, the
   host evidence), written from the current files; never feed the previous round's
   `brief.md` back in. With several reviewers, each follows up on its own previous run,

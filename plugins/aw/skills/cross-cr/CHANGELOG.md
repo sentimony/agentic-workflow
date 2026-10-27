@@ -18,8 +18,9 @@
 - The runner builds the standard part of the brief: with `--mode` the cr-request
   reviewer instructions, result contract, severity, and lenses, plus the Antigravity
   tools line; for a Claude or Antigravity reviewer the diff, the untracked files, and
-  requirement documents outside the repository, with `--exclude` for unrelated paths
-  and an error instead of truncation over 4 MiB; the current `Status:` line of the spec
+  requirement documents outside the repository, never env, key, or credential files
+  or untracked symlinks, with `--exclude` for unrelated paths and an error instead of
+  truncation over 4 MiB; the current `Status:` line of the spec
   and plan.
 - A `--followup` round without `--brief` reuses the host part of the previous brief and
   its target, and rebuilds the diff, the untracked files, hashes, and statuses from the

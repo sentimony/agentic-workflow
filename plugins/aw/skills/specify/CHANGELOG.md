@@ -2,7 +2,7 @@
 
 ## [0.0.2] - 2026-10-27
 
-- Rename only: the plugin `awf` is now `aw`; the text changes only that name.
+- Rename only: the plugin `awf` is now `aw`; version bump only, the text is unchanged.
 
 ## [0.0.1] - 2026-10-22
 

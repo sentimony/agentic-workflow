@@ -475,10 +475,22 @@ def _paths(raw: bytes) -> list:
     return [os.fsdecode(item) for item in raw.split(b"\0") if item]
 
 
+# Key and credential file names that never enter a brief, besides env files and local
+# overrides; matched on the lowercased base name.
+_SECRET_NAMES = (".npmrc", ".netrc", ".pypirc", ".pgpass", "credentials",
+                 "credentials.json", "secrets.json", "secrets.yaml", "secrets.yml")
+_SECRET_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".jks", ".keystore", ".ppk")
+_SECRET_PREFIXES = ("id_rsa", "id_dsa", "id_ecdsa", "id_ed25519")
+
+
 def is_standard_exclusion(path: str) -> bool:
-    """True for paths the brief must never cover: env files and local overrides."""
+    """True for paths the brief must never cover: env files, local overrides, and key or
+    credential files."""
     name = path.rsplit("/", 1)[-1]
-    return name == ".env" or name.startswith(".env.") or ".local" in name
+    lower = name.lower()
+    return (name == ".env" or name.startswith(".env.") or ".local" in name
+            or lower in _SECRET_NAMES or lower.endswith(_SECRET_SUFFIXES)
+            or lower.startswith(_SECRET_PREFIXES))
 
 
 def parse_target(tokens) -> tuple:
@@ -505,6 +517,32 @@ def _excluded_by_user(path: str, exclude) -> bool:
     return any(path == item or path.startswith(item.rstrip("/") + "/") for item in exclude)
 
 
+def normalize_exclude(repo: Path, items) -> list:
+    """--exclude values as repository-relative paths: ./x, x/, and an absolute path inside
+    repo all name x. A path outside repo is invalid input."""
+    repo = Path(repo).resolve()
+    result = []
+    for item in items or ():
+        if not item:
+            continue
+        path = Path(item)
+        if path.is_absolute():
+            try:
+                path = path.resolve().relative_to(repo)
+            except ValueError:
+                raise CrossReviewError(EXIT_INVALID_INPUT,
+                                       "--exclude %s is outside the repository" % item)
+        text = path.as_posix().strip("/")
+        while text.startswith("./"):
+            text = text[2:]
+        if text in ("", "."):
+            raise CrossReviewError(EXIT_INVALID_INPUT,
+                                   "--exclude %s names the whole repository" % item)
+        if text not in result:
+            result.append(text)
+    return result
+
+
 def compute_target(repo: Path, kind: str, ref: Optional[str], exclude=()) -> dict:
     """File list, standard exclusions, and fingerprint of a review target.
 
@@ -522,7 +560,8 @@ def compute_target(repo: Path, kind: str, ref: Optional[str], exclude=()) -> dic
     if kind == "range":
         base_ref, head_ref = ref.split("..")
         base, head = _commit(repo, base_ref), _commit(repo, head_ref)
-        files = _paths(_git_bytes(repo, "diff", "--name-only", "-z", base, head, "--"))
+        files = _paths(_git_bytes(repo, "diff", "--name-only", "--no-renames", "-z", base,
+                                  head, "--"))
         diff = _git_bytes(repo, "diff", "--binary", base, head, "--")
         info.update(base=base, head=head, diff_sha256=hashlib.sha256(diff).hexdigest())
     elif kind == "tree":
@@ -533,7 +572,8 @@ def compute_target(repo: Path, kind: str, ref: Optional[str], exclude=()) -> dic
     else:
         head = _commit(repo, "HEAD")
         base = _commit(repo, ref) if ref else head
-        files = _paths(_git_bytes(repo, "diff", "--name-only", "-z", base, "--"))
+        files = _paths(_git_bytes(repo, "diff", "--name-only", "--no-renames", "-z", base,
+                                  "--"))
         diff = _git_bytes(repo, "diff", "--binary", base, "--")
         if ref:
             info["base"] = base
@@ -541,7 +581,9 @@ def compute_target(repo: Path, kind: str, ref: Optional[str], exclude=()) -> dic
         for path in _paths(_git_bytes(repo, "ls-files", "--others", "--exclude-standard",
                                       "-z")):
             full = repo / path
-            if full.is_symlink() and repo not in full.resolve().parents:
+            # An untracked symlink can point at an excluded file inside the repository
+            # too; it is never read.
+            if full.is_symlink():
                 untracked_hashes[path] = None
                 continue
             try:
@@ -606,9 +648,10 @@ def embed_material(repo: Path, info: Mapping) -> str:
         revs = [info.get("base") or info["head"]]
     diff = ""
     if tracked:
-        diff = os.fsdecode(_git_bytes(
-            repo, "diff", "--no-ext-diff", "--no-textconv", *revs, "--",
-            *[":(literal)" + path for path in tracked]))
+        # Not UTF-8 text stays readable as replacement characters instead of failing.
+        diff = _git_bytes(
+            repo, "diff", "--no-ext-diff", "--no-textconv", "--no-renames", *revs, "--",
+            *[":(literal)" + path for path in tracked]).decode("utf-8", "replace")
     lines = ["", "## Embedded material (added by the cross-cr runner)", "",
              "You cannot run Git here: this is the complete selected material of the target",
              "above. Git and test commands in the instructions yield to it.", "",
@@ -636,7 +679,7 @@ def embed_material(repo: Path, info: Mapping) -> str:
 
 
 DOCUMENT_KINDS = ("spec", "plan")
-_STATUS_RE = re.compile(r"^\**Status:?\**:?[ \t]*(\S.*?)[ \t]*$", re.M)
+_STATUS_RE = re.compile(r"^\**Status(?::\**|\**:)[ \t]+(\S.*?)[ \t]*$", re.M)
 
 
 def compute_documents(paths: Mapping[str, Optional[str]]) -> dict:
@@ -705,6 +748,16 @@ def _markdown_sections(text: str, names) -> list:
     return ["\n".join(found[name]).rstrip() for name in names if name in found]
 
 
+def _drop_subsections(section: str, headings) -> str:
+    kept, skip = [], False
+    for line in section.splitlines():
+        if line.startswith("### "):
+            skip = line.strip() in headings
+        if not skip:
+            kept.append(line)
+    return "\n".join(kept).rstrip()
+
+
 AGY_TOOLS_LINE = ("Use only your file read and search tools. agy denies any command or "
                   "file write and then ends the turn without an answer.")
 
@@ -720,6 +773,11 @@ def standard_sections(mode: str, reviewer: str) -> str:
         raise CrossReviewError(EXIT_INVALID_INPUT,
                                "dependency unavailable: cr-request (%s)" % exc)
     parts = _markdown_sections(brief, ("Reviewer instructions", "Result contract", "Severity"))
+    if len(parts) == 3:
+        # Re-review kind conflicts with the runner's follow-up section, and Document kind
+        # applies only to a plan.
+        dropped = ("### Re-review kind",) + (("### Document kind",) if mode != "plan" else ())
+        parts[0] = _drop_subsections(parts[0], dropped)
     if len(parts) != 3:
         raise CrossReviewError(EXIT_INVALID_INPUT,
                                "dependency unavailable: cr-request brief.md sections")
@@ -753,7 +811,10 @@ def _previous_documents(meta: Mapping) -> dict:
 FOLLOWUP_SECTION = """
 ## Previous round
 
-This is review round {round} of the same target. Below are the previous round's review
+This is review round {round} of the same target. Use finding IDs R{round}-<reviewer>-F<k>
+for new findings and keep the previous IDs. A round number, finding ID prefix, or Tree
+stated earlier in this brief belongs to round {previous_round}; the target section the
+runner computed above is the current target. Below are the previous round's review
 and the host's disposition of each finding. For every previous finding, state its status
 on the current target: ADDRESSED or NOT ADDRESSED, with evidence; a partial fix is NOT
 ADDRESSED. A finding the host rejected stays closed unless you bring evidence its ruling
@@ -1410,6 +1471,15 @@ def _load_run_header(run_dir: Path, code: int = EXIT_NO_SESSION, verb: str = "re
     return meta
 
 
+def _pinned_target(tokens) -> bool:
+    """True when a target names its head by a full commit id, which a follow-up round
+    cannot reuse: the fixes since then would be outside it."""
+    if len(tokens) < 2:
+        return False
+    head = tokens[1].split("..")[-1] if tokens[0] == "range" else tokens[1]
+    return tokens[0] != "working-tree" and bool(re.fullmatch(r"[0-9a-fA-F]{40,64}", head))
+
+
 def _previous_host_brief(run_dir: Path, meta: Mapping) -> bytes:
     """The host-written part of a previous run's brief, without the runner's sections."""
     size = meta.get("host_brief_bytes")
@@ -1743,7 +1813,7 @@ def run_review(reviewer: Optional[str], repo: Path, brief: Path, model: Optional
     """
     ensure_not_nested(env)
     pass_env = validate_pass_env(pass_env)
-    previous_meta, round_no = None, 1
+    previous_meta, round_no, inherited = None, 1, []
     if (followup is None) != (dispositions is None):
         raise CrossReviewError(EXIT_INVALID_INPUT,
                                "--followup and --dispositions go together")
@@ -1762,10 +1832,17 @@ def run_review(reviewer: Optional[str], repo: Path, brief: Path, model: Optional
                 target = [previous_target["kind"]]
                 if isinstance(previous_target.get("ref"), str):
                     target.append(previous_target["ref"])
+                if _pinned_target(target):
+                    raise CrossReviewError(
+                        EXIT_INVALID_INPUT,
+                        "the previous target %s is pinned to a commit; pass --target for "
+                        "this round" % " ".join(target))
         if mode is None and previous_meta.get("mode") in MODES:
             mode = previous_meta["mode"]
-        if not exclude and isinstance(previous_meta.get("exclude"), list):
-            exclude = [item for item in previous_meta["exclude"] if isinstance(item, str)]
+        if isinstance(previous_meta.get("exclude"), list):
+            inherited = [item for item in previous_meta["exclude"] if isinstance(item, str)]
+        else:
+            inherited = []
     if reviewer is None:
         raise CrossReviewError(EXIT_INVALID_INPUT, "--agent is required")
     reviewer = FAMILIES.get(reviewer, reviewer)
@@ -1791,13 +1868,20 @@ def run_review(reviewer: Optional[str], repo: Path, brief: Path, model: Optional
     extra = {"host_brief_bytes": len(brief_data)}
     if mode is not None:
         extra["mode"] = mode
-    exclude = [item for item in (exclude or ()) if item]
+    given = normalize_exclude(repo, exclude)
+    exclude = inherited + [item for item in given if item not in inherited]
     if exclude:
         extra["exclude"] = exclude
     embed = reviewer in EMBED_REVIEWERS
     material = ""
     if kind_ref is not None:
         info = compute_target(repo, *kind_ref, exclude=exclude)
+        # A new exclusion that matches nothing is a typo, and the file it meant would be
+        # sent: fail instead.
+        for item in given:
+            if not any(_excluded_by_user(path, [item]) for path in info["excluded"]):
+                raise CrossReviewError(EXIT_INVALID_INPUT,
+                                       "--exclude %s matches no path of the target" % item)
         brief_data += format_target(repo, info).encode("utf-8")
         if embed and info["kind"] != "tree":
             material = embed_material(repo, info)

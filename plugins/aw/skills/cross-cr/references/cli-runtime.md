@@ -113,10 +113,16 @@ fingerprint.
 | `working-tree` | tracked changes against `HEAD` plus untracked files that gitignore keeps | `HEAD`, a SHA-256 of `git diff --binary HEAD`, and a SHA-256 per untracked file |
 | `working-tree BASE` | `git diff BASE` (committed, staged, and unstaged) plus untracked files that gitignore keeps | `BASE`, `HEAD`, a SHA-256 of `git diff --binary BASE`, and a SHA-256 per untracked file |
 
-Standard exclusions: `.env`, `.env.*`, any name containing `.local`, and untracked
-symlinks that leave the repository or files that cannot be read. `--exclude <path>`
-(repeatable) adds a file, or a directory with everything under it, and the `run.log`
-header records the list. Gitignored files never
+Standard exclusions: `.env`, `.env.*`, any name containing `.local`, untracked files
+that cannot be read, key and credential names (`*.pem`, `*.key`, `*.p12`,
+`*.pfx`, `*.jks`, `*.keystore`, `*.ppk`, `id_rsa*`, `id_dsa*`, `id_ecdsa*`, `id_ed25519*`,
+`.npmrc`, `.netrc`, `.pypirc`, `.pgpass`, `credentials`, `credentials.json`,
+`secrets.json`, `secrets.yaml`, `secrets.yml`), and every untracked symlink, which the
+runner never follows. `--exclude <path>` (repeatable) adds a file, or a directory with
+everything under it, relative to the repository root or absolute inside it; one that
+matches no path of the target, or lies outside the repository, is exit 2. The `run.log`
+header records the list. File lists and the embedded diff use `--no-renames`, so a
+rename shows as a deletion and an addition. Gitignored files never
 enter the list. A revision that does not resolve to a commit, or one that starts with `-`,
 is invalid input. The target summary without the file list, plus a `fingerprint` hash of
 the whole computed target, goes into the `run.log` header.
@@ -127,13 +133,16 @@ For a `claude-code` or `antigravity` reviewer, a `range` or `working-tree` targe
 appends an `Embedded material` section: `git diff --no-ext-diff --no-textconv` of the
 tracked files in scope (never the excluded ones) and the full content of each untracked
 file in scope, each in a fence longer than any backtick run inside it. An untracked file
-that is not UTF-8 is listed as a gap instead. Material over 4 MiB (`MAX_EMBED_BYTES`) is
+that is not UTF-8 is listed as a gap instead; a tracked diff that is not UTF-8 is shown
+with replacement characters. This diff and these files over 4 MiB (`MAX_EMBED_BYTES`) are
 exit 2 before any run directory exists; nothing is truncated. A Codex reviewer runs Git
 itself and gets the file list only.
 
 `--mode plan|implementation` appends the `Reviewer instructions`, `Result contract`
 (without its closing-line rules for the host), and `Severity` sections of the installed
-cr-request `references/brief.md`, plus the `Intent`, `System`, and `Craft` sections of its
+cr-request `references/brief.md` (without `Re-review kind`, which the follow-up section
+replaces, and with `Document kind` in `plan` mode only), plus the `Intent`, `System`, and
+`Craft` sections of its
 `references/lenses.md` in `implementation` mode, and for `antigravity` the line that limits
 it to file read and search tools. cr-request is read from the skills directory that holds
 `cross-cr`; when it is missing, the run is exit 2 with `dependency unavailable:
@@ -154,12 +163,16 @@ round's paths, and a new flag replaces its path. An unreadable file is invalid i
 `--followup <previous-run-dir> --dispositions <file>` starts a fresh session, not a resume:
 the new round reviews the current target from scratch. Without `--brief`, the runner takes
 the host part of the previous `brief.md` (its length is `host_brief_bytes` in the header);
-without `--target`, `--mode`, or `--exclude`, the previous values. It then rebuilds every
+without `--target` or `--mode`, the previous values, and a new `--exclude` adds to the
+previous list. A previous `range` or `tree` target whose head is a full commit id is exit 2
+without `--target`, because the fixes since then lie outside it. It then rebuilds every
 section it adds from the current files, so the embedded diff, the untracked files, the
 hashes, and the `Status:` lines are those of the new round. The runner reads the previous
 run's header and `review.md` (both must be private files of a private run directory),
 appends the previous review and the host's dispositions to the brief, and asks for a
-status of every previous finding: resolved, partially resolved, or not resolved. The round
+status of every previous finding: `ADDRESSED` or `NOT ADDRESSED`. It also states the new
+round's finding IDs and that a round, ID prefix, or `Tree` in the host part belongs to the
+previous round. The round
 number is the previous one plus one. When the target and documents match the previous
 round's header, the runner prints `cross-review: target and documents unchanged since
 round N` on stderr and still runs. Both flags go together, and an unreadable previous

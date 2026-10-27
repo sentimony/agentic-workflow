@@ -35,6 +35,9 @@ orchestrator skill.
 specify -> plan-craft -> implement -> verify -> cr-request -> cr-received -> verify -> finalize -> session-learnings
 ```
 
+`cross-cr` is outside the chain: it runs only on request, next to or in place of the
+`cr-request` step, and hands its findings to `cr-received`.
+
 ## Install
 
 0.0.8 renames the plugin to `aw`: uninstall the old plugin, then install `aw`.

@@ -23,7 +23,7 @@ if [ "$gitdir" = "$common" ]; then
   root=$(git -C "$dir" rev-parse --show-toplevel)
 else
   first=$(git -C "$dir" worktree list --porcelain | sed -n '1s/^worktree //p')
-  root=$(git -C "$first" rev-parse --show-toplevel 2>/dev/null)
+  [ -n "$first" ] && root=$(git -C "$first" rev-parse --show-toplevel 2>/dev/null)
 fi
 echo "${root:-no main checkout}"
 ```

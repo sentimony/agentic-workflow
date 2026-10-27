@@ -147,10 +147,10 @@ In the root, make sure, each item only when missing (recipe and file contents:
 When the root checkout holds someone else's work - uncommitted changes to tracked files
 this session did not make, a branch other than the default one that this session did not
 work on, a detached HEAD, or an operation in progress - touch no tracked file: ignore the
-folder through the local exclude file (`git rev-parse --git-path info/exclude`) instead of
-`.gitignore`, add no pointer,
-create no root file, and report the notes as not wired until a triage or the owner of that
-branch adds the pointer. A tracked edit there would land in the other session's commit.
+folder through the local exclude file (`git -C <root> rev-parse --path-format=absolute
+--git-path info/exclude`) instead of `.gitignore`, add no pointer, create no root file,
+and report the notes as not wired until a triage or the owner of that branch adds the
+pointer. A tracked edit there would land in the other session's commit.
 
 These setup edits, and the notes themselves when the folder is already tracked, are the
 only tracked changes the skill makes when recording. Never stage or commit them on your

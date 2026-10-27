@@ -84,6 +84,9 @@ Work in this order.
    git checkout -- '<plan-path>'
    ```
 
+   A plan that `HEAD` does not track is moved aside instead (`mv '<plan-path>' "$saved"`):
+   `git checkout` has no version to restore it to.
+
 2. Bring the base up to date and move this worktree onto it:
 
    ```sh

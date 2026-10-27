@@ -51,8 +51,8 @@ Shared with `specify`, `implement`, and `cr-received`:
 
 - a draft spec is never planned around as `Spec: none`;
 - a material change to an approved spec (a decision, behavior, contract, or criterion;
-  not a typo) sets `Status: draft` again, and the work it affects pauses until a new
-  explicit yes;
+  not a typo) sets `Status: draft` again, including a revision this skill sends back to
+  `specify`, and the work it affects pauses until a new explicit yes;
 - no skill approves or replaces a spec on the user's behalf.
 
 This skill never edits an approved spec's content, not even a section it judges minor

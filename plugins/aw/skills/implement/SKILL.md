@@ -128,8 +128,8 @@ Shared with `specify`, `plan-craft`, and `cr-received`:
 
 - a draft spec is never planned around as `Spec: none`;
 - a material change to an approved spec (a decision, behavior, contract, or criterion;
-  not a typo) sets `Status: draft` again, and the work it affects pauses until a new
-  explicit yes;
+  not a typo) sets `Status: draft` again, including a revision this skill sends back to
+  `specify`, and the work it affects pauses until a new explicit yes;
 - no skill approves or replaces a spec on the user's behalf.
 
 A plan whose `Spec` names a file with `Status: draft` does not start: stop before the
@@ -175,8 +175,8 @@ subagent result, and resolves any overlap before starting the next wave.
 ## Step 8. Report
 
 End with: the tasks and their states with evidence, rulings made (and any awaiting a
-decision), a spec sent back to `draft` and why, deferred items, and checks not run with the reason. The last line
-follows the table:
+decision), a spec sent back to `draft` and why, deferred items, and checks not run with
+the reason. The last line follows the table; the first matching row wins:
 
 | Condition | Last line |
 | --- | --- |

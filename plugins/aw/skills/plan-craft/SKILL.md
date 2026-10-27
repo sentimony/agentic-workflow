@@ -86,10 +86,14 @@ applies wins:
 - a revision after spec re-approval (the plan's spec went back to draft and is now
   approved again), whether the plan is finished or not: edit this plan in place, never
   a new file. Update `Global constraints` and the task sections the spec change
-  touches, and add the delta as new `Task <n>: pending` lines with new numbers after
-  the last task. Never edit a record line: a task already `done` keeps its line and its
-  change becomes a new task, and a task `blocked - conflicting intent` keeps its line;
-  `implement` returns it to `pending` on resume (its `references/journal.md`, Resume).
+  touches. Then append to the record, at its end right before the closing fence, the
+  marker line `Ruling: plan revised after spec re-approval - <spec path>`
+  followed by the delta as new `Task <n>: pending` lines with new numbers. These are the
+  only record lines plan-craft writes, and it never edits an existing one: a task
+  already `done` keeps its line and its change becomes a new task, and a task
+  `blocked - conflicting intent` keeps its line; `implement` returns it to `pending` on
+  resume (its `references/journal.md`, Resume). `verify` counts only the code reviews
+  after the last marker, so the delta gets its own review.
   Then rerun step 6 on the whole plan; `Execution` keeps its value;
 - no plan, or the existing one is finished (every `Task` line `done`): write a new file;
 - an unfinished record (any task not `done`, even with `Base: unset`): never replace that

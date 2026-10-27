@@ -29,7 +29,12 @@ Round <loop> <n>: <cause>
 
 `implement` writes `Base`, `Root`, `Branch`, `Initial dirty state`, `Task`, `Ruling`,
 `Deferred`, and its own `Round` lines. `Verify`, `Review`, `Finding`, and `Received`
-belong to other skills; read them, never write them.
+belong to other skills; read them, never write them. `plan-craft` writes record lines
+only when it revises the plan in place after the spec is approved again: the marker
+`Ruling: plan revised after spec re-approval - <spec path>` and the new
+`Task <n>: pending` delta lines after it, appended at the end of the record right before
+the closing fence like every new line. `verify` counts only the code reviews after the
+last marker.
 
 - **Start.** `plan-craft` leaves the placeholder `Base: unset`, meaning execution has not
   begun. Fill that placeholder line with the real values (it is a placeholder, like a

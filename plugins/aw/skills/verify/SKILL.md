@@ -163,6 +163,12 @@ implementation review yet: when the journal has no code review after `Base`, the
 row is the first one, whatever document reviews it holds. Step 3 still reads every round,
 document ones included, for open blockers.
 
+When the journal holds the marker line
+`Ruling: plan revised after spec re-approval - <spec path>` (written by `plan-craft`
+when it revises the plan in place after the spec is approved again), only the code `Review`, `Finding`, and `Received` lines after the last marker
+count in this table, and "after `Base`" reads "after the last marker": with no code
+review after it, the `PASS` row is the first one, `cr-request`.
+
 | Condition | Next step |
 | --- | --- |
 | `PASS`, no code review line in the journal after `Base` | `cr-request` (code mode) |

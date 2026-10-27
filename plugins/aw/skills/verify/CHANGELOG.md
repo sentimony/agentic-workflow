@@ -2,6 +2,9 @@
 
 ## [0.0.3] - 2026-10-27
 
+- The `Next step` table counts only the code `Review`, `Finding`, and `Received` lines
+  after the last `Ruling: plan revised after spec re-approval` marker; with no code
+  review after it, the next step is `cr-request` (review R3-F1 on PR #14).
 - The time in the `Verify` line comes from `date '+%Y-%m-%d %H:%M'` right after the
   re-pin, never from memory (request 20261026-1911).
 - The `Next step` table counts only `Review` lines in `code` mode, or `re-review` after a

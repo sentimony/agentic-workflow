@@ -2,6 +2,10 @@
 
 ## [0.0.3] - 2026-10-27
 
+- The revision after spec re-approval appends the marker
+  `Ruling: plan revised after spec re-approval - <spec path>` and then the delta tasks,
+  at the end of the record before the closing fence; these are the only record lines
+  plan-craft writes (review R3-F1, F2 on PR #14).
 - The revision after spec re-approval comes first in step 3 and applies to a finished
   plan too; it adds delta tasks with new numbers and never edits a record line, and a
   blocked task is returned to `pending` by `implement` (review R2-F1, F3 on PR #14).

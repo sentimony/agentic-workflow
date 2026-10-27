@@ -2,6 +2,9 @@
 
 ## [0.0.3] - 2026-10-27
 
+- The journal names the record lines `plan-craft` writes on a revision after spec
+  re-approval (the marker and the delta tasks) and where they go (review R3-F1, F2 on
+  PR #14).
 - The spec's `Status` is checked in Step 1, before `Base` is written; a resume against a
   draft spec with no marked task stops too. On resume, a `blocked - conflicting intent`
   task whose spec is approved again goes back to `pending` (journal Resume rule), so

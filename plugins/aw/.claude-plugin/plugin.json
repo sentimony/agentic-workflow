@@ -27,6 +27,7 @@
     "./skills/verify",
     "./skills/cr-request",
     "./skills/cr-received",
+    "./skills/cross-cr",
     "./skills/finalize",
     "./skills/session-learnings"
   ]

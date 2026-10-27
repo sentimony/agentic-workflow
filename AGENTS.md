@@ -48,9 +48,12 @@
   no orchestrator skill.
 - aw skills replace their sentimony/skills devflow counterparts (scope-triage,
   plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
-  review-request, review-resolution): a description opens with `You MUST use this when`,
-  as devflow's do, and names the skill it replaces. README Install keeps review-request and
-  review-resolution installed while devflow `cross-review` depends on them.
+  review-request, review-resolution, cross-review): a description opens with
+  `You MUST use this when`, as devflow's do, and names the skill it replaces.
+- `cross-cr` reads `cr-request` references (`brief.md`, `target.md`, `tree-fingerprint.md`,
+  `lenses.md`) by name, and its runner extracts the `Reviewer instructions`,
+  `Result contract`, and `Severity` sections of `brief.md` and the `Intent`, `System`, and
+  `Craft` sections of `lenses.md` by heading: renaming one breaks its briefs.
 - License: MIT, Ihor Orlovskyi.
 - Branches: `YYMMDD-dev-session`, squash-merged into `main` via PR.
 - English only, plain hyphen.

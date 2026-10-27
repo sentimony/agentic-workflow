@@ -9,7 +9,7 @@ Version: `v0.0.8`
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [aw](plugins/aw) | 0.0.8 | specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
+| [aw](plugins/aw) | 0.0.8 | specify, plan-craft, implement, verify, cr-request, cr-received, cross-cr, finalize, session-learnings |
 
 ## Skills
 
@@ -21,6 +21,7 @@ Version: `v0.0.8`
 | [verify](plugins/aw/skills/verify/SKILL.md) | 0.0.2 | `/aw:verify` | Check every completion claim with fresh evidence bound to the exact tree fingerprint and return PASS, FAIL, INCOMPLETE, or BLOCKED. |
 | [cr-request](plugins/aw/skills/cr-request/SKILL.md) | 0.0.7 | `/aw:cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer that returns Intent, System, and Craft verdicts with evidence-backed findings. |
 | [cr-received](plugins/aw/skills/cr-received/SKILL.md) | 0.0.3 | `/aw:cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
+| [cross-cr](plugins/aw/skills/cross-cr/SKILL.md) | 0.0.1 | `/aw:cross-cr` | Hand a plan or a finished change to other agent CLIs (by default the opposite CLI, more by name) for a read-only review in the cr-request contract, then pass the findings to cr-received. |
 | [finalize](plugins/aw/skills/finalize/SKILL.md) | 0.0.2 | `/aw:finalize` | Integrate verified work safely: merge, pull request, squash, keep, discard, or pause, with cleanup behind explicit confirmation. |
 | [session-learnings](plugins/aw/skills/session-learnings/SKILL.md) | 0.0.4 | `/aw:session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 
@@ -42,9 +43,8 @@ specify -> plan-craft -> implement -> verify -> cr-request -> cr-received -> ver
 
 aw replaces these sentimony/skills devflow skills; remove them from a workspace that
 installs aw, or they intercept the same requests: `scope-triage`, `plan-crafting`,
-`inline-plan-dev`, `subagent-plan-dev`, `verification-gate`, `branch-finish`. Keep
-`review-request` and `review-resolution` for now: devflow `cross-review` reads its brief
-from the first and hands findings to the second.
+`inline-plan-dev`, `subagent-plan-dev`, `verification-gate`, `branch-finish`,
+`review-request`, `review-resolution`, and `cross-review`, which `cross-cr` replaces.
 
 Claude Code:
 
@@ -63,5 +63,5 @@ codex plugin add aw@agentic-workflow
 Any agent through [skills](https://github.com/vercel-labs/skills):
 
 ```bash
-npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify cr-request cr-received finalize session-learnings -a codex claude-code -y
+npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify cr-request cr-received cross-cr finalize session-learnings -a codex claude-code -y
 ```

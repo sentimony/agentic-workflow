@@ -4,14 +4,14 @@
 
 - Description drops how the notes are linked and what each note carries; the body still
   covers both.
-- The notes root is the main checkout of the repository the work happened in
-  (`--git-common-dir` of the worktree, or the clone from the brief), not the working
-  directory of the process, so a subagent that worked in a worktree of another
-  repository writes there. A note about a further repository goes into its notes when
-  that folder already exists.
-- In a checkout with someone else's uncommitted changes or on someone else's branch,
-  setup changes no tracked file: the folder is ignored through `.git/info/exclude`, no
-  pointer is added, and the report says the notes are not wired.
+- The notes root is the main checkout of the repository the work happened in (the first
+  entry of `git worktree list`, or the clone from the brief), not the working directory of
+  the process, so a subagent that worked in a worktree of another repository writes there.
+  A note about a further repository goes into its notes when that folder already exists.
+- In a checkout with someone else's uncommitted changes, on someone else's branch, on a
+  detached HEAD, or mid-operation, setup changes no tracked file: the folder is ignored
+  through `.git/info/exclude`, no pointer is added, and the report says the notes are not
+  wired.
 - The report names the chosen root, how the folder is ignored, and whether the notes are
   wired, and its last line before `Next step` is `Learnings: <n> -> <file>`.
 - Notes and setup lines are written with the file edit or write tool, never a shell

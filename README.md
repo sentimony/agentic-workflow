@@ -22,7 +22,7 @@ Version: `v0.0.7`
 | [cr-request](plugins/awf/skills/cr-request/SKILL.md) | 0.0.6 | `/awf:cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer that returns Intent, System, and Craft verdicts with evidence-backed findings. |
 | [cr-received](plugins/awf/skills/cr-received/SKILL.md) | 0.0.2 | `/awf:cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
 | [finalize](plugins/awf/skills/finalize/SKILL.md) | 0.0.1 | `/awf:finalize` | Integrate verified work safely: merge, pull request, squash, keep, discard, or pause, with cleanup behind explicit confirmation. |
-| [session-learnings](plugins/awf/skills/session-learnings/SKILL.md) | 0.0.3 | `/awf:session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes linked from the root instruction file, then triage them into the right instruction file after approval. |
+| [session-learnings](plugins/awf/skills/session-learnings/SKILL.md) | 0.0.3 | `/awf:session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 
 ## Workflow
 

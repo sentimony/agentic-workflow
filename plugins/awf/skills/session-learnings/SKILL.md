@@ -123,13 +123,13 @@ so in `Check` and loses a confidence level.
 ## 8. Set up the notes folder
 
 The root is the main checkout of the repository the work happened in, not the working
-directory of the process: a subagent often starts in one repository and does all its
-work in a worktree of another. When the work ran in a linked worktree, the root is that
-worktree's main checkout (`--git-common-dir`; after the worktree was removed, the clone
-named in the brief). When the work spanned several repositories, the root is the one
-that holds most of it; a note about another of them goes into that repository's notes
-when its notes folder already exists, otherwise into the root's notes with `Target`
-naming it. Recipe: [notes](references/notes.md).
+directory of the process: a subagent often starts in one repository and does all its work
+in a worktree of another. When the work ran in a linked worktree, the root is that
+worktree's main checkout (`git worktree list`; for a bare repository or after the worktree
+was removed, the clone named in the brief). When the work spanned several repositories,
+the root is the one that holds most of it; a note about another of them goes into that
+repository's notes when its notes folder already exists, otherwise into the root's notes
+with `Target` naming it. Recipe: [notes](references/notes.md).
 
 In the root, make sure, each item only when missing (recipe and file contents:
 [notes](references/notes.md)):
@@ -144,11 +144,11 @@ In the root, make sure, each item only when missing (recipe and file contents:
   `@docs/session-learnings/CLAUDE.md`. A missing root file is created.
 
 When the root checkout holds someone else's work - uncommitted changes to tracked files
-this session did not make, or a branch other than the default one that this session did
-not work on - touch no tracked file: ignore the folder through the local
-`.git/info/exclude` instead of `.gitignore`, add no pointer, create no root file, and
-report the notes as not wired until a triage or the owner of that branch adds the
-pointer. A tracked edit there would land in the other session's commit.
+this session did not make, a branch other than the default one that this session did not
+work on, a detached HEAD, or an operation in progress - touch no tracked file: ignore the
+folder through the local `.git/info/exclude` instead of `.gitignore`, add no pointer,
+create no root file, and report the notes as not wired until a triage or the owner of that
+branch adds the pointer. A tracked edit there would land in the other session's commit.
 
 These setup edits, and the notes themselves when the folder is already tracked, are the
 only tracked changes the skill makes when recording. Never stage or commit them on your
@@ -172,12 +172,18 @@ When nothing qualifies, say so. Name the root and why it was chosen (working dir
 main checkout of a worktree, or the clone from the brief). List the notes written (rule,
 target, rung, confidence), the candidates dropped with the reason, and the setup edits
 made, marked as uncommitted tracked changes. Say how the folder is ignored (`.gitignore`,
-`.git/info/exclude`, or tracked) and whether the notes are wired; not wired means the
-next session will not load them. When the project limits the size of its instruction
-files, give the number, say that the notes count toward it when the host imports them
-(Claude Code), and whether a triage is due. The last line before `Next step` is
-`Learnings: <n> -> <absolute path of the notes file>` (several files separated by
-commas; `none` when nothing was written). The report marks the boundary for a repeat run.
+`.git/info/exclude`, or tracked) and whether the notes are wired; not wired means the next
+session will not load them. When the project limits the size of its instruction files,
+give the number, say that the notes count toward it when the host imports them (Claude
+Code), and whether a triage is due. The report marks the boundary for a repeat run. Its
+last line before `Next step` is, with the absolute path of the notes file (several files
+separated by commas):
+
+```text
+Learnings: <n> -> <file>
+```
+
+When nothing was written, that line is `Learnings: 0 -> none`.
 
 ## Triage the notes
 

@@ -13,18 +13,29 @@ moves each note to its real place.
 The root is the main checkout of the repository the work happened in: where this session
 edited files and committed, not the working directory the process started in. Take
 `<dir>` from a file the session changed (a linked worktree, if it still exists, or the
-main checkout itself) and run:
+main checkout itself) and run it with `bash -s -- <dir>`:
 
 ```bash
-dirname "$(git -C <dir> rev-parse --path-format=absolute --git-common-dir)"
+dir=$1
+gitdir=$(git -C "$dir" rev-parse --path-format=absolute --git-dir)
+common=$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir)
+if [ "$gitdir" = "$common" ]; then
+  root=$(git -C "$dir" rev-parse --show-toplevel)
+else
+  root=$(git -C "$dir" worktree list --porcelain | sed -n '1s/^worktree //p')
+  [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ] || root=
+fi
+echo "${root:-no main checkout}"
 ```
 
-From a linked worktree this prints its main checkout; from a main checkout, the checkout
-itself (plain `--git-common-dir` there prints a relative `.git`, hence the flag). When
-the worktree was already removed, use the clone named in the brief or the one the
-worktree path was created from, and say so in the report. When the session changed no
-files, use the repository of the working directory. Outside a Git repository, use the
-working directory and skip the ignore step, saying so in the report.
+A main checkout prints itself, a linked worktree prints its main checkout (the first entry
+of `git worktree list`), also for a submodule or a clone with a separate Git directory. A
+worktree of a bare repository, or one whose first entry is not a checkout, prints `no main
+checkout`: then use the clone named in the brief, or else the worktree itself, and say so
+in the report. When the worktree was already removed, use the clone named in the brief or
+the one the worktree path was created from, and say so. When the session changed no files,
+use the repository of the working directory. Outside a Git repository, use the working
+directory and skip the ignore step, saying so in the report.
 
 When the work spanned several repositories, the root is the one holding most of it. A
 note about another of them goes into that repository's `docs/session-learnings/AGENTS.md`
@@ -54,10 +65,12 @@ git -C <root> branch --show-current
 git -C <root> symbolic-ref --short refs/remotes/origin/HEAD
 ```
 
-Changes listed by the first command that this session did not make, or a current branch
-that is neither the default branch (the third command without `origin/`; when it
-fails, `main` or `master`, whichever exists) nor one this session worked on, mean the checkout is someone else's. Then use the local variant below
-instead of steps 1 and 4.
+The checkout is someone else's when the first command lists changes this session did not
+make, or the current branch is neither the default branch (the third command without
+`origin/`; when it fails, `main` or `master`, whichever exists) nor one this session
+worked on. A detached HEAD (the second command prints nothing) or a merge, rebase, or
+cherry-pick in progress counts too, unless this session caused it. Then use the local
+variant below instead of steps 1 and 4.
 
 1. `.gitignore`: when `git check-ignore -q docs/session-learnings/AGENTS.md` fails, append
    the line `docs/session-learnings/` to the root `.gitignore` (create it when missing).
@@ -99,7 +112,9 @@ instead of steps 1 and 4.
 
 ### Local variant: a checkout that holds someone else's work
 
-No tracked file changes, so nothing lands in the other session's commit:
+No tracked file changes, so nothing lands in the other session's commit. When
+`docs/session-learnings/` is already tracked there, write no notes: put them in the
+report in full, say they were not written and why, and end with `Learnings: 0 -> none`.
 
 1. Ignore: when `git check-ignore -q docs/session-learnings/AGENTS.md` fails, append the
    line `docs/session-learnings/` to the file `git rev-parse --git-path info/exclude`
@@ -110,7 +125,8 @@ No tracked file changes, so nothing lands in the other session's commit:
    the notes are not wired: the next session will not load them until a triage or the
    owner of the branch adds the pointer.
 
-Check: `git status --porcelain --untracked-files=no` prints the same before and after.
+Check: `git status --porcelain --untracked-files=no` prints the same before and after,
+and `git -C <root> status --porcelain -- docs/session-learnings` prints nothing.
 
 ## Note shape
 

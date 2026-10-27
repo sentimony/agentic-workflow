@@ -19,8 +19,8 @@
 - After a context compaction, quotes come from the session transcript (Claude Code JSONL
   or Codex thread), read with a script; the compaction summary is quoted only as a last
   resort, as `agent` with at most `medium` confidence.
-- A recipe note is run in the form it is written before it is recorded and again in
-  triage; its flags are copied verbatim.
+- A recipe note is run in the form it is written before it is recorded, and again in
+  triage once the user approves it; its flags are copied verbatim.
 - Triage moves declined notes into `docs/session-learnings/declined.md`, which nothing
   imports, instead of leaving them in the loaded notes file.
 

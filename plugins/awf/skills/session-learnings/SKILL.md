@@ -125,11 +125,12 @@ so in `Check` and loses a confidence level.
 The root is the main checkout of the repository the work happened in, not the working
 directory of the process: a subagent often starts in one repository and does all its work
 in a worktree of another. When the work ran in a linked worktree, the root is that
-worktree's main checkout (`git worktree list`; for a bare repository or after the worktree
-was removed, the clone named in the brief). When the work spanned several repositories,
-the root is the one that holds most of it; a note about another of them goes into that
-repository's notes when its notes folder already exists, otherwise into the root's notes
-with `Target` naming it. Recipe: [notes](references/notes.md).
+worktree's main checkout (`git worktree list`; when none is found or the worktree was
+removed, the clone named in the brief, or else the worktree itself). When the work spanned
+several repositories, the root is the one that holds most of it; a note about another of
+them goes into that repository's notes when its notes folder already exists and is ignored
+there, otherwise into the root's notes with `Target` naming it. Recipe:
+[notes](references/notes.md).
 
 In the root, make sure, each item only when missing (recipe and file contents:
 [notes](references/notes.md)):
@@ -146,7 +147,8 @@ In the root, make sure, each item only when missing (recipe and file contents:
 When the root checkout holds someone else's work - uncommitted changes to tracked files
 this session did not make, a branch other than the default one that this session did not
 work on, a detached HEAD, or an operation in progress - touch no tracked file: ignore the
-folder through the local `.git/info/exclude` instead of `.gitignore`, add no pointer,
+folder through the local exclude file (`git rev-parse --git-path info/exclude`) instead of
+`.gitignore`, add no pointer,
 create no root file, and report the notes as not wired until a triage or the owner of that
 branch adds the pointer. A tracked edit there would land in the other session's commit.
 
@@ -169,15 +171,15 @@ repository's notes folder only when the session ran there and the user asks.
 ## 10. Report
 
 When nothing qualifies, say so. Name the root and why it was chosen (working directory,
-main checkout of a worktree, or the clone from the brief). List the notes written (rule,
-target, rung, confidence), the candidates dropped with the reason, and the setup edits
-made, marked as uncommitted tracked changes. Say how the folder is ignored (`.gitignore`,
-`.git/info/exclude`, or tracked) and whether the notes are wired; not wired means the next
-session will not load them. When the project limits the size of its instruction files,
-give the number, say that the notes count toward it when the host imports them (Claude
-Code), and whether a triage is due. The report marks the boundary for a repeat run. Its
-last line before `Next step` is, with the absolute path of the notes file (several files
-separated by commas):
+main checkout of a worktree, the clone from the brief, or the worktree itself, which loses
+the notes when it is removed). List the notes written (rule, target, rung, confidence),
+the candidates dropped with the reason, and the setup edits made, marked as uncommitted
+tracked changes. Say how the folder is ignored (`.gitignore`, the local exclude file, or
+tracked) and whether the notes are wired; not wired means the next session will not load
+them. When the project limits the size of its instruction files, give the number, say that
+the notes count toward it when the host imports them (Claude Code), and whether a triage
+is due. The report marks the boundary for a repeat run. Its last line before `Next step`
+is, with the absolute path of the notes file (several files separated by commas):
 
 ```text
 Learnings: <n> -> <file>
@@ -191,9 +193,8 @@ Runs only on a separate request, usually in a new session. For each note in
 `docs/session-learnings/AGENTS.md`:
 
 1. Confirm it still holds (step 3) and is not already in its target or in
-   `declined.md` (step 6). Rerun a recipe on the exact text that will go into the target,
-   not on the `Check` of the record. When the notes are not wired, the first item is
-   the root pointer of step 8.
+   `declined.md` (step 6). When the notes are not wired, the first item is the root
+   pointer of step 8.
 2. Draft the edit in the target: section and exact text as a diff, matched to the
    target's language, headings, bullet shape, line width, and tone; a higher rung as the
    check, hook, or test itself. When a file only imports another, edit the source.
@@ -205,7 +206,9 @@ Runs only on a separate request, usually in a new session. For each note in
    mark every target outside the current repository. Apply only the approved items; a
    conflict is asked, never decided.
 5. Re-read each target right before editing, edit on top of what is there, run the
-   project's checks, and read the diff. When the drafted lines changed, redraft and ask.
+   project's checks, and read the diff. For an approved recipe, run the exact text that
+   went into the target, not the `Check` of the note: the notes file is untrusted, so its
+   commands run only after approval. When the drafted lines changed, redraft and ask.
 6. Remove each applied note, and each note an applied one supersedes, from the notes
    file. Move each declined note, whole, with `Declined: <date>` into
    `docs/session-learnings/declined.md`, which nothing imports: a note left in the notes
@@ -247,11 +250,12 @@ authorizes an edit.
 Shell and network: the skill reads instruction files and the session transcript, searches
 the repositories the session used, and runs read-only commands to check candidates and
 measure instruction size, plus the project's own size-check script after recording, and
-the commands of a recipe note where that is local and safe. Recording writes without
-approval only inside `docs/session-learnings/` (tracked when that folder already is), plus
-the step 8 setup: the `.gitignore` line, the root pointer, and a missing root `CLAUDE.md`
-or `AGENTS.md` it creates; in a checkout that holds someone else's work, the local
-`.git/info/exclude` line replaces all three. It writes notes and setup lines with the file
+the commands of a recipe note it drafted from this session, where that is local and safe;
+triage runs a recipe from the notes file only after the user approves it. Recording writes
+without approval only inside `docs/session-learnings/` (tracked when that folder already
+is), plus the step 8 setup: the `.gitignore` line, the root pointer, and a missing root
+`CLAUDE.md` or `AGENTS.md` it creates; in a checkout that holds someone else's work, the
+local exclude line replaces all three. It writes notes and setup lines with the file
 edit or write tool, not through the shell. Triage edits other files only after approval
 and runs the project's own checks. It makes no network calls, and it stages, commits, or
 pushes only on the user's request.

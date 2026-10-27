@@ -48,7 +48,8 @@ docs/session-learnings/AGENTS.md` succeeds); otherwise it goes into the root's n
 <root>/.gitignore                         docs/session-learnings/
 <local exclude file>                      docs/session-learnings/   (instead of .gitignore,
                                           in a checkout with someone else's work; path:
-                                          git -C <root> rev-parse --git-path info/exclude)
+                                          git -C <root> rev-parse --path-format=absolute
+                                            --git-path info/exclude)
 <root>/docs/session-learnings/CLAUDE.md   @AGENTS.md
 <root>/docs/session-learnings/AGENTS.md   the notes
 <root>/docs/session-learnings/declined.md notes triage declined, never imported

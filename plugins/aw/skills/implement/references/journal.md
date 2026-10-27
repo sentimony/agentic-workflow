@@ -7,8 +7,10 @@ Contents: line format, lines this skill writes, plan-journal, resume.
 
 ## Line format
 
-The whole chain uses one format. Lines are appended at the bottom; existing lines are not
-rewritten, except the state of a `Task` line.
+The whole chain uses one format. New lines go at the end of the record: inside its
+```` ```text ```` block when it has one, right before the closing fence and never after it
+(plan-craft's `references/plan-template.md`, "Execution record format"). Existing lines
+are not rewritten, except the state of a `Task` line.
 
 ```text
 Base: <full SHA>   Root: <path>   Branch: <name>

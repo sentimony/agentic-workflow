@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.0.3] - 2026-10-27
+
+- After a squash the worktree always ends on the fresh base, with or without branch
+  deletion, or detached on `origin/<base>` when another worktree holds the base; the
+  report gives the branch, `HEAD`, and whether it equals `origin/<base>`
+  (request 20261024-2226).
+- Before the merge, a PR that changes `.github/workflows/` needs the `workflow` scope on
+  the CLI token; a merge refused with a generic text gets its reason from the same merge
+  through the REST API, pinned to the same head (request 20261026-1946).
+- A repository without required checks waits for all PR checks, and a `mergeStateStatus`
+  other than `CLEAN` stops the merge; the report says which checks were read
+  (request 20261026-2331, no required checks).
+- The uncommitted journal is saved and restored to `HEAD` before switching to the base,
+  then written back; the diff must show only added record lines, and the report names
+  the journal's fate (request 20261026-2331, uncommitted journal after squash).
+
 ## [0.0.2] - 2026-10-27
 
 - Rename only: the plugin `awf` is now `aw`; the text changes only that name.

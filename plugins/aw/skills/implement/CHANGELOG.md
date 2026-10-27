@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.3] - 2026-10-27
+
+- A deviation that would materially change an approved spec no longer updates the spec
+  in the same pass: the skill sets the spec's `Status` back to `draft`, blocks the
+  affected tasks, and ends with `Next step: specify` until a new explicit yes; a plan whose
+  spec is a draft does not start. A new `Approval invariant` section is shared with
+  `specify`, `plan-craft`, and `cr-received` (request 20261027-0206).
+- Journal lines go inside the record's `text` block, before its closing fence, never
+  after it (request 20261025-1800).
+
 ## [0.0.2] - 2026-10-27
 
 - Rename only: the plugin `awf` is now `aw`; version bump only, the text is unchanged.

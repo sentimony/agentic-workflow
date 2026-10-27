@@ -88,13 +88,22 @@ placeholders, and when a record is unfinished are rules of SKILL.md steps 1-5.
   with the same spelling.
 - `Covers` lists only criteria this task makes observable. A criterion no task covers is
   a hole in the plan.
+- An exact expected output in `RED`, `GREEN`, or `Check` that follows from a formatting
+  rule is computed by a script or a run of existing code, never by hand (SKILL.md step 5),
+  for example `**GREEN:** ... -> <expected> (computed: <command that reproduces it>)`; a
+  value that could not be computed reads `check during execution`.
 - `Commit` names the task's own paths. A bare `git add .` or `git add -A` without paths
   sweeps in unrelated edits.
 
 ## Execution record format
 
-The record is the last section of the plan. Later skills append lines at the bottom and
-never rewrite existing ones, except the state of a task line:
+The record is the last section of the plan. In a plan from this template its lines sit
+inside a ```` ```text ```` block, and later skills add new lines at the end of that block,
+right before its closing ```` ``` ````, never after it at the end of the file: a line
+after the fence renders as a paragraph, and a skill reading the block misses it. Append
+with an edit that inserts before the fence, not with `>>`. A record without a fence (a
+plan-journal) takes new lines at its end. Existing lines are never rewritten, except the
+state of a task line:
 
 ```text
 Base: <full SHA>   Root: <path>   Branch: <name>

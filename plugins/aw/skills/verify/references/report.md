@@ -105,14 +105,23 @@ Read the journal of the plan:
 - when the `cr-received` return block is in the conversation, every item of its
   `Blocking:` field other than `none` is a blocker too.
 
+Blockers come from every round, document reviews included. The choice of the next step
+(SKILL.md step 10) is different: there only a `Review` line with `mode code`, or
+`mode re-review` after a code review, counts as a review of the implementation, so a
+journal with only spec or plan reviews leads to `cr-request`, not `finalize`.
+
 ## Journal lines
 
-Append at the bottom of `## Execution record`; never rewrite an existing line:
+Append at the end of `## Execution record`, inside its ```` ```text ```` block before the
+closing fence when it has one; never rewrite an existing line:
 
 ```text
 Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM>
 Round <loop> <n>: <cause>
 ```
+
+`<YYYY-MM-DD HH:MM>` is the output of `date '+%Y-%m-%d %H:%M'` run right after the
+re-pin (SKILL.md step 7), never a time written from memory.
 
 For this skill `<loop>` is `verify` and the cause lists each failing claim by its source
 tag and promise, for example `Round verify 2: AC3 - login redirects to /home`. `C<n>`

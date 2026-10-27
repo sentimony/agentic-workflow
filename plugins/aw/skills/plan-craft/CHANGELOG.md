@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.0.3] - 2026-10-27
+
+- A spec with `Status: draft` is no longer planned around as `Spec: none`: the skill
+  writes nothing and stops with `Next step: specify`; the standalone case is only for
+  work with no spec. A new `Approval invariant` section, shared with `specify`,
+  `implement`, and `cr-received`: the skill never edits an approved spec's content, and a
+  material change it needs sets `Status: draft` and goes back to `specify`
+  (request 20261027-0206).
+- No longer calls `scope-check`.
+- An exact expected output that follows from a formatting rule is computed by a script
+  or a run of existing code, marked as computed with the command that reproduces it, or
+  marked `check during execution`; never written by hand (request 20261024-2246).
+- The template says where journal lines go: inside the record's `text` block, right
+  before its closing fence, never after it at the end of the file (request 20261025-1800).
+
 ## [0.0.2] - 2026-10-27
 
 - Rename only: the plugin `awf` is now `aw`; version bump only, the text is unchanged.

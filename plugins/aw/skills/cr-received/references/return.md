@@ -20,8 +20,9 @@ Without a plan, the same check runs against the records still in the conversatio
 
 ## Journal lines
 
-When the plan is known, append to the bottom of its `## Execution record`, in exactly
-this format; existing lines are never rewritten:
+When the plan is known, append at the end of its `## Execution record`, inside the
+record's ```` ```text ```` block right before the closing fence when it has one (never
+after the fence), in exactly this format; existing lines are never rewritten:
 
 ```text
 Received R<n>: <ID> <ACCEPT|REJECT|PARTIAL|DEFER|ESCALATE|OUTDATED>, ... Re-review: <needed|not needed>
@@ -68,7 +69,10 @@ Route: verify | specify | plan-craft (<why>)
 
 Document variant (review of a spec or plan): `Changed paths` lists the changed sections
 as `§<heading>`, `Previous verification` gives the new `sha256` of the file, and `Route`
-is `plan-craft` for a plan or `specify` for a spec.
+is `plan-craft` for a plan or `specify` for a spec. An accepted fix that materially
+changes an approved spec (a decision, behavior, contract, or criterion) sets its `Status`
+to `draft` in the same edit, and `Changed paths` lists `§Status` too; a typo-level fix
+keeps `approved`.
 
 The line right after the block is `Next step:` naming the same skill as `Route`, except
 that any `ESCALATE` makes it `Next step: none - awaiting user`.

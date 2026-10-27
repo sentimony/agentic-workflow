@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.0.3] - 2026-10-27
+
+- Description drops how the notes are linked and what each note carries; the body still
+  covers both.
+- The notes root is the main checkout of the repository the work happened in
+  (`--git-common-dir` of the worktree, or the clone from the brief), not the working
+  directory of the process, so a subagent that worked in a worktree of another
+  repository writes there. A note about a further repository goes into its notes when
+  that folder already exists.
+- In a checkout with someone else's uncommitted changes or on someone else's branch,
+  setup changes no tracked file: the folder is ignored through `.git/info/exclude`, no
+  pointer is added, and the report says the notes are not wired.
+- The report names the chosen root, how the folder is ignored, and whether the notes are
+  wired, and its last line before `Next step` is `Learnings: <n> -> <file>`.
+- Notes and setup lines are written with the file edit or write tool, never a shell
+  heredoc or `echo >>`.
+- After a context compaction, quotes come from the session transcript (Claude Code JSONL
+  or Codex thread), read with a script; the compaction summary is quoted only as a last
+  resort, as `agent` with at most `medium` confidence.
+- A recipe note is run in the form it is written before it is recorded and again in
+  triage; its flags are copied verbatim.
+- Triage moves declined notes into `docs/session-learnings/declined.md`, which nothing
+  imports, instead of leaving them in the loaded notes file.
+
 ## [0.0.2] - 2026-10-22
 
 - Description opens with "You MUST use this when", names the end of the awf chain as a

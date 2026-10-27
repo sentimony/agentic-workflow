@@ -22,6 +22,13 @@ Target: <file and section>
   turn that settles it and name the others in `Event`.
 - A quote that contains a secret, a credential, or personal data is masked before it is
   shown. Refer to such values by a placeholder name, never by their content.
+- After a context compaction the early events survive only in the summary the agent
+  wrote, which is not a quote. Search the session transcript for the verbatim text:
+  user messages and tool results in the Claude Code JSONL
+  (`~/.claude/projects/<slug>/<session-id>.jsonl`, a subagent's under
+  `<session-id>/subagents/`) or the Codex thread under `~/.codex/sessions/`. Read it with
+  a short Python script, not grep: the lines are long JSON. Only when the transcript lacks
+  it, quote the summary with author `agent` and confidence no higher than `medium`.
 
 ## Who said it
 
@@ -53,7 +60,8 @@ what would raise them to `high`.
 
 When the skill already ran earlier in the same session, its previous report marks the
 boundary: collect only events after it. A note already in the notes file, or one a
-triage marked `Declined`, is not written again unless a new event changed the evidence.
+triage moved to `declined.md`, is not written again unless a new event changed the
+evidence.
 Then the sharper or corrected version is appended as a new note with `Supersedes:`
 naming the earlier one; earlier notes are never rewritten, and triage removes the one
 superseded. Notes written in the current run may still be edited before its report.

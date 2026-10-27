@@ -34,6 +34,12 @@ Pick the form by the kind of failure, not by habit:
 | A required piece of an artifact was missing | template slot | a new field or heading in the template the project already uses |
 | Behavior differs by situation | condition | "When X, do Y; otherwise Z." |
 
+A recipe copies the flags of the command that worked verbatim: shorten the explanation,
+never the command. "Connect with `psql -h <host> -p <port> -U postgres -d postgres`" works
+on a fresh cluster; trimmed to `psql -h <host> -p <port>` it fails on the missing role.
+Step 7 runs the written form before the note is recorded, and triage runs it again on the
+text that goes into the target.
+
 Write the rule, not the story. "On 2026-10-21 the push failed because..." is a story;
 "Push with X when Y: otherwise Z" is a rule. Dates, branch names, and who did what stay in
 the session.

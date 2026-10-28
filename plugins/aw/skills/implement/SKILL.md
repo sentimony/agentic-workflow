@@ -83,7 +83,7 @@ is a full option, not a fallback. Details and limits are in
 [isolation.md](references/isolation.md).
 
 On a fresh start (`Base: unset`), record the starting point before the first task: fill
-the `Base` placeholder with the full SHA of `HEAD`, `Root`, and `Branch`, and add
+the `Base` placeholder with the full object ID of `HEAD`, `Root`, and `Branch`, and add
 `Initial dirty state` under it (format and example in
 [journal.md](references/journal.md)).
 
@@ -98,8 +98,8 @@ On resume (`Base` is set), follow the resume rule in [journal.md](references/jou
 a task marked `done` with no trace in the tree or the history goes back to `pending`,
 and a task `blocked - conflicting intent` whose spec reads `Status: approved` again
 goes back to `pending` too. A `done` task whose `Files` overlap a later `done` task
-with a trace reruns its own `GREEN` or `Check`; a failure that later task or a plan
-revision explains keeps it `done`.
+with a trace reruns its own `GREEN` or `Check`; a failure that later task, a plan
+revision, or the partial work of an `in progress` task explains keeps it `done`.
 Round counters continue from the journal; they do not restart at zero.
 
 ## Step 4. Before each task

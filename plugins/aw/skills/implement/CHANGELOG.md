@@ -14,8 +14,9 @@
   the user decides (review R1-F2).
 - On resume, a `done` task whose `Files` overlap a later `done` task with a trace
   (an `in progress` task triggers nothing) reruns its own check and goes back to
-  `pending` with a `Ruling` if it fails, unless that later task's `Produces` or a plan
-  revision after spec re-approval explains the failure; step 3 names this recheck
+  `pending` with a `Ruling` if it fails, unless that later task's `Produces`, a plan
+  revision after spec re-approval, or the partial work of an `in progress` task explains
+  the failure; step 3 names this recheck
   (review R1-F4).
 - In a separate worktree the plan and spec stay authoritative in the controller's
   checkout, only the controller writes the journal, and tasks and subagents get absolute

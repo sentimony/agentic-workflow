@@ -129,6 +129,16 @@ When `Base` is already set, execution is being resumed:
    task's `Files`, or the task's changes present in the working tree. A `done` task with
    no trace in the tree or the history goes back to `pending`, and a `Ruling` line says
    why.
+
+   A `done` task whose `Files` overlap the `Files` of any later-numbered task that has
+   a trace (`done` or `in progress`) reruns its own `GREEN` or `Check`. Passing, it
+   stays `done`. Failing, it goes back to `pending` with a `Ruling` line naming the
+   check, and runs as an ordinary task. Other `done` tasks stay `done` on their trace.
+
+   ```text
+   Task 2: pending
+   Ruling: Task 2 back to pending - its Check failed after Task 4 edited the same file - medium, the later edit may have broken it
+   ```
 3. A task `in progress` is inspected: keep the partial work that matches the task, rerun
    its check, and continue from there.
 4. Continue `Round` counters from the last recorded number for each loop.

@@ -97,9 +97,9 @@ and with no other blocker the next step is still `verify`.
 On resume (`Base` is set), follow the resume rule in [journal.md](references/journal.md):
 a task marked `done` with no trace in the tree or the history goes back to `pending`,
 and a task `blocked - conflicting intent` whose spec reads `Status: approved` again
-goes back to `pending` too. A `done` task whose `Files` overlap a later task with a
-trace reruns its own `GREEN` or `Check`; a failure that later task or a plan revision
-explains keeps it `done`.
+goes back to `pending` too. A `done` task whose `Files` overlap a later `done` task
+with a trace reruns its own `GREEN` or `Check`; a failure that later task or a plan
+revision explains keeps it `done`.
 Round counters continue from the journal; they do not restart at zero.
 
 ## Step 4. Before each task

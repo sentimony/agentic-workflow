@@ -60,6 +60,13 @@ A compact `PASS` lists no rows. A compact report never stands in for the full ma
   the remedy the `Received` and `Ruling` lines chose, not the reviewer's full suggestion.
   Its check is the command `cr-received` lists under `Checks to rerun` when that return
   block is in the conversation; a failing one points back at the finding.
+- A finding claim is `n/a: superseded by <Task n | R<m>-F<k> | marker>` when a later
+  `Ruling: R<n>-F<k> superseded by <...> - <reason> - <cost>` line (from `implement`,
+  `plan-craft`, or `cr-received`) records that a later task's `Produces`, a later
+  accepted finding, or the re-approval marker removes the fixed behavior on purpose.
+  That `Ruling` is checked as a claim instead: the named task, finding, or marker
+  exists and accounts for the change. Without such a line the finding claim stays,
+  and its failure routes to `cr-received`, which may write it.
 - A claim is one observable promise. "Done" or "works" is split until each part has a
   check that could fail.
 - Without a plan, the sources are the caller's words and the diff from the base the
@@ -99,8 +106,9 @@ Read the journal of the plan:
 - every round counts, document reviews included: a new round does not close an old finding;
 - each `Finding` of any round with severity `Critical` or `Important` is a blocker until
   a `Received` line gives its ID a disposition; `REJECT`, `OUTDATED`, and `DEFER`
-  close it, and `ACCEPT` and `PARTIAL` mark it fixed, with its claim (tag `R<n>-F<k>`)
-  checked in this run over the current tree as the proof;
+  close it, and `ACCEPT` and `PARTIAL` mark it fixed, with its claim (tag `R<n>-F<k>`),
+  or the `Ruling` that supersedes it, checked in this run over the current tree as the
+  proof;
 - any `ESCALATE` in any `Received` line is a blocker until the user decides it;
 - when the `cr-received` return block is in the conversation, every item of its
   `Blocking:` field other than `none` is a blocker too.
@@ -129,9 +137,10 @@ For this skill `<loop>` is `verify` and the cause lists each failing claim by it
 tag and promise, for example `Round verify 2: AC3 - login redirects to /home`. `C<n>`
 numbers are reassigned every run, so they never form the cause; the same tag and promise
 in two rounds is the same cause for the Round rule. A `Round` line is written only when
-the verdict is `FAIL` and the journal has no earlier `Verify: FAIL` line on this
-fingerprint (the first failure on this tree, or a fix attempt happened); a repeated
-`FAIL` on the same fingerprint writes only a new `Verify` line, no `Round`. It is
+the verdict is `FAIL` and the most recent `Verify` line is not a `FAIL` on this
+fingerprint (the first failure on this tree, or a fix attempt happened, a revert to an
+earlier tree included); a repeated `FAIL` on the same fingerprint writes only a new
+`Verify` line, no `Round`. It is
 numbered one above the last `Round verify` line in the journal.
 
 Credentials and secrets never enter the plan-journal a standalone run creates, its Goal

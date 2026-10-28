@@ -32,8 +32,9 @@ paths from `git status --porcelain`. Compute the fingerprint with the recipe in
 Write the claims down before running anything, numbered `C1`, `C2`, and so on. Take
 them from every source present - the spec's `AC<n>` (via `Spec:` in the plan header),
 the plan's tasks with `Produces` and `Covers`, the journal's `Task`, `Ruling`, and
-`Deferred` lines, each `ACCEPT` or `PARTIAL` finding of any review round, and the
-caller's words; the list and source tags are in [report.md](references/report.md). The
+`Deferred` lines, each `ACCEPT` or `PARTIAL` finding of any review round (unless a
+later `Ruling` supersedes it), and the caller's words; the list and source tags are in
+[report.md](references/report.md). The
 marker `Ruling: plan revised after spec re-approval - <spec path>` is checked as a
 claim this way: the plan's `Spec` names that path, and that spec reads
 `Status: approved`.
@@ -129,10 +130,11 @@ new plan-journal of step 9. It never edits code, tests, the spec, or the plan bo
 failing claim goes back to `implement`; a failing claim tagged `R<n>-F<k>` goes back to
 `cr-received`.
 
-A `FAIL` writes `Round <loop> <n>: <cause>` with `verify` as the loop when the journal
-has no earlier `Verify: FAIL` line on this fingerprint (the first failure on this tree,
-or a fix attempt happened, so a new verify-fix round starts); a repeated `FAIL` on the
-same fingerprint writes only a new `Verify` line, no `Round`. The cause names
+A `FAIL` writes `Round <loop> <n>: <cause>` with `verify` as the loop unless the most
+recent `Verify` line is a `FAIL` on this fingerprint: any other case is the first
+failure on this tree or follows a fix attempt (a revert to an earlier tree included),
+so a new verify-fix round starts; a repeated `FAIL` on the same fingerprint writes only
+a new `Verify` line, no `Round`. The cause names
 each failing claim by its source tag and promise, not by its `C<n>` number, which is
 reassigned every run; the same tag and promise in two rounds is the same cause. The
 counter lives in the journal, so a fresh session continues it.

@@ -4,13 +4,15 @@
 
 - A single fresh command run on the fingerprint can be the evidence for several claims
   when its output covers each of them.
-- `Round verify` is written on a `FAIL` only when the journal has no earlier
-  `Verify: FAIL` line on this fingerprint; a repeated `FAIL` on the same fingerprint
-  writes only a `Verify` line.
+- `Round verify` is written on a `FAIL` unless the most recent `Verify` line is a
+  `FAIL` on the same fingerprint, so a revert to an earlier tree starts a round too; a
+  repeated `FAIL` on the same fingerprint writes only a `Verify` line.
 - One blocker rule across rounds: every `Critical` or `Important` finding of any round,
   document reviews included, blocks until a `Received` line rules on it; a new round
   does not close an old finding. Claims come from the `ACCEPT` and `PARTIAL` findings of
-  any round, so an accepted fix from an older round is proven too (review R1-F1).
+  any round, so an accepted fix from an older round is proven too (review R1-F1); a
+  later `Ruling: R<n>-F<k> superseded by ...` line makes that claim
+  `n/a: superseded` and is checked in its place.
 - The report and the tree fingerprint reference say `<full tree ID>` and record the full
   object ID (40 hex characters in SHA-1, 64 in SHA-256); the recipe removes its
   temporary index with a `trap`.

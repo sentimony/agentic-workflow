@@ -12,10 +12,11 @@
 - A file listed in `Initial dirty state` goes into a commit only with the task's own
   hunks; when they cannot be separated the task is `blocked - missing permissions` until
   the user decides (review R1-F2).
-- On resume, a `done` task whose `Files` overlap a later task with a trace reruns its
-  own check and goes back to `pending` with a `Ruling` if it fails, unless that later
-  task's `Produces` or a plan revision after spec re-approval explains the failure;
-  step 3 names this recheck (review R1-F4).
+- On resume, a `done` task whose `Files` overlap a later `done` task with a trace
+  (an `in progress` task triggers nothing) reruns its own check and goes back to
+  `pending` with a `Ruling` if it fails, unless that later task's `Produces` or a plan
+  revision after spec re-approval explains the failure; step 3 names this recheck
+  (review R1-F4).
 - In a separate worktree the plan and spec stay authoritative in the controller's
   checkout, only the controller writes the journal, and tasks and subagents get absolute
   paths to that copy.

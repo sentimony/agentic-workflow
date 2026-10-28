@@ -130,8 +130,9 @@ When `Base` is already set, execution is being resumed:
    no trace in the tree or the history goes back to `pending`, and a `Ruling` line says
    why.
 
-   A `done` task whose `Files` overlap the `Files` of any later-numbered task that has
-   a trace (`done` or `in progress`) reruns its own `GREEN` or `Check`. Passing, it
+   A `done` task whose `Files` overlap the `Files` of any later-numbered `done` task
+   with a trace reruns its own `GREEN` or `Check`; a later task still `in progress`
+   holds partial work and triggers no recheck. Passing, it
    stays `done`. Failing where that later task's `Produces`, or a later
    `Ruling: plan revised after spec re-approval` marker, accounts for the changed
    behavior, it stays `done` with a `Ruling` line naming that task or marker. Any other

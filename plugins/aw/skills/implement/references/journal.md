@@ -132,8 +132,11 @@ When `Base` is already set, execution is being resumed:
 
    A `done` task whose `Files` overlap the `Files` of any later-numbered task that has
    a trace (`done` or `in progress`) reruns its own `GREEN` or `Check`. Passing, it
-   stays `done`. Failing, it goes back to `pending` with a `Ruling` line naming the
-   check, and runs as an ordinary task. Other `done` tasks stay `done` on their trace.
+   stays `done`. Failing where that later task's `Produces`, or a later
+   `Ruling: plan revised after spec re-approval` marker, accounts for the changed
+   behavior, it stays `done` with a `Ruling` line naming that task or marker. Any other
+   failure sends it back to `pending` with a `Ruling` line naming the check, and it runs
+   as an ordinary task. Other `done` tasks stay `done` on their trace.
 
    ```text
    Task 2: pending

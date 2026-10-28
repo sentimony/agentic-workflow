@@ -130,9 +130,9 @@ failing claim goes back to `implement`; a failing claim tagged `R<n>-F<k>` goes 
 `cr-received`.
 
 A `FAIL` writes `Round <loop> <n>: <cause>` with `verify` as the loop when the journal
-has no earlier `Verify` line or the fingerprint differs from that of the previous
-`Verify` (a fix attempt happened, so a new verify-fix round starts); a repeated `FAIL`
-on the same fingerprint writes only a new `Verify` line, no `Round`. The cause names
+has no earlier `Verify: FAIL` line on this fingerprint (the first failure on this tree,
+or a fix attempt happened, so a new verify-fix round starts); a repeated `FAIL` on the
+same fingerprint writes only a new `Verify` line, no `Round`. The cause names
 each failing claim by its source tag and promise, not by its `C<n>` number, which is
 reassigned every run; the same tag and promise in two rounds is the same cause. The
 counter lives in the journal, so a fresh session continues it.

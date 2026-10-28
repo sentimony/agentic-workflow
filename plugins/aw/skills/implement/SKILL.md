@@ -16,15 +16,17 @@ itself so that any later session can pick the work up from the files and Git alo
 plan -> mode -> isolation -> clean start -> task loop -> drift and blockers -> record -> next step
 ```
 
-Arguments are optional: a path to the plan, and `--inline` or `--subagents` to choose the
-mode.
+Arguments are optional: a path to the plan or to a spec, and `--inline` or `--subagents`
+to choose the mode.
 
 ## Step 1. Find the plan
 
 Take the plan from the argument, else from the conversation. An argument that is a spec
-(it has `Status` and no `## Execution record`), or a `no plan needed` handoff line, goes
-to the no-plan case below without a plan search. Otherwise the candidates are the plans
-in the project's plans folder whose `## Execution record` is unfinished (a task not
+(it has `Status` and no `## Execution record`) takes the unfinished plan whose `Spec`
+names that path; with none, it goes to the no-plan case below, and with several, ask one
+question listing them. A `no plan needed` handoff line goes to the no-plan case
+without a plan search. Otherwise the candidates are the plans in the project's plans
+folder whose `## Execution record` is unfinished (a task not
 `done`, or `Base: unset`; a task-less plan-journal is finished once `Base` is set and
 its evidence is written). One candidate is taken. With several, take the single one
 whose `Branch` equals the current branch. With zero or several matches (a plan with
@@ -96,7 +98,8 @@ On resume (`Base` is set), follow the resume rule in [journal.md](references/jou
 a task marked `done` with no trace in the tree or the history goes back to `pending`,
 and a task `blocked - conflicting intent` whose spec reads `Status: approved` again
 goes back to `pending` too. A `done` task whose `Files` overlap a later task with a
-trace reruns its own `GREEN` or `Check`.
+trace reruns its own `GREEN` or `Check`; a failure that later task or a plan revision
+explains keeps it `done`.
 Round counters continue from the journal; they do not restart at zero.
 
 ## Step 4. Before each task

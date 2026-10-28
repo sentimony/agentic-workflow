@@ -4,9 +4,9 @@
 
 - A single fresh command run on the fingerprint can be the evidence for several claims
   when its output covers each of them.
-- `Round verify` is written on a `FAIL` only when the journal has no earlier `Verify`
-  line or the fingerprint differs from the previous one; a repeated `FAIL` on the same
-  fingerprint writes only a `Verify` line.
+- `Round verify` is written on a `FAIL` only when the journal has no earlier
+  `Verify: FAIL` line on this fingerprint; a repeated `FAIL` on the same fingerprint
+  writes only a `Verify` line.
 - One blocker rule across rounds: every `Critical` or `Important` finding of any round,
   document reviews included, blocks until a `Received` line rules on it; a new round
   does not close an old finding. Claims come from the `ACCEPT` and `PARTIAL` findings of

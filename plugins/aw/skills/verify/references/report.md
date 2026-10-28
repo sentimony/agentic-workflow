@@ -129,10 +129,10 @@ For this skill `<loop>` is `verify` and the cause lists each failing claim by it
 tag and promise, for example `Round verify 2: AC3 - login redirects to /home`. `C<n>`
 numbers are reassigned every run, so they never form the cause; the same tag and promise
 in two rounds is the same cause for the Round rule. A `Round` line is written only when
-the verdict is `FAIL` and the journal has no earlier `Verify` line or the fingerprint
-differs from that of the previous `Verify` (a fix attempt happened); a repeated `FAIL` on
-the same fingerprint writes only a new `Verify` line, no `Round`. It is numbered one above
-the last `Round verify` line in the journal.
+the verdict is `FAIL` and the journal has no earlier `Verify: FAIL` line on this
+fingerprint (the first failure on this tree, or a fix attempt happened); a repeated
+`FAIL` on the same fingerprint writes only a new `Verify` line, no `Round`. It is
+numbered one above the last `Round verify` line in the journal.
 
 Credentials and secrets never enter the plan-journal a standalone run creates, its Goal
 included; use placeholder names such as `<API_TOKEN>`.

@@ -6,9 +6,10 @@
   or an acceptance criterion; a material entry that stays `assumed` moves `note` to
   `design` and, before approval, becomes an open question or a named risk.
 - An open question whose answer would change Behavior, Contract, or an acceptance
-  criterion is marked `blocking`; the spec template says so, a general yes does not
-  approve the spec while a `blocking` question is unresolved (an explicitly accepted
-  risk does not block), and the result names each `blocking` question.
+  criterion is marked `blocking`; the spec template gives the `blocking:` form with the
+  risk it names, a general yes does not approve the spec while a `blocking` question is
+  unresolved (an explicitly accepted risk does not block), and the result names each
+  `blocking` question.
 
 ## [0.0.3] - 2026-10-27
 

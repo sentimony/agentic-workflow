@@ -136,7 +136,8 @@ Order:
 
 - the riskiest unknown first, so a wrong assumption fails before work piles on it;
 - test infrastructure and shared types before the features that use them;
-- removals before additions; a wide mechanical refactor as expand, migrate, contract.
+- order by dependencies: a removal comes only after nothing reads the old thing; a
+  wide mechanical refactor as expand, migrate, contract.
 
 Content:
 
@@ -175,7 +176,7 @@ Read the saved plan once more against the spec and fix what fails:
 - every `AC` of the spec (or of the plan header with `Spec: none`) is in some task's
   `Covers`;
 - no placeholders left: no `TBD`, no "add error handling", no unfilled angle brackets
-  outside the record format;
+  outside the record format and credential placeholder names such as `<API_TOKEN>`;
 - names, signatures, and formats agree between `Produces` and `Consumes` of every pair;
 - every command is checked against its `--help` or the project's documentation, not
   recalled;

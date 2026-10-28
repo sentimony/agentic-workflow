@@ -96,16 +96,16 @@ Any `not verified`, any `failed`, or any open review blocker rules out `PASS`.
 
 Read the journal of the plan:
 
-- the last round is the highest `<n>` among the `Review R<n>` and `Finding R<n>-F<k>` lines;
-- each `Finding` of that round with severity `Critical` or `Important` is a blocker until
-  a `Received R<n>` line gives its ID a disposition; `REJECT`, `OUTDATED`, and `DEFER`
+- every round counts, document reviews included: a new round does not close an old finding;
+- each `Finding` of any round with severity `Critical` or `Important` is a blocker until
+  a `Received` line gives its ID a disposition; `REJECT`, `OUTDATED`, and `DEFER`
   close it, and `ACCEPT` and `PARTIAL` mark it fixed, with its claim (tag `R<n>-F<k>`)
   checked in this run over the current tree as the proof;
 - any `ESCALATE` in any `Received` line is a blocker until the user decides it;
 - when the `cr-received` return block is in the conversation, every item of its
   `Blocking:` field other than `none` is a blocker too.
 
-Blockers come from every round, document reviews included. The choice of the next step
+Blockers come from every round. The choice of the next step
 (SKILL.md step 10) is different: there only a `Review` line with `mode code`, or
 `mode re-review` after a code review, counts as a review of the implementation, so a
 journal with only spec or plan reviews leads to `cr-request`, not `finalize`. When the

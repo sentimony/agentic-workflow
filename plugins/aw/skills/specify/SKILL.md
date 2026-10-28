@@ -71,13 +71,15 @@ or a system; that needs a file or a command.
 Work in a loop: draft the list, check each entry in the repository or by running
 something, then rewrite the list. Never ask the user what the repository or a quick run
 can answer. A `design` spec records the register in its `Evidence` section; a `note`
-keeps it in the conversation. Before approval, every material entry still `assumed`
-becomes an open question or a named risk in the spec.
+keeps it in the conversation. An entry is material when its opposite would change a
+decision or an acceptance criterion. Before approval, every material entry still
+`assumed` becomes an open question or a named risk in the spec.
 
 Then confirm or revise the route, and say so with the reason. A `contradicted` entry, or
-evidence that brings up an item of the design list, moves `note` to `design`. Evidence
-that removes the only ambiguity may move a route lighter, but only when no item of the
-design list remains and no decision the user still has to make is skipped.
+evidence that brings up an item of the design list, moves `note` to `design`; so does a
+material entry that stays `assumed`. Evidence that removes the only ambiguity may move
+a route lighter, but only when no item of the design list remains and no decision the
+user still has to make is skipped.
 
 ## Step 3. Ask in rounds
 

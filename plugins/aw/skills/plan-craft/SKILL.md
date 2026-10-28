@@ -132,7 +132,8 @@ A task is the smallest unit a reviewer can reject without rejecting its neighbor
 one carries the fields of the template: `Files`, `Consumes`, `Produces` (exact
 signatures or formats), `Covers` (`AC<n>`, comma-separated), `Depends on` (`Task <n>` or
 `none`), `RED` and `GREEN` (command and expected output), and `Commit` with
-`git add -A -- <paths>` for that task's paths only.
+`git add -A -- <paths>` for that task's paths only (a file listed in `Initial dirty state`
+takes only the task's own hunks, see `implement` step 5).
 
 Order:
 

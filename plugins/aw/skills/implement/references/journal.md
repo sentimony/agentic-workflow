@@ -104,7 +104,7 @@ appear in it; use placeholder names such as `<API_TOKEN>`.
 
 **Check:** <command> -> <expected result>
 
-**Commit:** `git add -A -- <paths>`
+**Commit:** `git add -A -- <paths>` (in `Initial dirty state`: own hunks only)
 
 ## Execution record
 

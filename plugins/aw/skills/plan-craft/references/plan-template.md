@@ -67,7 +67,7 @@ produces them>
 
 **Check:** `<command or observable check>` -> <expected result>
 
-**Commit:** `git add -A -- <paths>`
+**Commit:** `git add -A -- <paths>` (in `Initial dirty state`: own hunks only)
 
 ## Execution record
 
@@ -93,7 +93,8 @@ placeholders, and when a record is unfinished are rules of SKILL.md steps 1-5.
   for example `**GREEN:** ... -> <expected> (computed: <command that reproduces it>)`; a
   value that could not be computed reads `check during execution`.
 - `Commit` names the task's own paths. A bare `git add .` or `git add -A` without paths
-  sweeps in unrelated edits.
+  sweeps in unrelated edits. A file listed in `Initial dirty state` takes only the task's
+  own hunks (`implement` step 5).
 
 ## Execution record format
 

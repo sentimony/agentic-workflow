@@ -111,7 +111,10 @@ task `in progress` in the journal.
   scope become `Deferred` lines, not edits.
 - **Commit** with the task's `Commit` line from the plan's task template
   (`git add -A -- <paths>`), with only the task's own paths, unless the user said not to
-  commit.
+  commit. The task's paths are the staging boundary. A file listed in `Initial dirty
+  state` goes in only with the task's own hunks: choose the method at commit time
+  (`git apply --cached` with your own patch, or `git update-index --cacheinfo`). When the
+  hunks cannot be separated, the task is `blocked`; never commit someone else's changes.
 
 A task is `done` only with evidence: a command run on this tree and its result, written
 into the `Task` line.

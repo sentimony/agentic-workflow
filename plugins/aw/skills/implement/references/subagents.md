@@ -10,7 +10,10 @@ Each brief stands on its own, because the subagent sees nothing of this conversa
 - **Goal** - the task's title and what it must produce (`Produces`), plus the plan's
   `Goal` in one line for orientation.
 - **Scope** - the task's `Files`, the `Consumes` it can rely on, and the paths of the spec
-  and plan to read. Point at files; do not paste conversation history.
+  and plan to read. Point at files; do not paste conversation history. When the subagent
+  works in a separate worktree, give absolute paths to the plan and spec in the
+  controller's checkout: that copy is authoritative, and the subagent neither reads nor
+  edits a copy of the plan inside the worktree.
 - **Do not touch** - paths outside the task, the uncommitted changes listed in
   `Initial dirty state`, the execution record, Git history (no reset, stash, clean, or
   force operations).

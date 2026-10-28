@@ -92,7 +92,7 @@ appear in it; use placeholder names such as `<API_TOKEN>`.
 ```markdown
 # <topic>
 
-**Spec:** none
+**Spec:** <spec path, or `none` when there is no spec>
 
 **Goal:** <one sentence with the domain values of the request: names, numbers, behavior>
 

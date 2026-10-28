@@ -38,7 +38,11 @@ Check the spec's `Status` here, before `Base` is written. When it is not `approv
   independent tasks continue, and once only waiting tasks remain, stop with the same
   line.
 
-No plan at all (standalone call, or the `direct` route of `specify`):
+No plan at all (standalone call, or the `direct` route of `specify`): take the spec path
+from the argument or from the handoff line
+`Next step: implement - no plan needed: <the edit> - spec <path>`, the path after the
+last ` - spec ` (`<the edit>` may itself contain ` - `). A spec that is not `approved`
+stops as above, before `Base` is written.
 
 - one or two edits whose approach is obvious - write a plan-journal and work from it;
 - anything larger, or with a real design choice - stop with
@@ -47,7 +51,8 @@ No plan at all (standalone call, or the `direct` route of `specify`):
 Credentials and secret values never go into the plan-journal; use placeholder names such
 as `<API_TOKEN>` wherever a credential would appear.
 
-The plan-journal holds `Spec: none`, a `Goal` of one sentence carrying the domain values of
+The plan-journal holds `Spec: <path>` when the edit comes from a spec and `Spec: none`
+only when there is no spec, a `Goal` of one sentence carrying the domain values of
 the request (names, numbers, behavior), `Execution: inline`, one task or none, and the
 `## Execution record` section. Its path, template, and the task-less case are in
 [journal.md](references/journal.md).

@@ -62,6 +62,9 @@ those belong to the plan.
 - <question> - decision for the user: <what each option leads to>
 (or "None.")
 
+Prefix a question with `blocking` when its answer would change Behavior, Contract, or
+an acceptance criterion.
+
 ## Acceptance criteria
 
 - AC1: <observable, checkable predicate>

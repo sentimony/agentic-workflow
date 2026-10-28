@@ -92,7 +92,9 @@ questions. Start each round with the line `Round <k>/8`; there are at most eight
 After any round that leaves nothing unclear, go on to the spec yourself instead of
 asking more or asking leave to write it; do not wait for round 8. The saved draft is
 the proposal the user approves in Step 8. If something is still unclear after round 8,
-write the spec with it under `Open questions`.
+write the spec with it under `Open questions`. A question whose answer would change
+Behavior, Contract, or an acceptance criterion is marked `blocking` there; the others
+are not.
 
 Give each question a recommended answer, with its reason, when the evidence or a stated
 constraint supports one; a plain yes accepts it. When the choice rests only on the
@@ -157,7 +159,10 @@ user says an explicit yes to this spec. These are not approval:
 
 - "what do you think" or other questions;
 - silence, or a change of subject;
-- "we already discussed this", unless the approval is recorded in the file.
+- "we already discussed this", unless the approval is recorded in the file;
+- a general yes while a `blocking` open question is unresolved: it does not approve
+  the spec until the user answers that question or explicitly accepts the risk it
+  names (an accepted risk does not block approval).
 
 On requested changes, edit, save, and ask again. On an explicit yes, set
 `Status: approved`, save, give the result below without its `Next step` line, and in
@@ -183,8 +188,8 @@ Shared with `plan-craft`, `implement`, and `cr-received`:
 ## Result
 
 Report the route and any revision of it, the spec path (none for `direct`), the status,
-the open questions, the criteria count, and the fresh-reader verdicts. The last line of
-the result is:
+the open questions (naming each `blocking` one), the criteria count, and the
+fresh-reader verdicts. The last line of the result is:
 
 ```text
 Next step: <skill> - <one-line reason>

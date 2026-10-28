@@ -21,10 +21,12 @@ mode.
 
 ## Step 1. Find the plan
 
-Take the plan from the argument, else from the conversation, else the most recent plan
-in the project's plans folder whose `## Execution record` is unfinished (a task not
-`done`, or `Base: unset`; a task-less plan-journal is finished once `Base` is set and its
-evidence is written). Read the plan
+Take the plan from the argument, else from the conversation. Otherwise the candidates
+are the plans in the project's plans folder whose `## Execution record` is unfinished (a
+task not `done`, or `Base: unset`; a task-less plan-journal is finished once `Base` is
+set and its evidence is written). One candidate is taken. With several, take the single
+one whose `Branch` equals the current branch. With zero or several matches (a plan with
+`Base: unset` has no `Branch`), ask one question listing the candidates. Read the plan
 header (`Spec`, `Goal`, `Global constraints`, `Execution`) and, when `Spec` names a file,
 the spec too.
 

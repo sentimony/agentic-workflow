@@ -69,10 +69,12 @@ as approval of a design the user has not confirmed.
 ## 2. Decide whether a plan is needed
 
 One or two edits with an obvious approach do not get a plan. Say so in one line, name
-the edit, and stop with `Next step: implement - no plan needed: <the edit>`; `implement`
-keeps its own minimal journal for such changes. Everything else gets a plan, including
-a small change whose order of steps carries risk (a migration, a deletion, a public
-interface).
+the edit, and stop with `Next step: implement - no plan needed: <the edit>`. When the
+input is an approved spec, end instead with
+`Next step: implement - no plan needed: <the edit> - spec <path>`, so the spec travels
+with the handoff. `implement` keeps its own minimal journal for such changes.
+Everything else gets a plan, including a small change whose order of steps carries
+risk (a migration, a deletion, a public interface).
 
 ## 3. Choose the file
 
@@ -211,7 +213,8 @@ the result is exactly one of:
 | Condition | Last line |
 | --- | --- |
 | plan ready and `Execution` chosen | `Next step: implement - <path>, <inline or subagents>` |
-| no plan needed (step 2) | `Next step: implement - no plan needed: <the edit>` |
+| no plan needed (step 2), no spec | `Next step: implement - no plan needed: <the edit>` |
+| no plan needed (step 2), approved spec | `Next step: implement - no plan needed: <the edit> - spec <path>` |
 | plan revised after review, `Re-review: needed` | `Next step: cr-request - <path>, document re-review` |
 | plan revised after review, `Re-review: not needed` | `Next step: implement - <path>, <inline or subagents>` |
 | plan saved, no execution choice yet | `Next step: none - awaiting execution choice` |

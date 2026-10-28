@@ -56,12 +56,11 @@ finding. `ACCEPT` and `PARTIAL` fixes are proven as claims (step 2). Read
 
 Each claim gets a check run now, on this fingerprint. A single fresh command run on this
 fingerprint can be the evidence for several claims when its output covers each of them;
-the same command is not run again. Take commands from the project
-itself: its README, CI workflow, scripts, and package manifests, confirmed with `--help`
-when unsure. When the project runs its checks in a fresh clone and the tree is
-uncommitted, rebuild that exact tree in the clone with
-[clean-clone.md](references/clean-clone.md); a copy of the files without `.git` is not a
-clean checkout. These are not evidence:
+the same command is not run again. Take commands from the project itself: its README, CI
+workflow, scripts, and package manifests, confirmed with `--help` when unsure. When the
+project runs its checks in a fresh clone and the tree is uncommitted, rebuild that exact
+tree in the clone with [clean-clone.md](references/clean-clone.md); a copy of the files
+without `.git` is not a clean checkout. These are not evidence:
 
 - a run from before the last edit, or CI on another commit or tree;
 - a report by the implementer, a subagent, or a reviewer;
@@ -132,11 +131,11 @@ failing claim goes back to `implement`; a failing claim tagged `R<n>-F<k>` goes 
 
 A `FAIL` writes `Round <loop> <n>: <cause>` with `verify` as the loop when the journal
 has no earlier `Verify` line or the fingerprint differs from that of the previous
-`Verify` (a fix attempt happened, so a new verify-fix round starts); a repeated `FAIL` on
-the same fingerprint writes only a new `Verify` line, no `Round`. The cause names each failing claim by its source tag and promise,
-not by its `C<n>` number, which is reassigned every run; the same tag and promise in two
-rounds is the same cause. The counter lives in the journal, so a fresh session continues
-it.
+`Verify` (a fix attempt happened, so a new verify-fix round starts); a repeated `FAIL`
+on the same fingerprint writes only a new `Verify` line, no `Round`. The cause names
+each failing claim by its source tag and promise, not by its `C<n>` number, which is
+reassigned every run; the same tag and promise in two rounds is the same cause. The
+counter lives in the journal, so a fresh session continues it.
 
 ```text
 Round rule: a round count the user gave explicitly allows exactly that many rounds;

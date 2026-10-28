@@ -54,7 +54,9 @@ finding. `ACCEPT` and `PARTIAL` fixes are proven as claims (step 2). Read
 
 ## 4. Fresh evidence only
 
-Each claim gets a check run now, on this fingerprint. Take commands from the project
+Each claim gets a check run now, on this fingerprint. A single fresh command run on this
+fingerprint can be the evidence for several claims when its output covers each of them;
+the same command is not run again. Take commands from the project
 itself: its README, CI workflow, scripts, and package manifests, confirmed with `--help`
 when unsure. When the project runs its checks in a fresh clone and the tree is
 uncommitted, rebuild that exact tree in the clone with

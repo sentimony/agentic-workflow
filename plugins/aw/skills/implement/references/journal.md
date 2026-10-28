@@ -46,7 +46,7 @@ fence like every new line. `verify` counts only the code reviews after the last 
   Initial dirty state: none
   ```
 
-  `Base` is the full 40-character SHA of `HEAD` before the first task. `Root` is the
+  `Base` is the full object ID of `HEAD` before the first task. `Root` is the
   absolute path of the working tree the tasks run in (the worktree, when one was made).
 
 - **Task state.** Change the state of the task's own line in place. Every state except

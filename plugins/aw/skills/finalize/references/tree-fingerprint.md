@@ -14,6 +14,7 @@ real index and the staging area do not change:
 
 ```sh
 tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
 index="$(git rev-parse --git-path index)"
 if [ -f "$index" ]; then cp "$index" "$tmp"; else rm -f "$tmp"; fi
 GIT_INDEX_FILE="$tmp" git add -A
@@ -32,4 +33,5 @@ the result equals `git rev-parse 'HEAD^{tree}'`.
   recorded one. Any edit, including a whitespace fix or a new untracked file, makes it stale.
 - A rebase, a merge, or an amend that leaves the content identical keeps the fingerprint;
   one that changes the content needs a new verification.
-- Record the full 40-character ID. A short prefix is for display only.
+- Record the full object ID: 40 hex characters in a SHA-1 repository, 64 in a SHA-256 one.
+  A short prefix is for display only.

@@ -8,7 +8,7 @@ Both end with exactly one `Next step` line.
 
 ```text
 HEAD: <full SHA>   Branch: <name or detached>
-Tree: <40-character fingerprint>
+Tree: <full tree ID>
 Working state: staged <n or none>, unstaged <n or none>, untracked <n or none>
 Plan: <path or none>   Spec: <path or none>
 
@@ -36,7 +36,7 @@ Next step: <skill> - <one-line reason>
 ## Compact report
 
 ```text
-Verdict: <verdict>   Tree: <40-character fingerprint>
+Verdict: <verdict>   Tree: <full tree ID>
 <only rows whose status is not passed, in the matrix form>
 Journal: Verify: <verdict> compact tree <tree SHA> <YYYY-MM-DD HH:MM>
 Next step: <skill> - <one-line reason>

@@ -3,7 +3,7 @@ name: finalize
 description: You MUST use this when verified work awaits a decision on how it leaves the branch - merging it, pushing it, opening a pull request (PR), keeping the branch, discarding the branch, or cleaning up a worktree or workspace - in any repository. Not for work that is not verified yet (verify), open review findings (cr-received), a plain commit with no integration decision, or release work with its own checklist. Replaces devflow branch-finish.
 argument-hint: "[merge|pr|squash|keep|discard|pause]"
 metadata:
-  version: "0.0.3"
+  version: "0.0.4"
 license: MIT
 ---
 

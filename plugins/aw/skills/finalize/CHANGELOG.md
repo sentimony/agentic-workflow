@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.4] - 2026-10-28
+
+- The fingerprint recipe in `references/tree-fingerprint.md` records the full object ID
+  (40 hex characters in a SHA-1 repository, 64 in a SHA-256 one) and removes its
+  temporary index with a `trap` on exit.
+
 ## [0.0.3] - 2026-10-27
 
 - Squash: `UNKNOWN` merge state is read again up to five times, `HAS_HOOKS` goes on,

@@ -50,7 +50,7 @@ A compact `PASS` lists no rows. A compact report never stands in for the full ma
 - Number claims `C1`, `C2`, and so on before any check runs.
 - Sources, all of them when present: every `AC<n>` of the spec the plan names, every task
   of the plan with its `Produces` and `Covers` fields, the `Task`, `Ruling`, and
-  `Deferred` lines of the journal, each finding of the last review round that a
+  `Deferred` lines of the journal, each finding of any review round that a
   `Received` line marks `ACCEPT` or `PARTIAL`, and the words of the caller ("fixed the
   login redirect", "all tests pass").
 - The source tag in parentheses is `AC<n>`, `Task <n>`, `journal`, `R<n>-F<k>` (or

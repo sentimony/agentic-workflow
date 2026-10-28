@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.4] - 2026-10-28
+
+- The `no plan needed` handoff carries the approved spec:
+  `Next step: implement - no plan needed: <the edit> - spec <path>`; the Result table
+  has a row for it.
+- Tasks are ordered by dependencies (a removal comes only after nothing reads the old
+  thing), and credential placeholder names such as `<API_TOKEN>` are not flagged as
+  placeholders.
+- A file listed in `Initial dirty state` takes only the task's own hunks in the commit
+  line (see `implement` step 5).
+
 ## [0.0.3] - 2026-10-27
 
 - One list of the record lines plan-craft writes (step 5 and the template's writer

@@ -3,7 +3,7 @@ name: verify
 description: You MUST use this when anyone - you, a subagent, or the user - is about to state that work is done, fixed, ready, or mergeable, and before the commit that completes it, a merge, opening a pull request, or a handoff report, including work that has no plan. Covers every promise behind the claim - spec criteria, plan tasks, journal entries, accepted review fixes, and the caller's words - proven with fresh checks on the current tree and given one verdict, without editing code. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-path>]"
 metadata:
-  version: "0.0.3"
+  version: "0.0.4"
 license: MIT
 ---
 
@@ -32,7 +32,7 @@ paths from `git status --porcelain`. Compute the fingerprint with the recipe in
 Write the claims down before running anything, numbered `C1`, `C2`, and so on. Take
 them from every source present - the spec's `AC<n>` (via `Spec:` in the plan header),
 the plan's tasks with `Produces` and `Covers`, the journal's `Task`, `Ruling`, and
-`Deferred` lines, each `ACCEPT` or `PARTIAL` finding of the last review round, and the
+`Deferred` lines, each `ACCEPT` or `PARTIAL` finding of any review round, and the
 caller's words; the list and source tags are in [report.md](references/report.md). The
 marker `Ruling: plan revised after spec re-approval - <spec path>` is checked as a
 claim this way: the plan's `Spec` names that path, and that spec reads

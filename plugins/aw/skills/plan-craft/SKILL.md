@@ -1,9 +1,9 @@
 ---
 name: plan-craft
 description: You MUST use this when a spec the user approved, an accepted design, or requirements already agreed in the conversation have to be turned into an ordered, multi-step implementation plan before any code is written - including a spec from specify, work with no spec yet, and a plan revision after a document review. Replaces devflow plan-crafting. Covers whether a plan is needed, task order, acceptance-criteria coverage, and the execution choice. Not for open design (specify) or executing a plan (implement).
-argument-hint: "[<spec-path>] [<plan-path>]"
+argument-hint: "[<spec-path>] [<plan-path>] [--auto]"
 metadata:
-  version: "0.0.4"
+  version: "0.0.5"
 license: MIT
 ---
 
@@ -18,7 +18,19 @@ input -> plan needed? -> path -> header -> tasks -> self-check -> save -> execut
 ```
 
 The optional arguments are the path to a spec, the path to a plan to revise, or both
-(`specify` passes both after a re-approval). Without them, step 1 finds the input.
+(`specify` passes both after a re-approval), and `--auto`. Without paths, step 1 finds
+the input.
+
+With `--auto` in the arguments, a `Next step` that names a local skill (`implement`, and
+`cr-request` for the plan review) is not handed back: start that skill in the same turn
+and pass `--auto` on.
+The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
+`ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
+a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+`BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
+nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
+`--auto` is never written into a plan, spec, or record, and a `Next step` line never
+carries it; a new session or a manual call runs without it.
 
 ## 1. Find the input
 
@@ -57,6 +69,8 @@ Shared with `specify`, `implement`, and `cr-received`:
   instead of writing a second one;
 - no skill approves or replaces a spec on the user's behalf.
 
+Appending lines to a spec's `## Verification record` is not a material change and does not reset its approval.
+
 This skill never edits an approved spec's content, not even a section it judges minor
 (a Security Model line, a criterion's wording). When planning shows the spec must change
 materially, set its `Status` to `draft`, change nothing else in it, write no plan, and
@@ -68,11 +82,16 @@ as approval of a design the user has not confirmed.
 
 ## 2. Decide whether a plan is needed
 
+When a plan for this spec already exists (passed in, routed back by `cr-received`, or
+one whose `Spec` names the spec), skip this step and revise that plan (step 3), even for
+a one-line delta; this step applies only when there is no plan.
+
 One or two edits with an obvious approach do not get a plan. Say so in one line, name
 the edit, and stop with `Next step: implement - no plan needed: <the edit>`. When the
 input is an approved spec, end instead with
 `Next step: implement - no plan needed: <the edit> - spec <path>`, so the spec travels
-with the handoff. `implement` keeps its own minimal journal for such changes.
+with the handoff. Such a change has no plan file: `implement` writes its record lines
+into the spec's `## Verification record`, and with no spec there is no record file.
 Everything else gets a plan, including a small change whose order of steps carries
 risk (a migration, a deletion, a public interface).
 
@@ -133,7 +152,18 @@ one carries the fields of the template: `Files`, `Consumes`, `Produces` (exact
 signatures or formats), `Covers` (`AC<n>`, comma-separated), `Depends on` (`Task <n>` or
 `none`), `RED` and `GREEN` (command and expected output), and `Commit` with
 `git add -A -- <paths>` for that task's paths only (a file listed in `Initial dirty state`
-takes only the task's own hunks, see `implement` step 5).
+takes only the task's own hunks, see `implement` step 5), and `Outward` when it has one.
+
+Each task is self-contained for a fresh agent that never saw the conversation: its
+files, the context it needs, when it is done, the commands that check it, and what it
+must not touch. Dependencies are explicit in `Depends on`, so waves follow from them.
+
+`Outward: <what and where>` marks a task whose action leaves the repository: a deploy,
+production, a publication, an external service. Pushing and merging the work branch is
+`finalize`, not `Outward`. Such a task runs only after a full `PASS` and a closed review,
+with its own confirmation of that action, also under `--auto`; a `Check` that acts
+outward moves into its own task with `Outward`. A criterion only such tasks cover is
+reported by `verify` as `deferred to Task <n>` and does not block `PASS`.
 
 Order:
 
@@ -151,9 +181,11 @@ Content:
   check that can actually fail; no ceremonial tests built only from mocks;
 - an exact expected output that follows from a rule (alignment, padding, truncation,
   number format, hashes, serialization) is computed by a throwaway script that applies
-  the rule, or by running existing code, never by hand; the plan says it was computed
-  and gives the command that reproduces it, and a value that could not be computed is
-  marked `check during execution` instead of an invented line;
+  the rule, never by hand; running existing code gives the expected value only for
+  behavior the spec says does not change, otherwise it comes from the requirement, a
+  rule, or a fixture; the plan says it was computed and gives the command that
+  reproduces it, and a value that could not be computed is marked
+  `check during execution` instead of an invented line;
 - waves, independent tasks, and shared state are marked only where they exist; a
   dimension that does not apply gets `n/a: <reason>` once in `Architecture`, not an
   empty section;
@@ -170,7 +202,10 @@ The record lines this skill writes, and no others, each appended and never edite
 - a revision after review (step 3): `Task <n>: pending` for each new task;
 - a revision after spec re-approval (step 3): the marker
   `Ruling: plan revised after spec re-approval - <spec path>`, then the delta tasks as
-  `Task <n>: pending` lines with new numbers.
+  `Task <n>: pending` lines with new numbers;
+- a revision that removes the behavior of an accepted fix:
+  `Ruling: R<n>-F<k> superseded by <Task <n> | R<m>-F<k> | marker> - <reason> - <cost if wrong>`,
+  naming the task, finding, or marker that replaces it; it needs no user consent.
 
 ## 6. Check the plan before handoff
 
@@ -181,39 +216,64 @@ Read the saved plan once more against the spec and fix what fails:
 - no placeholders left: no `TBD`, no "add error handling", no unfilled angle brackets
   outside the record format and credential placeholder names such as `<API_TOKEN>`;
 - names, signatures, and formats agree between `Produces` and `Consumes` of every pair;
-- every command is checked against its `--help` or the project's documentation, not
-  recalled;
+- every project script or alias is checked against its definition (`package.json`,
+  `Makefile`, config); `--help` or the documentation only for syntax the definition does
+  not show; a command that cannot be confirmed is marked `check during execution`;
 - proportion: a plan far longer than its spec usually already contains the code; move
   that back into behavior and invariants.
 
 ## 7. Save and choose execution
 
-An independent review of the plan is optional: `cr-request` in document mode takes the
-plan file and reports findings by section. Offer it for plans with high-risk tasks; do
-not run it unasked.
-
-Then ask how to execute. Use the harness's interactive question tool when it has one,
+Ask how to execute. Use the harness's interactive question tool when it has one,
 otherwise a numbered list:
 
-1. `implement` inline - this session runs the tasks one by one; state why it fits or
-   not (few tasks, tightly coupled, needs the conversation's context);
-2. `implement` with subagents - a fresh agent per task, driven from this session; state
-   why it fits or not (many independent tasks, long plan, context budget).
+1. `implement` with subagents - the default: this session orchestrates and a fresh
+   agent runs each task, in waves where `Depends on` allows; state why it fits or not
+   (many independent tasks, long plan, context budget);
+2. `implement` inline - this session runs the tasks one by one; offered with its reason
+   when that fits better (one or two tasks, tightly coupled edits, needs the
+   conversation's context).
 
 Put the recommendation inside the description of the option it favors, with its reason;
 no separate "(Recommended)" tag. Write the answer into the header as `Execution: inline`
 or `Execution: subagents`. Without an explicit
-choice, `Execution` stays `unset` and execution does not start.
+choice, `Execution` stays `unset` and execution does not start. A revision keeps the
+existing `Execution` and does not ask again.
+
+Under `--auto` there is no question: `inline` when the plan has one or two tasks or
+every task changes the same files, otherwise `subagents`; a host without subagents
+gives `inline`. The reason follows the value in the header
+(`Execution: inline - two tasks`); the value stays the first word.
+
+Checkpoint commit: commit locally, never push, with only this session's own paths (files it
+created or changed for this spec, plan, task, or round). Other uncommitted changes, and
+content someone else already staged, stay exactly as they were: commit through a temporary
+index when the real index holds foreign content. Before the first commit of a chain, read the
+commit policy in the user's and project's instruction files in force; the stricter one wins.
+A policy that asks first gets one question for the whole chain (this stops `--auto`); a
+policy that forbids commits means no commit, and the report says so.
+
+Commit the plan once `Execution` is written, as `Plan <topic>`, and each later revision
+separately, as `Revise plan <topic>: <reason>`.
+
+A review of the plan is `cr-request` in document mode: it takes the plan file and
+reports findings by section. Without `--auto`, offer it for plans with high-risk tasks
+and do not run it unasked. Under `--auto`, run it after the `Plan <topic>` commit, with
+up to three automatic rounds through `cr-received` and the plan revisions it routes
+here; then start `implement`. `cross-cr plan` runs only when the user names it. When the
+reviewer is unavailable, say so in one line of the report and go on to `implement`.
 
 ## 8. Report
 
 Report the plan path, the number of tasks, the criteria each task covers, any question
-left open, and whether an unfinished plan was kept beside the new one. The last line of
+left open, whether an unfinished plan was kept beside the new one, and the commit made
+or why there is none. The last line of
 the result is exactly one of:
 
 | Condition | Last line |
 | --- | --- |
 | plan ready and `Execution` chosen | `Next step: implement - <path>, <inline or subagents>` |
+| plan ready under `--auto`, plan review not run yet | `Next step: cr-request - <path>, document review` |
 | no plan needed (step 2), no spec | `Next step: implement - no plan needed: <the edit>` |
 | no plan needed (step 2), approved spec | `Next step: implement - no plan needed: <the edit> - spec <path>` |
 | plan revised after review, `Re-review: needed` | `Next step: cr-request - <path>, document re-review` |
@@ -247,12 +307,15 @@ active instructions.
 
 Capabilities: the skill reads repository files, may run read-only commands such as
 `--help` to check planned commands, and writes the plan file and, in a spec, only the
-`Status` field when it sets it back to `draft`. It makes no network calls, does not edit
-code, does not commit, and does not start execution.
+`Status` field when it sets it back to `draft`. It commits the plan and its revisions
+locally (its own paths only, never a push) unless the commit policy forbids it. It
+makes no network calls and does not edit code; under `--auto` it starts the plan review
+and `implement`, and otherwise does not start execution.
 
 ## References
 
 - [Plan template, field notes, and execution record format](references/plan-template.md)
 - Spec input: `specify`
 - Execution: `implement`
-- Optional plan review: `cr-request` in document mode
+- Plan review: `cr-request` in document mode (run under `--auto`); `cross-cr plan` only
+  when the user names it

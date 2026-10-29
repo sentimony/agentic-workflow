@@ -26,7 +26,8 @@ local diff drivers from rewriting the output.
     git diff --no-ext-diff --no-textconv HEAD | git hash-object --stdin
     git ls-files --others --exclude-standard
 
-The tree fingerprint comes from the recipe in [tree-fingerprint.md](tree-fingerprint.md).
+The tree fingerprint comes from the `## Committed tree` recipe in
+[tree-fingerprint.md](tree-fingerprint.md).
 
 ## Identity record
 
@@ -82,7 +83,8 @@ Assessment and disposition are separate: a `CONFIRMED` finding can be `DEFER`, a
   blocker.
 - `ESCALATE` - needs a decision the user or another owner makes: product scope,
   architecture, security posture, a public contract, or a conflict with an earlier user
-  decision.
+  decision. It stays open across rounds until a `Ruling: R<n>-F<k> escalation decided`
+  line; records that do not depend on it are fixed in the same pass.
 
 ## Evidence for findings on a spec or plan
 
@@ -110,9 +112,9 @@ The resolution evidence of a document fix is the edited section and the file's n
     Rejected:  <ID - assessment - evidence>
     Deferred:  <ID - owner - where tracked>
     Set aside: <row - ruling>
-    Escalated: <ID - decision needed - options>
+    Escalated: <ID - decision needed - options; open ones from earlier rounds too>
     Open questions: <from the review and from verification>
-    Checks run: <commands and results>
+    Checks run: <commands, results, and the class of each failure>
     Re-review: <needed for which scope, or not needed - reason>
 
 Report counts as they are; a rejected or deferred finding is a result, not a failure to

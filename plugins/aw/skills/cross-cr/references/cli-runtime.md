@@ -362,11 +362,20 @@ Antigravity has no read-only flag, and the runner adds none. Observed effect of 
 write, a read outside the workspace, and a command missing from the user's global
 `permissions.allow` (in `~/.gemini/antigravity-cli/settings.json`) are denied and end the
 turn. A command that list allows does run, so a test or build command there runs the
-reviewed repository's code. `agy` loaded the reviewed repository's `AGENTS.md` and
-`GEMINI.md` as rules even in an untrusted workspace, and no flag or environment variable
-turns that or the user settings off. `--mode plan` is ignored together with
-`--disable-slash-commands`, so the runner does not pass it. The runner never passes
-`--dangerously-skip-permissions` or `--mode accept-edits`.
+reviewed repository's code, and the runner refuses such a run (below). `agy` loaded the
+reviewed repository's `AGENTS.md` and `GEMINI.md` as rules even in an untrusted
+workspace, and no flag or environment variable turns that or the user settings off.
+`--mode plan` is ignored together with `--disable-slash-commands`, so the runner does not
+pass it. The runner never passes `--dangerously-skip-permissions` or
+`--mode accept-edits`.
+
+Before every Antigravity `run` and `resume`, the runner reads
+`$HOME/.gemini/antigravity-cli/settings.json`. A non-empty `permissions.allow`, a file it
+cannot read, and content it cannot parse (not JSON, `permissions` not an object, `allow`
+not a list) are exit `2` before a run directory exists and before any brief is sent; the
+message names the file and the number of entries, never their content. A missing file is
+an empty list and the run proceeds. There is no override: the entry format is not
+documented, so any non-empty list stops the run, a false stop rather than a leak.
 
 UNASSESSED: Antigravity project hooks and MCP servers in a workspace listed in
 `trustedWorkspaces`, and whether `cache_read_tokens` counts inside `input_tokens`; the
@@ -436,7 +445,7 @@ other than `never`; only `codex exec` was observed as a host.
 | 25 | `agy` wrote a complete answer and did not exit; the runner stopped it after `AGY_IDLE_SECONDS` and `review.md` holds the answer | check completeness as for 0 and name the stop in the run report |
 | 2 | invalid input: unknown agent, a malformed argument group, effort outside the fixed set, empty or option-like model, missing repository, invalid `--target` or `--pass-env`, unreadable `--plan` or `--spec`, unusable `--followup` or `--dispositions`, embedded
 material over 4 MiB, cr-request missing for `--mode`, a follow-up without `--brief` whose
-previous run records no host brief, a Codex trust path that cannot be determined or holds a control character, missing or non-UTF-8 brief, empty prompt, unsafe run root, or a failure to create the run root | fix the invocation once; otherwise report unavailable |
+previous run records no host brief, a Codex trust path that cannot be determined or holds a control character, `agy` settings with a non-empty `permissions.allow` or that cannot be read or parsed, missing or non-UTF-8 brief, empty prompt, unsafe run root, or a failure to create the run root | fix the invocation once; otherwise report unavailable |
 | 20 | `CROSS_REVIEW_DEPTH` is set: this process is already a reviewer | perform the review yourself; never retry delegation |
 | 21 | reviewer CLI not found or not executable | report unavailable and apply the fallback |
 | 22 | reviewer exited non-zero or `agy` reported a status other than `SUCCESS`, or a runtime I/O failure after the run directory exists | report unavailable with the cause from `run.log`; partial output is no review |

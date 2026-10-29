@@ -2,10 +2,10 @@
 name: cross-cr
 description: You MUST use this when an implementation plan or a finished implementation needs an independent review by other agent CLIs - by default the opposite CLI (Codex for work done in Claude Code, Claude Code for work done in Codex), plus any reviewer the user names, Antigravity (Gemini) included - whether the user asks for a cross-review, a cross-cr, or a second opinion from the other agent. Replaces devflow cross-review. Same-host review belongs to cr-request and deciding on findings to cr-received; spec review and per-task review are outside this skill.
 metadata:
-  version: "0.0.1"
+  version: "0.0.2"
 license: MIT
 compatibility: Requires Python 3.9 or newer and the reviewer agent CLI (codex, claude, or agy) installed and logged in; reads the brief, target, and fingerprint references of the installed cr-request skill.
-argument-hint: "[<claude|codex|gemini> [model] [low|medium|high|xhigh|max]]..."
+argument-hint: "[--auto] [<claude|codex|gemini> [model] [low|medium|high|xhigh|max]]..."
 ---
 
 # Cross CR
@@ -69,8 +69,10 @@ Arguments after `/cross-cr` (or `$cross-cr` in Codex): zero or more groups
   `astra`, `luna`; `argon`, `flash`) or a full model id; `effort` is one of
   `low|medium|high|xhigh|max`. A missing value takes the reviewer's default.
 
-Resolve the arguments with the runner before any run. It prints one JSON line per
-reviewer with `agent`, the full `model` id, `effort`, and `same_cli`:
+Take `--auto` (step 7) out of the arguments first: it never reaches the runner, whose
+`resolve` rejects it. Resolve the remaining arguments with the runner before any run. It
+prints one JSON line per reviewer with `agent`, the full `model` id, `effort`, and
+`same_cli`:
 
 ```text
 python3 <skill-dir>/scripts/cross_review.py resolve --host claude-code|codex [<group>...]
@@ -107,6 +109,20 @@ that contains this `SKILL.md`). Both modes need its `references/brief.md` and
 `references/tree-fingerprint.md`; `implementation` also needs `references/target.md` and
 `references/lenses.md`. If they are missing, report `dependency unavailable: cr-request`
 and stop.
+
+Before round 1, commit this session's own uncommitted spec, plan, or code as
+`Checkpoint before cross-cr R1: <topic>`. Own paths are the spec, the plan, and the paths
+of the tasks and rounds in its record, the files this session created or changed; list
+every other uncommitted path in the report and leave it uncommitted. Without a commit,
+the boundary stays on the working tree (step 3).
+
+Checkpoint commit: commit locally, never push, with only this session's own paths (files it
+created or changed for this spec, plan, task, or round). Other uncommitted changes, and
+content someone else already staged, stay exactly as they were: commit through a temporary
+index when the real index holds foreign content. Before the first commit of a chain, read the
+commit policy in the user's and project's instruction files in force; the stricter one wins.
+A policy that asks first gets one question for the whole chain (this stops `--auto`); a
+policy that forbids commits means no commit, and the report says so.
 
 Capture the target identity: repository root, branch or worktree, `HEAD`, and working-tree
 state. For `plan`, name the plan and spec paths; pass them to the runner as `--plan` and
@@ -164,8 +180,8 @@ detection. Pass the boundary to the runner, which then computes the file list, t
 standard exclusions, and the fingerprint and appends them to the brief:
 
 - `--target working-tree BASE` - `git diff BASE` with selected untracked files; the
-  default for the final review, including after `implement` when the plan, spec, or
-  fixes are still uncommitted, and for a later round with uncommitted fixes;
+  default for the final review, including when the commit policy left the plan, spec, or
+  fixes uncommitted, and for a later round with uncommitted fixes;
 - `--target range BASE..HEAD` - committed changes only;
 - `--target working-tree` - uncommitted changes against `HEAD`, the usual boundary of a
   change made from conversation requests;
@@ -174,7 +190,8 @@ standard exclusions, and the fingerprint and appends them to the brief:
 `--exclude <path>` (repeatable, a file or a directory, relative to the repository root or
 absolute inside it) drops a path from the material, for example the user's untracked file
 that is not part of the change; the brief lists it as excluded, and one that matches no
-path of the target is exit `2`. Never commit only to get a boundary the runner accepts.
+path of the target is exit `2`. Only the checkpoint commit of step 1 commits anything:
+foreign changes are excluded or listed, never committed to fit a boundary.
 
 ### 4. Record the target fingerprint
 
@@ -259,7 +276,8 @@ Exit `0`: read `review.md` and check it in step 7. `25`: `agy` wrote a complete 
 then did not exit; the runner stopped it after 60 seconds idle and `review.md` holds the
 answer: check it in step 7 as for `0`. `20`: do the review yourself; never delegate again.
 `24`: start a fresh `run` with a full brief if still needed. `2` (invalid input, unsafe
-run root, oversized material, or cr-request missing): fix the invocation once, otherwise
+run root, oversized material, cr-request missing, or `agy` settings that allow commands or
+cannot be read; see Security Model): fix the invocation once, otherwise
 unavailable. `21`, `22` (partial output is no review; cause in `run.log`), `23`:
 unavailable, apply the fallback. `130`: interrupted, no review; partial artifacts stay
 for diagnosis. [cli-runtime.md](references/cli-runtime.md) has the allowlist, the
@@ -315,6 +333,17 @@ The last line of the result is the next step:
 | Clean `plan` mode | `Next step: implement - <plan path>` |
 | Unavailable | `Next step: none - choose another reviewer or retry` |
 
+With `--auto` in the arguments, a `Next step` that names a local skill (`cr-received`,
+`verify`, `implement` after a clean `plan` round, the next `cross-cr` round of step 8)
+is not handed back: start that skill in the same turn and pass `--auto` on.
+The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
+`ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
+a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+`BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
+nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
+`--auto` is never written into a plan, spec, or record, and a `Next step` line never
+carries it; a new session or a manual call runs without it.
+
 ### 8. Repeat rounds
 
 Automatic rounds:
@@ -322,7 +351,8 @@ Automatic rounds:
 - **Start.** After `cr-received` decides that another round is needed (an accepted
   material change, security, data loss, public contract, or several interacting fixes),
   start the next `cross-cr` round of the same mode yourself, without asking, up to
-  and including round 3 of the same target. Each round is a fresh
+  the round limit of Count. Under `--auto` the loop runs without pauses: the review,
+  `cr-received --auto`, `verify --auto`, then the next round. Each round is a fresh
   `run --followup <previous-run-dir> --dispositions <file>` without `--brief`: the runner
   reuses the host part of the previous brief, its target, mode, and exclusions (a new
   `--exclude` adds to them), rebuilds the diff, untracked files, hashes, and `Status:`
@@ -335,30 +365,34 @@ Automatic rounds:
   and its dispositions file lists its own findings.
 - **Named rounds.** A number of rounds or a sequence of reviewers the user names
   explicitly authorizes exactly those rounds: they run one after another without asking,
-  even on an unchanged target or past round 3, and Skip and the unchanged-target rule of
+  even on an unchanged target or past the limit, and Skip and the unchanged-target rule of
   step 1 do not apply to them. After them the usual rules hold. When the user named 2
   rounds, round 2 starts without asking and round 3 only after asking.
-- **Count.** Every round of the target counts, including the first automatic one and
-  rounds the user requested, whichever reviewer ran it. The target is the plan and spec
-  paths in `plan` mode, and the base and branch in `implementation` mode. The runner's
-  `Target:` total covers one reviewer's follow-up chain; for a sequence of reviewers on
-  one target, the report adds the chains up.
+- **Count.** Only automatic rounds count: at most three, or the number of named rounds.
+  A round the user starts by an explicit call after the limit runs once past it and is
+  recorded as
+  `Ruling: round R<n> started by the user past the limit - <user's words> - <cost if wrong>`.
+  The same cause twice escalates to the user, in user-started rounds too. Round numbers
+  `R<n>` run over every round of the target, whichever reviewer ran it. The target is the
+  plan and spec paths in `plan` mode, and the base and branch in `implementation` mode.
+  The runner's `Target:` total covers one reviewer's follow-up chain; for a sequence of
+  reviewers on one target, the report adds the chains up.
 - **Skip.** Do not start a round automatically when the last round had no accepted
   Critical or Important finding, when the round was `unavailable`, or when the user said
   not to repeat the review for this target. An explicit request on an unchanged target
   after a clean round follows step 1.
-- **After round 3.** Ask before every further round and give a recommendation with its
+- **After the limit.** Ask before every further round and give a recommendation with its
   reason: worth it when the last round found an accepted Critical or Important finding
   whose fix changed a contract; can stop when only Minor, rejected, or deferred findings
   remain or when running tests catches the remaining risk better. Without a user channel,
-  stop after round 3 and put the recommendation in the report.
+  stop at the limit and put the recommendation in the report.
 
 Each round report shows the round cost and the cumulative cost of the target.
 
 The round counter lives in the conversation, with no state file. It is separate from the
 fix-attempt counters of `cr-received`. Write the dispositions file
 from the `cr-received` record: every previous finding ID with accepted and fixed,
-rejected with reason, or deferred.
+rejected with reason, deferred, or escalated, open.
 
 ### 9. Follow up in the same session
 
@@ -395,9 +429,11 @@ reviewer CLI (by default the opposite agent CLI, plus one per group the user nam
 each contacts
 its own vendor API over the network with the brief and whatever files that reviewer reads. Run artifacts live only under the system temporary directory in
 `cross-review/`; the runner writes nothing into the target repository. The skill itself
-edits only the plan's execution record, when the plan is known. `usage.json` holds
-only numbers and model and skill names, with the same private permissions as the other
-artifacts.
+edits only the plan's execution record, when the plan is known, and makes the local
+checkpoint commit of step 1 with this session's own paths; it never pushes. Before an
+Antigravity run it reads the `agy` settings file without printing its content.
+`usage.json` holds only numbers and model and skill names, with the same private
+permissions as the other artifacts.
 
 Reviewer choice: the opposite CLI by default; more reviewers, Antigravity, and the same
 CLI as the host only from the user's explicit groups, the last reported as not
@@ -421,9 +457,13 @@ Limits:
   `agy`, which denies file writes, reads outside the repository, and commands, but runs
   every command in the user's global `permissions.allow` of `agy` settings without
   asking. When that list holds a test or build command, the reviewer can run the
-  reviewed repository's code; trim the list before an Antigravity review of untrusted
-  code. `agy` also loads the reviewed repository's `AGENTS.md` and `GEMINI.md` as rules,
-  and no flag turns that off.
+  reviewed repository's code, so the runner reads
+  `~/.gemini/antigravity-cli/settings.json` (through `HOME`) first: a non-empty
+  `permissions.allow`, or a file it cannot read or parse, is exit `2` before any brief is
+  sent, with a message that names the file but not its content; a missing file is an
+  empty list. There is no override; empty the list before an Antigravity review. `agy`
+  also loads the reviewed repository's `AGENTS.md` and `GEMINI.md` as rules, and no flag
+  turns that off.
 - **Environment.** The reviewer process gets only the allowlist in
   [cli-runtime.md](references/cli-runtime.md#reviewer-environment) plus any name the host
   passes with `--pass-env`. Other secrets exported in the host shell do not reach it, but
@@ -463,8 +503,9 @@ Limits:
 - reusing a review after the plan, spec, or diff changed;
 - repeating a round on an unchanged target after a clean result without offering a
   different reviewer, model, effort, or focus;
-- committing only to make a boundary fit `--target`, or judging the user's own
-  uncommitted edits as findings.
+- committing foreign changes to make a boundary fit `--target`, or judging the user's own
+  uncommitted edits as findings;
+- passing `--auto` to the runner.
 
 ## References
 

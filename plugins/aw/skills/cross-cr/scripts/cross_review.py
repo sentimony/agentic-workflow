@@ -1629,6 +1629,40 @@ def _wait_reviewer(proc, reviewer: str, raw_path: Optional[Path]):
             return proc.returncode, "idle-after-answer"
 
 
+AGY_SETTINGS = Path(".gemini") / "antigravity-cli" / "settings.json"
+
+
+def check_agy_isolation(env: Mapping[str, str]) -> None:
+    """Refuse an Antigravity run when agy would run commands without asking.
+
+    Headless agy runs every command in the user's permissions.allow, so a non-empty
+    list, or a settings file that cannot be read or parsed, is exit 2 before any brief
+    is sent. A missing file is an empty list. Messages name the file, never its content.
+    """
+    path = Path(env.get("HOME") or os.path.expanduser("~")) / AGY_SETTINGS
+    try:
+        raw = path.read_bytes()
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise CrossReviewError(EXIT_INVALID_INPUT, "cannot read agy settings %s: %s"
+                               % (path, exc.strerror or type(exc).__name__))
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except ValueError:
+        data = None
+    permissions = data.get("permissions", {}) if isinstance(data, dict) else None
+    allow = permissions.get("allow", []) if isinstance(permissions, dict) else None
+    if not isinstance(allow, list):
+        raise CrossReviewError(EXIT_INVALID_INPUT,
+                               "cannot parse permissions.allow in agy settings %s" % path)
+    if allow:
+        raise CrossReviewError(
+            EXIT_INVALID_INPUT,
+            "agy settings %s allow %d command(s) without asking (permissions.allow); "
+            "empty that list before an Antigravity review" % (path, len(allow)))
+
+
 def _require_cli(reviewer: str) -> str:
     cli = REVIEWERS[reviewer]["cli"]
     executable = shutil.which(cli)
@@ -1649,6 +1683,8 @@ def _execute(reviewer: str, repo: Path, model: str, effort: str, brief_data: byt
     runtime after the run directory exists -> 22.
     """
     executable = _require_cli(reviewer)
+    if reviewer == "antigravity":
+        check_agy_isolation(env)
     child_env = reviewer_environment(env, reviewer, pass_env)
     try:
         run_dir = _create_run_dir()

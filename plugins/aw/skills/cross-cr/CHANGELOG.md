@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.0.2] - 2026-10-29
+
+- Before round 1 the skill commits this session's own uncommitted spec, plan, or code
+  locally as `Checkpoint before cross-cr R1: <topic>`, through a temporary index when the
+  real one holds foreign content, under the user's and project's commit policy; other
+  uncommitted paths are listed and left alone. "Never commit only to get a boundary" is
+  gone.
+- Only automatic rounds count against the limit (three, or the named rounds); a round
+  the user starts past the limit runs once and is recorded as a `Ruling` line, and the
+  same cause twice escalates also in user-started rounds. Dispositions can be
+  "escalated, open".
+- `--auto`: the skill takes it out of the arguments before the runner's `resolve` and
+  runs review, `cr-received`, `verify`, and the next round without pauses, stopping on
+  user decisions, the Round rule, and before the `finalize` choice.
+- The runner reads `~/.gemini/antigravity-cli/settings.json` (through `HOME`) before every
+  Antigravity `run` and `resume`: a non-empty `permissions.allow`, or a file it cannot read
+  or parse, is exit 2 before any brief is sent, with a message that names the file but not
+  its content; a missing file lets the run proceed.
+- A runner test checks that `standard_sections()` leaves out the host-only text of
+  cr-request `brief.md` (`Reviewed with`, `CI footer grammar`, `conversation comment`).
+
 ## [0.0.1] - 2026-10-27
 
 - New skill, forked from sentimony/skills devflow `cross-review` 1.4.2, which it

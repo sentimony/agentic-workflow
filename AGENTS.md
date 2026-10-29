@@ -49,6 +49,10 @@
 - `finalize` has no gate for work with neither a plan nor a spec: such work has no record
   host to hold a `Verify` line, and the option choice is the user's own confirmation. This
   is an accepted trade-off, not a defect for review.
+- `finalize` advises `pr --draft` for a `working` verdict although a draft carries only
+  committed work: the uncommitted paths are listed as not integrated, and committing them is
+  the user's call under the commit policy. This is an accepted trade-off, not a defect for
+  review.
 - Renaming a released skill: the new name starts at `0.0.1`, its CHANGELOG names the old one,
   and README Install says to remove the old skill or reinstall.
 - Skills form one chain: specify -> plan-craft -> implement -> verify -> cr-request ->
@@ -59,8 +63,8 @@
   whose result ends the turn. With `--auto` each skill starts its local next step in the
   same turn and passes the flag on; it still stops on the user's decisions, the Round rule,
   an `Outward` action, and before the `finalize` choice, so nothing is pushed without it.
-  Each skill commits its own paths locally at its checkpoint (spec approval, plan, task,
-  review round, record) as part of the chain. `cross-cr` stays outside the chain: it runs
+  Each skill with a checkpoint (spec approval, plan, task, review round, record) commits its
+  own paths locally there as part of the chain. `cross-cr` stays outside the chain: it runs
   only on request, next to or in place of the cr-request step, and hands findings to
   cr-received.
 - aw skills replace their sentimony/skills devflow counterparts (scope-triage,

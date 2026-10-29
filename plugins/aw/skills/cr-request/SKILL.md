@@ -164,10 +164,12 @@ no host there is no verdict file: the `Verify:` line is printed in the report on
 ```
 
 The block is shared with `verify`; for this skill, with no host the `Review`, `Finding`, and
-`Round` lines stay in the result only. With a host, append to its record (the plan's
-`## Execution record` or the spec's `## Verification record`) after the result is accepted,
-at the end of the record (inside its ```` ```text ```` block, before the closing fence, when
-it has one), in this format:
+`Round` lines stay in the result only. This skill never creates a spec's
+`## Verification record`: `implement` or `verify` does, and before that the lines stay in
+the result too. With a host, append to its record (the plan's `## Execution record` or the
+spec's `## Verification record`) after the result is accepted, at the end of the record
+(inside its ```` ```text ```` block, before the closing fence, when it has one), in this
+format:
 
 ```text
 Review R<n>: <Summary line> tree <tree SHA> reviewer <model> mode <code|document|re-review>
@@ -216,6 +218,11 @@ nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` w
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never
 carries it; a new session or a manual call runs without it.
 ```
+
+Under `--auto`, a chain that another skill started for a step it owns returns to that
+skill: `finalize` (healing its gate) at a `finalize` row, `cross-cr` at a re-review (its
+next round, never a same-host `cr-request`), and `plan-craft` after a clean document
+review of its plan, which then starts `implement` instead of `verify`.
 
 When the caller requires a closing line, that line goes right before the `Next step`
 line, in its exact text, and the `Next step` line stays the very last one. The CI

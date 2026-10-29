@@ -322,9 +322,10 @@ fingerprint, and the reviewer session with the review record.
 
 With a record host, found as `cr-request` step 7 finds it (the plan, else the spec), append
 to its record (the plan's `## Execution record` or the spec's `## Verification record`) the
-lines `cr-request` step 7 writes, one `Review` line per reviewer and one `Finding` line per
-finding, with `reviewer <agent> <model>` and mode `document` for `plan`, `code` for
-`implementation`, and `re-review` for a follow-up round. Never rewrite existing lines.
+lines `cr-request` step 7 writes, one `Review` line per reviewer, one `Finding` line per
+finding, and the `Round review <n>` line of the round, with `reviewer <agent> <model>` and
+mode `document` for `plan`, `code` for `implementation`, and `re-review` for a follow-up
+round. Never rewrite existing lines.
 
 The last line of the result is the next step:
 
@@ -351,17 +352,18 @@ carries it; a new session or a manual call runs without it.
 
 Automatic rounds:
 
-- **Start.** After `cr-received` decides that another round is needed (an accepted
-  material change, security, data loss, public contract, or several interacting fixes),
-  start the next `cross-cr` round of the same mode yourself, without asking, up to
-  the round limit of Count. Under `--auto` the loop runs without pauses: the review,
-  `cr-received --auto`, `verify --auto`, then the next round. Each round is a fresh
+- **Start.** After `cr-received` decides that another round is needed (an accepted material
+  change, security, data loss, public contract, or several interacting fixes), start the
+  next `cross-cr` round of the same mode yourself, without asking, up to the round limit of
+  Count. Under `--auto` the loop runs without pauses: the review, `cr-received --auto`,
+  `verify --auto`, then the next round: a re-review that `cr-received` or `verify` names
+  comes back here as that round, never as a same-host `cr-request`. Each round is a fresh
   `run --followup <previous-run-dir> --dispositions <file>` without `--brief`: the runner
   reuses the host part of the previous brief, its target, mode, and exclusions (a new
-  `--exclude` adds to them), rebuilds the diff, untracked files, hashes, and `Status:`
-  lines from the current files, and states the new round's finding IDs. A previous target
-  pinned to a commit id (`range BASE..<sha>`, `tree <sha>`) is exit `2`: pass `--target`
-  with the head that holds the fixes.
+  `--exclude` adds to them), rebuilds the diff, untracked files, hashes, and `Status:` lines
+  from the current files, and states the new round's finding IDs. A previous target pinned
+  to a commit id (`range BASE..<sha>`, `tree <sha>`) is exit `2`: pass `--target` with the
+  head that holds the fixes.
   Pass a new `--brief` only when a fact the host wrote has changed (a requirement, the
   host evidence), written from the current files; never feed the previous round's
   `brief.md` back in. With several reviewers, each follows up on its own previous run,
@@ -392,10 +394,11 @@ Automatic rounds:
 
 Each round report shows the round cost and the cumulative cost of the target.
 
-The round counter lives in the conversation, with no state file. It is separate from the
-fix-attempt counters of `cr-received`. Write the dispositions file
-from the `cr-received` record: every previous finding ID with accepted and fixed,
-rejected with reason, deferred, or escalated, open.
+The round counter is the record host's `Round review <n>` lines, which step 7 writes as
+`cr-request` does; with no host it lives in the conversation. It is separate from the
+fix-attempt counters of `cr-received`. Write the dispositions file from the `cr-received`
+record: every previous finding ID with accepted and fixed, rejected with reason, deferred,
+or escalated, open.
 
 ### 9. Follow up in the same session
 

@@ -4,7 +4,8 @@
 
 - `--auto` in the arguments starts the next local step (`verify`, `plan-craft`) in the
   same turn; it stops on a user decision, the Round rule, `ESCALATE`, `INCOMPLETE` or
-  `BLOCKED`, and before the `finalize` choice.
+  `BLOCKED`, and before the `finalize` choice; a chain that `finalize`, `cross-cr`, or
+  `plan-craft` started returns to that skill.
 - Each round's fixes and record lines are committed locally as
   `Address R<n> findings: <IDs>`, with only the session's own paths and under the commit
   policy of the user's and project's instructions.
@@ -23,9 +24,9 @@
 - Without a plan, record lines go to the spec's `## Verification record`, and appending
   there does not reset the spec's approval. The anchor uses the `## Committed tree`
   fingerprint recipe; a review of an uncommitted boundary keeps its identity only while
-  `HEAD` and the uncommitted fingerprint are unchanged. `Previous verification` is `stale`
-  whenever `Changed paths` is not `none`, and only a `Commits` line that says `allowed` or
-  `forbidden` answers the commit-policy question.
+  `HEAD` and the uncommitted state (without the record host) are unchanged.
+  `Previous verification` is `stale` whenever `Changed paths` is not `none`, and only a
+  `Commits` line that says `allowed` or `forbidden` answers the commit-policy question.
 
 ## [0.0.5] - 2026-10-28
 

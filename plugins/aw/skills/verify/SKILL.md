@@ -250,8 +250,12 @@ carries it; a new session or a manual call runs without it.
 ```
 
 So under `--auto` the `implement - Task <n> (outward, needs confirmation)` row and the
-`finalize` rows end the turn, except when `finalize` started this chain to heal its gate:
-then a `finalize` row returns to `finalize` and the option the user already chose.
+`finalize` rows end the turn, except as the next paragraph says.
+
+Under `--auto`, a chain that another skill started for a step it owns returns to that
+skill: `finalize` (healing its gate) at a `finalize` row, `cross-cr` at a re-review (its
+next round, never a same-host `cr-request`), and `plan-craft` after a clean document
+review of its plan, which then starts `implement` instead of `verify`.
 
 ## When not to use
 

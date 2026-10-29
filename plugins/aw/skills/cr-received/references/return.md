@@ -9,8 +9,9 @@ Check this before step 1. A review counts as already resolved when all of these 
 - the review itself is unchanged: the same thread update time for a PR, or the same
   content (`sha256`) for a saved file;
 - the reviewed head SHA in the review is the one the earlier records were made against;
-- the current tree fingerprint ([tree-fingerprint.md](tree-fingerprint.md)) equals the
-  `Tree` recorded in the identity record after the fixes.
+- the current tree fingerprint (the `## Committed tree` recipe in
+  [tree-fingerprint.md](tree-fingerprint.md)) equals the `Tree` recorded in the identity
+  record after the fixes.
 
 Then print the decision table rebuilt from that `Received` line and its records, and the
 return block with `Previous verification` worked out against the current tree. Edit no

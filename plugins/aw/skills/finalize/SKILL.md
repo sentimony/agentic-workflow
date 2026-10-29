@@ -128,10 +128,12 @@ where they are, and the report lists them as not integrated.
 When the gate fails - no `Verify` line, a non-`PASS` verdict, a `compact` verdict, a
 different tree, or a failed fingerprint recipe - integrate nothing, say which condition
 failed, and end with `Next step: verify - no full PASS on the current tree`. A `working`
-verdict ends with `Next step: none - commit the work for a verdict on a commit, or choose
-pr --draft`. When only the review is missing, end with
-`Next step: cr-request - no code review on this tree`; when only the re-review is
-missing, with `Next step: cr-request - re-review still needed on this tree`.
+verdict ends with
+`Next step: none - commit the work for a verdict on a commit, or choose pr --draft`; by
+design, a draft carries only what is committed, and the report lists the rest as not
+integrated. When only the review is missing, end with
+`Next step: cr-request - no code review on this tree`; when only the re-review is missing,
+with `Next step: cr-request - re-review still needed on this tree`.
 
 The gate holds through the whole run. A merge of the base into the branch, a rebase, a
 conflict resolution, or a regenerated lock file that changes the content gives a new

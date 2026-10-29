@@ -21,7 +21,11 @@
   and is recorded with a `Ruling` line; the same cause twice escalates in any round.
 - `--auto` starts `cr-received` or `verify` in the same turn and stops at the user's
   decisions, the Round rule, and before the `finalize` option choice; `Next step` lines,
-  the CI one included, never carry it.
+  the CI one included, never carry it. A chain that `finalize`, `cross-cr`, or
+  `plan-craft` started for a step it owns returns to that skill: a clean plan review goes
+  back to `plan-craft` and `implement`, not to `verify`.
+- The skill never creates a spec's `## Verification record`; until `implement` or `verify`
+  does, the `Review` and `Finding` lines stay in the result.
 
 ## [0.0.9] - 2026-10-28
 

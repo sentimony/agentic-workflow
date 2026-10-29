@@ -257,12 +257,13 @@ policy that forbids commits means no commit, and the report says so.
 Commit the plan once `Execution` is written, as `Plan <topic>`, and each later revision
 separately, as `Revise plan <topic>: <reason>`.
 
-A review of the plan is `cr-request` in document mode: it takes the plan file and
-reports findings by section. Without `--auto`, offer it for plans with high-risk tasks
-and do not run it unasked. Under `--auto`, run it after the `Plan <topic>` commit, with
-up to three automatic rounds through `cr-received` and the plan revisions it routes
-here; then start `implement`. `cross-cr plan` runs only when the user names it. When the
-reviewer is unavailable, say so in one line of the report and go on to `implement`.
+A review of the plan is `cr-request` in document mode: it takes the plan file and reports
+findings by section. Without `--auto`, offer it for plans with high-risk tasks and do not
+run it unasked. Under `--auto`, run it after the `Plan <topic>` commit, with up to three
+automatic rounds through `cr-received` and the plan revisions it routes here; the review
+chain returns here instead of starting `verify`, and after a clean round start `implement`.
+`cross-cr plan` runs only when the user names it. When the reviewer is unavailable, say so
+in one line of the report and go on to `implement`.
 
 ## 8. Report
 

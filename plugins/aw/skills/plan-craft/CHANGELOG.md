@@ -9,8 +9,9 @@
   written and `Revise plan <topic>: <reason>` per revision, local, own paths only, under
   the user's and project's commit policy.
 - Under `--auto` the plan review is `cr-request` in document mode with up to three
-  automatic rounds; `cross-cr plan` only when the user names it; an unavailable reviewer
-  is one report line.
+  automatic rounds; the review chain returns to `plan-craft`, which starts `implement`
+  after a clean round; `cross-cr plan` only when the user names it; an unavailable
+  reviewer is one report line.
 - Step 7 offers `implement` with subagents first and by default, `inline` with its
   reason; under `--auto` it picks without a question (`inline` for one or two tasks or
   tasks on the same files) and writes the reason after the value; a revision does not

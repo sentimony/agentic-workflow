@@ -33,6 +33,11 @@ nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` w
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never
 carries it; a new session or a manual call runs without it.
 
+Under `--auto`, a chain that another skill started for a step it owns returns to that
+skill: `finalize` (healing its gate) at a `finalize` row, `cross-cr` at a re-review (its
+next round, never a same-host `cr-request`), and `plan-craft` after a clean document
+review of its plan, which then starts `implement` instead of `verify`.
+
 ## 0. Repeat call
 
 A review already resolved, per [return.md](references/return.md), gets its decision
@@ -61,14 +66,14 @@ actionable defects, then trade-offs that need a ruling, then noise.
 
 ## 2. Anchor to the reviewed state
 
-Findings are true or false about a specific revision. Compare the reviewed target with
-the current tree using read-only Git ([records.md](references/records.md)). The identity
-record carries `Tree: <fingerprint>` (the `## Committed tree` recipe in
-[tree-fingerprint.md](references/tree-fingerprint.md)); decisions are bound to it, and
-one made on another tree is checked again. A review of an uncommitted boundary carries a
-`## Working tree` ID, which a committed fingerprint never matches (the recipes differ):
-its identity is the same only when `Reviewed head` equals `HEAD` and the
-`Uncommitted fingerprint` of records.md is unchanged, else it has moved on.
+Findings are true or false about a specific revision. Compare the reviewed target with the
+current tree using read-only Git ([records.md](references/records.md)). The identity record
+carries `Tree: <fingerprint>` (the `## Committed tree` recipe in
+[tree-fingerprint.md](references/tree-fingerprint.md)); decisions are bound to it, and one
+made on another tree is checked again. A review of an uncommitted boundary carries a
+`## Working tree` ID, which a committed fingerprint never matches (the recipes differ): its
+identity is the same only when `Reviewed head` equals `HEAD` and the `Uncommitted state` of
+records.md, which leaves the record host out, is unchanged, else it has moved on.
 
 - same identity: proceed;
 - moved on: a finding whose code changed since the review is checked against the

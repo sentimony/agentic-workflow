@@ -23,9 +23,12 @@ local diff drivers from rewriting the output.
     git rev-parse HEAD
     git status --porcelain=v1 --untracked-files=all
     git diff --no-ext-diff --no-textconv --name-status <reviewed-head> HEAD
-    git diff --no-ext-diff --no-textconv HEAD | git hash-object --stdin
-    git ls-files --others --exclude-standard
+    git diff --no-ext-diff --no-textconv HEAD -- . ':(exclude)<host-path>' | git hash-object --stdin
+    git ls-files --others --exclude-standard -- . ':(exclude)<host-path>'
 
+`<host-path>` is the record host relative to the root; drop the `-- . ':(exclude)...'`
+part when there is no host in the repository. Leaving the host out keeps the record lines
+that `cr-request` appends after a review from changing the uncommitted state.
 The tree fingerprint comes from the `## Committed tree` recipe in
 [tree-fingerprint.md](tree-fingerprint.md).
 
@@ -34,12 +37,12 @@ The tree fingerprint comes from the `## Committed tree` recipe in
     Reviewed head: <full SHA from the review, or unknown>
     Base: <base ref and SHA, or unknown>
     Included paths: <paths or whole tree>
-    Uncommitted fingerprint: <diff hash and untracked files, or none>
+    Uncommitted state: <diff hash and untracked files without the host, or none>
     Tree: <fingerprint>
 
 Keep one record for the reviewed target (`Tree` from the review when it states one) and
 one for the current tree. The current tree matches the reviewed target when HEAD, the
-base, the included paths, the uncommitted fingerprint, and `Tree` all match. Any
+base, the included paths, the uncommitted state, and `Tree` all match. Any
 difference moves the affected findings to a recheck against current code. Every
 disposition is bound to the current `Tree`: after any edit, earlier decisions on other
 records stand only once rechecked against the new fingerprint.

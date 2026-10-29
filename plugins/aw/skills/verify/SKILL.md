@@ -3,7 +3,7 @@ name: verify
 description: You MUST use this when anyone - you, a subagent, or the user - is about to state that work is done, fixed, ready, or mergeable, and before the commit that completes it, a merge, opening a pull request, or a handoff report, including work that has no plan. Covers every promise behind the claim - spec criteria, plan tasks, journal entries, accepted review fixes, and the caller's words - proven with fresh checks on the current tree and given one verdict, without editing code. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-path>]"
 metadata:
-  version: "0.0.3"
+  version: "0.0.4"
 license: MIT
 ---
 
@@ -32,7 +32,7 @@ paths from `git status --porcelain`. Compute the fingerprint with the recipe in
 Write the claims down before running anything, numbered `C1`, `C2`, and so on. Take
 them from every source present - the spec's `AC<n>` (via `Spec:` in the plan header),
 the plan's tasks with `Produces` and `Covers`, the journal's `Task`, `Ruling`, and
-`Deferred` lines, each `ACCEPT` or `PARTIAL` finding of the last review round, and the
+`Deferred` lines, each `ACCEPT` or `PARTIAL` finding of any review round, and the
 caller's words; the list and source tags are in [report.md](references/report.md). The
 marker `Ruling: plan revised after spec re-approval - <spec path>` is checked as a
 claim this way: the plan's `Spec` names that path, and that spec reads
@@ -46,19 +46,21 @@ Split vague promises ("works", "done") until each part has a check that can fail
 
 Read the journal's `Review`, `Finding`, and `Received` lines and, when present in the
 conversation, the `Blocking:` field of the `cr-received` return block. A blocker is a
-`Critical` or `Important` finding of the last round that no `Received` line rules on yet,
-or any `ESCALATE`; `ACCEPT` and `PARTIAL` fixes are proven as claims (step 2). Read
+`Critical` or `Important` finding of any round, document reviews included, that no
+`Received` line rules on yet, or any `ESCALATE`; a new round does not close an old
+finding. `ACCEPT` and `PARTIAL` fixes are proven as claims (step 2). Read
 [report.md](references/report.md) for the exact reading whenever the journal has a
 `Review` line. An open blocker rules out `PASS` whatever the matrix shows.
 
 ## 4. Fresh evidence only
 
-Each claim gets a check run now, on this fingerprint. Take commands from the project
-itself: its README, CI workflow, scripts, and package manifests, confirmed with `--help`
-when unsure. When the project runs its checks in a fresh clone and the tree is
-uncommitted, rebuild that exact tree in the clone with
-[clean-clone.md](references/clean-clone.md); a copy of the files without `.git` is not a
-clean checkout. These are not evidence:
+Each claim gets a check run now, on this fingerprint. A single fresh command run on this
+fingerprint can be the evidence for several claims when its output covers each of them;
+the same command is not run again. Take commands from the project itself: its README, CI
+workflow, scripts, and package manifests, confirmed with `--help` when unsure. When the
+project runs its checks in a fresh clone and the tree is uncommitted, rebuild that exact
+tree in the clone with [clean-clone.md](references/clean-clone.md); a copy of the files
+without `.git` is not a clean checkout. These are not evidence:
 
 - a run from before the last edit, or CI on another commit or tree;
 - a report by the implementer, a subagent, or a reviewer;
@@ -127,11 +129,13 @@ new plan-journal of step 9. It never edits code, tests, the spec, or the plan bo
 failing claim goes back to `implement`; a failing claim tagged `R<n>-F<k>` goes back to
 `cr-received`.
 
-A `FAIL` starts a new verify-fix round, recorded as `Round <loop> <n>: <cause>` with
-`verify` as the loop. The cause names each failing claim by its source tag and promise,
-not by its `C<n>` number, which is reassigned every run; the same tag and promise in two
-rounds is the same cause. The counter lives in the journal, so a fresh session continues
-it.
+A `FAIL` writes `Round <loop> <n>: <cause>` with `verify` as the loop unless the
+previous `Verify` line (the one before this run's) is a `FAIL` on this fingerprint, so a
+revert to an earlier tree starts a new verify-fix round too; a repeated `FAIL` on the
+same fingerprint writes only a new `Verify` line, no `Round`. The cause names each
+failing claim by its source tag and promise, not by its `C<n>` number, which is
+reassigned every run; the same tag and promise in two rounds is the same cause. The
+counter lives in the journal, so a fresh session continues it.
 
 ```text
 Round rule: a round count the user gave explicitly allows exactly that many rounds;

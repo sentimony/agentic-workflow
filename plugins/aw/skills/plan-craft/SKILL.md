@@ -3,7 +3,7 @@ name: plan-craft
 description: You MUST use this when a spec the user approved, an accepted design, or requirements already agreed in the conversation have to be turned into an ordered, multi-step implementation plan before any code is written - including a spec from specify, work with no spec yet, and a plan revision after a document review. Replaces devflow plan-crafting. Covers whether a plan is needed, task order, acceptance-criteria coverage, and the execution choice. Not for open design (specify) or executing a plan (implement).
 argument-hint: "[<spec-path>] [<plan-path>]"
 metadata:
-  version: "0.0.3"
+  version: "0.0.4"
 license: MIT
 ---
 
@@ -69,10 +69,12 @@ as approval of a design the user has not confirmed.
 ## 2. Decide whether a plan is needed
 
 One or two edits with an obvious approach do not get a plan. Say so in one line, name
-the edit, and stop with `Next step: implement - no plan needed: <the edit>`; `implement`
-keeps its own minimal journal for such changes. Everything else gets a plan, including
-a small change whose order of steps carries risk (a migration, a deletion, a public
-interface).
+the edit, and stop with `Next step: implement - no plan needed: <the edit>`. When the
+input is an approved spec, end instead with
+`Next step: implement - no plan needed: <the edit> - spec <path>`, so the spec travels
+with the handoff. `implement` keeps its own minimal journal for such changes.
+Everything else gets a plan, including a small change whose order of steps carries
+risk (a migration, a deletion, a public interface).
 
 ## 3. Choose the file
 
@@ -130,13 +132,15 @@ A task is the smallest unit a reviewer can reject without rejecting its neighbor
 one carries the fields of the template: `Files`, `Consumes`, `Produces` (exact
 signatures or formats), `Covers` (`AC<n>`, comma-separated), `Depends on` (`Task <n>` or
 `none`), `RED` and `GREEN` (command and expected output), and `Commit` with
-`git add -A -- <paths>` for that task's paths only.
+`git add -A -- <paths>` for that task's paths only (a file listed in `Initial dirty state`
+takes only the task's own hunks, see `implement` step 5).
 
 Order:
 
 - the riskiest unknown first, so a wrong assumption fails before work piles on it;
 - test infrastructure and shared types before the features that use them;
-- removals before additions; a wide mechanical refactor as expand, migrate, contract.
+- order by dependencies: a removal comes only after nothing reads the old thing; a
+  wide mechanical refactor as expand, migrate, contract.
 
 Content:
 
@@ -175,7 +179,7 @@ Read the saved plan once more against the spec and fix what fails:
 - every `AC` of the spec (or of the plan header with `Spec: none`) is in some task's
   `Covers`;
 - no placeholders left: no `TBD`, no "add error handling", no unfilled angle brackets
-  outside the record format;
+  outside the record format and credential placeholder names such as `<API_TOKEN>`;
 - names, signatures, and formats agree between `Produces` and `Consumes` of every pair;
 - every command is checked against its `--help` or the project's documentation, not
   recalled;
@@ -210,7 +214,8 @@ the result is exactly one of:
 | Condition | Last line |
 | --- | --- |
 | plan ready and `Execution` chosen | `Next step: implement - <path>, <inline or subagents>` |
-| no plan needed (step 2) | `Next step: implement - no plan needed: <the edit>` |
+| no plan needed (step 2), no spec | `Next step: implement - no plan needed: <the edit>` |
+| no plan needed (step 2), approved spec | `Next step: implement - no plan needed: <the edit> - spec <path>` |
 | plan revised after review, `Re-review: needed` | `Next step: cr-request - <path>, document re-review` |
 | plan revised after review, `Re-review: not needed` | `Next step: implement - <path>, <inline or subagents>` |
 | plan saved, no execution choice yet | `Next step: none - awaiting execution choice` |

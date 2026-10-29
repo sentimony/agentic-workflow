@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.0.4] - 2026-10-28
+
+- Without a plan argument, the plan is chosen among unfinished ones by `Branch`; zero or
+  several matches get one question listing the candidates.
+- The no-plan route reads the spec path from the argument or from the `- spec <path>`
+  handoff, and the minimal journal records `Spec: <path>` instead of `Spec: none` when a
+  spec exists; a spec argument takes the unfinished plan whose `Spec` names it and goes
+  to the no-plan route only without one, a `no plan needed` handoff skips the plan
+  search, and `argument-hint` and the argument line name `<spec-path>` (review R1-F3).
+- A file listed in `Initial dirty state` goes into a commit only with the task's own
+  hunks; when they cannot be separated the task is `blocked - missing permissions` until
+  the user decides (review R1-F2).
+- On resume, a `done` task whose `Files` overlap a later `done` task with a trace
+  (an `in progress` task triggers nothing) reruns its own check and goes back to
+  `pending` with a `Ruling` if it fails, unless that later task's `Produces`, a plan
+  revision after spec re-approval, or the partial work of an `in progress` task explains
+  the failure; step 3 names this recheck
+  (review R1-F4).
+- In a separate worktree the plan and spec stay authoritative in the controller's
+  checkout, only the controller writes the journal, and tasks and subagents get absolute
+  paths to that copy.
+- `Base` is the full object ID of `HEAD`.
+
 ## [0.0.3] - 2026-10-27
 
 - The journal reference names every record line plan-craft writes, matching its list

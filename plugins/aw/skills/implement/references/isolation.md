@@ -25,7 +25,10 @@ Existing isolation is used as it is. Do not stack a new worktree on top of one.
    instead of managing worktrees by hand.
 3. **A Git worktree.** When the work must not share a working tree with other changes or
    other sessions: `git worktree add -b <branch> <path> <base>`, placed where the
-   project's instructions say. Record its path as `Root` in the journal.
+   project's instructions say. Record its path as `Root` in the journal. The plan and
+   spec stay authoritative in the controller's checkout, and only the controller writes
+   the journal, there. Tasks get absolute paths to that copy; an uncommitted plan is not
+   copied into the worktree, and a committed copy inside it is neither read nor edited.
 
 Parallel subagents each need a separate workspace; the rule is in the skill's Parallel
 tasks section.

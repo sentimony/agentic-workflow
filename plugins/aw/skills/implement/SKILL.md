@@ -1,9 +1,9 @@
 ---
 name: implement
 description: You MUST use this when an existing implementation plan is to be executed, either directly in the current session or through subagents, including resuming an interrupted execution from the plan's execution record, or when one or two edits with an obvious approach need doing without a plan. Covers task-by-task execution with evidence, drift handling and blockers, and a resumable execution record. Replaces devflow inline-plan-dev and subagent-plan-dev. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize).
-argument-hint: "[<plan-path>] [--inline|--subagents]"
+argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents]"
 metadata:
-  version: "0.0.3"
+  version: "0.0.4"
 license: MIT
 ---
 
@@ -16,17 +16,23 @@ itself so that any later session can pick the work up from the files and Git alo
 plan -> mode -> isolation -> clean start -> task loop -> drift and blockers -> record -> next step
 ```
 
-Arguments are optional: a path to the plan, and `--inline` or `--subagents` to choose the
-mode.
+Arguments are optional: a path to the plan or to a spec, and `--inline` or `--subagents`
+to choose the mode.
 
 ## Step 1. Find the plan
 
-Take the plan from the argument, else from the conversation, else the most recent plan
-in the project's plans folder whose `## Execution record` is unfinished (a task not
-`done`, or `Base: unset`; a task-less plan-journal is finished once `Base` is set and its
-evidence is written). Read the plan
-header (`Spec`, `Goal`, `Global constraints`, `Execution`) and, when `Spec` names a file,
-the spec too.
+Take the plan from the argument, else from the conversation. An argument that is a spec
+(it has `Status` and no `## Execution record`) takes the unfinished plan whose `Spec`
+names that path; with none, it goes to the no-plan case below, and with several, ask one
+question listing them. A `no plan needed` handoff line goes to the no-plan case
+without a plan search. Otherwise the candidates are the plans in the project's plans
+folder whose `## Execution record` is unfinished (a task not
+`done`, or `Base: unset`; a task-less plan-journal is finished once `Base` is set and
+its evidence is written). One candidate is taken. With several, take the single one
+whose `Branch` equals the current branch. With zero or several matches (a plan with
+`Base: unset` has no `Branch`), ask one question listing the candidates. Read the plan
+header (`Spec`, `Goal`, `Global constraints`, `Execution`) and, when `Spec` names a
+file, the spec too.
 
 Check the spec's `Status` here, before `Base` is written. When it is not `approved`:
 
@@ -38,7 +44,11 @@ Check the spec's `Status` here, before `Base` is written. When it is not `approv
   independent tasks continue, and once only waiting tasks remain, stop with the same
   line.
 
-No plan at all (standalone call, or the `direct` route of `specify`):
+No plan at all (standalone call, the `no plan needed` handoff of `plan-craft`, or the
+`direct` route of `specify`): take the spec path from the argument or from the handoff
+line `Next step: implement - no plan needed: <the edit> - spec <path>`, the path after
+the last ` - spec ` (`<the edit>` may itself contain ` - `). A spec that is not
+`approved` stops as above, before `Base` is written.
 
 - one or two edits whose approach is obvious - write a plan-journal and work from it;
 - anything larger, or with a real design choice - stop with
@@ -47,7 +57,8 @@ No plan at all (standalone call, or the `direct` route of `specify`):
 Credentials and secret values never go into the plan-journal; use placeholder names such
 as `<API_TOKEN>` wherever a credential would appear.
 
-The plan-journal holds `Spec: none`, a `Goal` of one sentence carrying the domain values of
+The plan-journal holds `Spec: <path>` when the edit comes from a spec and `Spec: none`
+only when there is no spec, a `Goal` of one sentence carrying the domain values of
 the request (names, numbers, behavior), `Execution: inline`, one task or none, and the
 `## Execution record` section. Its path, template, and the task-less case are in
 [journal.md](references/journal.md).
@@ -72,7 +83,7 @@ is a full option, not a fallback. Details and limits are in
 [isolation.md](references/isolation.md).
 
 On a fresh start (`Base: unset`), record the starting point before the first task: fill
-the `Base` placeholder with the full SHA of `HEAD`, `Root`, and `Branch`, and add
+the `Base` placeholder with the full object ID of `HEAD`, `Root`, and `Branch`, and add
 `Initial dirty state` under it (format and example in
 [journal.md](references/journal.md)).
 
@@ -86,7 +97,9 @@ and with no other blocker the next step is still `verify`.
 On resume (`Base` is set), follow the resume rule in [journal.md](references/journal.md):
 a task marked `done` with no trace in the tree or the history goes back to `pending`,
 and a task `blocked - conflicting intent` whose spec reads `Status: approved` again
-goes back to `pending` too.
+goes back to `pending` too. A `done` task whose `Files` overlap a later `done` task
+with a trace reruns its own `GREEN` or `Check`; a failure that later task, a plan
+revision, or the partial work of an `in progress` task explains keeps it `done`.
 Round counters continue from the journal; they do not restart at zero.
 
 ## Step 4. Before each task
@@ -111,7 +124,12 @@ task `in progress` in the journal.
   scope become `Deferred` lines, not edits.
 - **Commit** with the task's `Commit` line from the plan's task template
   (`git add -A -- <paths>`), with only the task's own paths, unless the user said not to
-  commit.
+  commit. The task's paths are the staging boundary. A file listed in
+  `Initial dirty state` goes in only with the task's own hunks: choose the method at
+  commit time (`git apply --cached` with your own patch, or
+  `git update-index --cacheinfo`). When the hunks cannot be separated, the task is
+  `blocked - missing permissions: <path> mixes its hunks with Initial dirty state`
+  until the user decides; never commit someone else's changes.
 
 A task is `done` only with evidence: a command run on this tree and its result, written
 into the `Task` line.

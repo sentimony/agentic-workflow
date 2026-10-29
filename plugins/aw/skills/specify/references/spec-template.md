@@ -60,7 +60,12 @@ those belong to the plan.
 
 - <question> - recommended answer: <answer>, because <reason>
 - <question> - decision for the user: <what each option leads to>
+- blocking: <question> - risk if left open: <what it changes> - recommended answer:
+  <answer>, because <reason>
 (or "None.")
+
+Prefix a question with `blocking:` when its answer would change Behavior, Contract, or
+an acceptance criterion, and name the risk the user may accept instead of answering.
 
 ## Acceptance criteria
 

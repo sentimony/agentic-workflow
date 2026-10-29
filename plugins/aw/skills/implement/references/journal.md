@@ -46,7 +46,7 @@ fence like every new line. `verify` counts only the code reviews after the last 
   Initial dirty state: none
   ```
 
-  `Base` is the full 40-character SHA of `HEAD` before the first task. `Root` is the
+  `Base` is the full object ID of `HEAD` before the first task. `Root` is the
   absolute path of the working tree the tasks run in (the worktree, when one was made).
 
 - **Task state.** Change the state of the task's own line in place. Every state except
@@ -92,7 +92,7 @@ appear in it; use placeholder names such as `<API_TOKEN>`.
 ```markdown
 # <topic>
 
-**Spec:** none
+**Spec:** <spec path, or `none` when there is no spec>
 
 **Goal:** <one sentence with the domain values of the request: names, numbers, behavior>
 
@@ -104,7 +104,7 @@ appear in it; use placeholder names such as `<API_TOKEN>`.
 
 **Check:** <command> -> <expected result>
 
-**Commit:** `git add -A -- <paths>`
+**Commit:** `git add -A -- <paths>` (in `Initial dirty state`: own hunks only)
 
 ## Execution record
 
@@ -129,6 +129,20 @@ When `Base` is already set, execution is being resumed:
    task's `Files`, or the task's changes present in the working tree. A `done` task with
    no trace in the tree or the history goes back to `pending`, and a `Ruling` line says
    why.
+
+   A `done` task whose `Files` overlap the `Files` of any later-numbered `done` task
+   with a trace reruns its own `GREEN` or `Check`; a later task still `in progress`
+   holds partial work and triggers no recheck. Passing, it stays `done`. Failing where
+   that later task's `Produces`, a later `Ruling: plan revised after spec re-approval`
+   marker, or the partial work of a task still `in progress` accounts for the failure, it
+   stays `done` with a `Ruling` line naming that task or marker. Any other failure sends
+   it back to `pending` with a `Ruling` line naming the check, and it runs as an
+   ordinary task. Other `done` tasks stay `done` on their trace.
+
+   ```text
+   Task 2: pending
+   Ruling: Task 2 back to pending - its Check failed after Task 4 edited the same file - medium, the later edit may have broken it
+   ```
 3. A task `in progress` is inspected: keep the partial work that matches the task, rerun
    its check, and continue from there.
 4. Continue `Round` counters from the last recorded number for each loop.

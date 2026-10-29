@@ -2,6 +2,7 @@
 
 In subagent mode this session is the controller. Subagents write code; the controller
 decides, rechecks, and keeps the journal. A subagent never edits the execution record.
+Subagents are the default mode when the plan says `Execution: unset` (skill, step 2).
 
 ## The brief
 
@@ -14,15 +15,20 @@ Each brief stands on its own, because the subagent sees nothing of this conversa
   works in a separate worktree, give absolute paths to the plan and spec in the
   controller's checkout: that copy is authoritative, and the subagent neither reads nor
   edits a copy of the plan inside the worktree.
-- **Do not touch** - paths outside the task, the uncommitted changes listed in
+- **Do not touch** - paths outside the task, the uncommitted and staged changes listed in
   `Initial dirty state`, the execution record, Git history (no reset, stash, clean, or
-  force operations).
+  force operations), and the remote (no push).
 - **How to check** - the task's `RED` and `GREEN` commands, or its `Check:`.
 - **Rules carried over** - test first where there is a seam, root cause before a fix,
   the closed list of blockers from the skill, and the commit rule of the task when the
   subagent commits.
 - **Report** - one status, the changed paths, the commands run with their results, and
-  anything noticed but left alone.
+  anything noticed but left alone. A subagent whose brief forbids the record and that runs
+  `verify` returns the `Verify:` line in its report instead, and the controller appends
+  that line verbatim.
+- **At the end** - run `session-learnings` and, when installed, a skill retrospective
+  skill (such as `fdb`), and return the lines `Learnings: ...` and `Requests: ...`. This
+  is desirable, not a condition of `DONE`.
 
 Name the subagent model in every dispatch (for example "model: sonnet") instead of
 relying on a default, and repeat it in the report so the journal can be read later
@@ -52,9 +58,10 @@ the task into smaller ones. Each retry counts as a round under the Round rule an
 ## Parallel dispatch
 
 Several tasks go out at once only under the rules of the skill's Parallel tasks section:
-shown independence, a separate isolated workspace per subagent (see
-[isolation.md](isolation.md)), results integrated one by one with the checks rerun, and
-overlap resolved before the next wave.
+shown independence, a separate worktree per subagent (see [isolation.md](isolation.md)),
+results integrated one by one with a local cherry-pick or merge of the subagent's commits
+into the controller's branch (no push, no force) and the checks rerun, and overlap
+resolved before the next wave.
 
 ## Review inside execution
 

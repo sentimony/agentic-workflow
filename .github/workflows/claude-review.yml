@@ -333,7 +333,8 @@ jobs:
 
             Keep the body compact: a reader sees the target, the verdicts, and one line per finding at a glance,
             and opens every detail on demand from a collapsed `<details>` block. Put a blank line after each
-            `<summary>...</summary>` line and before each `</details>`, so the Markdown inside renders. The body
+            `<summary>...</summary>` line, before each `</details>`, and after each `</details>`, so the Markdown
+            inside and after it renders. The body
             must start with this exact line:
             <!-- claude-review sha=${{ needs.gate.outputs.head_sha }} -->
             then these parts, in this order:
@@ -480,8 +481,9 @@ jobs:
               if raw.startswith("diff --git "):
                   path = None
               elif raw.startswith("+++ "):
-                  # A quoted path (special characters) gets no comments.
-                  path = raw[6:] if raw.startswith("+++ b/") else None
+                  # A quoted path (special characters) gets no comments; git ends a path with a
+                  # space with a TAB.
+                  path = raw[6:].rstrip("\t") if raw.startswith("+++ b/") else None
               else:
                   hunk = re.match(r"@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", raw)
                   if hunk:
@@ -645,7 +647,8 @@ jobs:
             fail "The review body does not end with the signature and Next step lines"
           fi
           # The closing lines in small type, the version linked to the skill's page; the Next step line
-          # follows the signature after a line break. A signature as the last line takes no break.
+          # follows the signature after a line break. A signature as the last line takes no break. A blank
+          # line goes before the footer: right after `</details>` it would join that HTML block raw.
           export SIGNATURE="$signature"
           export RENDERED="Reviewed with: \`/cr-request\` [$VERSION](https://www.skills.sh/sentimony/agentic-workflow/cr-request) skill${signature#"Reviewed with: \`/cr-request\` $VERSION skill"}"
           awk '
@@ -653,10 +656,12 @@ jobs:
             NR == FNR { if ($0 !~ /^[[:space:]]*$/) { prev = last; last = FNR } next }
             FNR == prev || FNR == last {
               line = $0; sub(/[[:space:]]+$/, "", line)
-              if (line == ENVIRON["SIGNATURE"]) $0 = "<sub>" ENVIRON["RENDERED"] "</sub>" (FNR == prev ? "<br>" : "")
-              else if (FNR == last) $0 = "<sub>" line "</sub>"
+              if (line == ENVIRON["SIGNATURE"]) {
+                $0 = "<sub>" ENVIRON["RENDERED"] "</sub>" (FNR == prev ? "<br>" : "")
+                if (before !~ /^[[:space:]]*$/) print ""
+              } else if (FNR == last) $0 = "<sub>" line "</sub>"
             }
-            { print }
+            { print; before = $0 }
           ' "$BODY_FILE" "$BODY_FILE" > "$POST_FILE"
           # GitHub rejects review bodies over 65536 characters; bytes are the stricter bound.
           [ "$(wc -c < "$POST_FILE")" -le 65536 ] || fail "The review body is longer than GitHub accepts"
@@ -696,7 +701,8 @@ jobs:
 
       # The only step with the yngwald PAT: it checks the token's owner and posts the validated body
       # and inline comments as is. Inline comments count in the PR list's comment counter; a review
-      # body alone does not. When GitHub refuses the comments, the body goes alone.
+      # body alone does not. When GitHub refuses the comments (HTTP 422, a line outside its diff), the
+      # body goes alone; any other failure, a timeout that may have posted included, posts nothing more.
       - id: post
         if: steps.validate.outputs.ready_to_post == 'true'
         env:
@@ -709,8 +715,10 @@ jobs:
           jq -n --arg commit "$HEAD_SHA" --rawfile body "$POST_FILE" --slurpfile comments "$COMMENTS_FILE" \
             '{commit_id: $commit, event: "COMMENT", body: $body, comments: ($comments[0] | map(. + {side: "RIGHT"}))}' \
             > "$payload"
-          if ! id=$(gh api -X POST "repos/$REPO/pulls/$NUMBER/reviews" --input "$payload" --jq .id); then
-            [ "$(jq length "$COMMENTS_FILE")" -gt 0 ] || exit 1
+          err="$(mktemp)"
+          if ! id=$(gh api -X POST "repos/$REPO/pulls/$NUMBER/reviews" --input "$payload" --jq .id 2> "$err"); then
+            cat "$err" >&2
+            grep -q 'HTTP 422' "$err" && [ "$(jq length "$COMMENTS_FILE")" -gt 0 ] || exit 1
             echo "::warning::GitHub refused the review with inline comments; posting the body alone"
             id=$(gh api -X POST "repos/$REPO/pulls/$NUMBER/reviews" -f commit_id="$HEAD_SHA" -f event=COMMENT \
               -F body=@"$POST_FILE" --jq .id)

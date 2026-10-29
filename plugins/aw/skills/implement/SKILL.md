@@ -223,7 +223,8 @@ Shared with `specify`, `plan-craft`, and `cr-received`:
   instead of writing a second one;
 - no skill approves or replaces a spec on the user's behalf.
 
-Appending lines to a spec's `## Verification record` is not a material change and does not reset its approval.
+Appending lines to a spec's `## Verification record` is not a material change and does
+not reset its approval.
 
 Step 1 checks the spec's `Status` before any task runs. After the new yes, `plan-craft`
 adds the delta as new `pending` tasks and edits no record line; on resume this skill
@@ -278,7 +279,8 @@ any overlap before starting the next wave.
 
 End with: the tasks and their states with evidence, rulings made (and any awaiting a
 decision), a spec sent back to `draft` and why, deferred items, checks not run with the
-reason, and, when the policy kept the work uncommitted, that fact and the paths. The last line follows the table; the first matching row wins:
+reason, and, when the policy kept the work uncommitted, that fact and the paths. The last
+line follows the table; the first matching row wins:
 
 | Condition | Last line |
 | --- | --- |

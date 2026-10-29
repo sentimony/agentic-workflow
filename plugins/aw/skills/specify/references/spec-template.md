@@ -114,7 +114,8 @@ the block, right before its closing fence. On a re-approval of a spec that has t
 section, `specify` appends `Ruling: spec re-approved - <YYYY-MM-DD>`. The tree
 fingerprint excludes the spec that hosts the record, as it excludes a plan.
 
-Appending lines to a spec's `## Verification record` is not a material change and does not reset its approval.
+Appending lines to a spec's `## Verification record` is not a material change and does not
+reset its approval.
 
 ## Acceptance criteria rules
 

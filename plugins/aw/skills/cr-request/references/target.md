@@ -123,10 +123,11 @@ Else write `Tree: unknown - <reason>`.
 
 ## Base discovery
 
-When the user names no base, use the `Base` line of the plan's execution record if it
-is set (not `unset`; a spec's `## Verification record` has no `Base`); otherwise take the merge-base with the default branch
-(`git merge-base origin/HEAD HEAD`, falling back to `main` or `master`). State the choice in
-the brief. If the branch has no upstream and no obvious parent, ask.
+When the user names no base, use the `Base` line of the plan's execution record if it is
+set (not `unset`; a spec's `## Verification record` has no `Base`); otherwise take the
+merge-base with the default branch (`git merge-base origin/HEAD HEAD`, falling back to
+`main` or `master`). State the choice in the brief. If the branch has no upstream and no
+obvious parent, ask.
 
 ## Fail fast
 

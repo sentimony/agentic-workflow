@@ -1,6 +1,6 @@
 {
   "name": "aw",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Agentic workflow skills for one change from request to merge: specify the design, craft the plan, implement it, verify with evidence, request and resolve an independent code review, finalize the branch, and record session learnings.",
   "author": {
     "name": "Ihor Orlovskyi",

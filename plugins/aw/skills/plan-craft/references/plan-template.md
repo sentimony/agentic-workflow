@@ -133,7 +133,8 @@ A spec's `## Verification record` is its optional last section: the same fenced 
 first line `Branch: <name>`, then the same lines under the same rules. The first skill
 that writes there (`implement` or `verify`) creates it. The tree fingerprint excludes the
 record host, plan or spec.
-Appending lines to a spec's `## Verification record` is not a material change and does not reset its approval.
+Appending lines to a spec's `## Verification record` is not a material change and does
+not reset its approval.
 
 ```text
 Base: <full SHA>   Root: <path>   Branch: <name>

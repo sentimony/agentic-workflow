@@ -200,9 +200,10 @@ diff, and the hash of each selected untracked file (commands in cr-request's `ta
 Requirements can change without a commit, so hash the plan and spec files themselves:
 `--plan` and `--spec` make the runner do it on every round, and a `--followup` round
 rehashes the previous round's paths. Also take the `Tree` fingerprint with cr-request's
-`tree-fingerprint.md` (leave the plan out, as its recipe says) and write it into the
-target identity: `cr-received` binds its decisions to it. The brief carries this fingerprint. Recheck it before the handoff; a material change
-makes the result stale.
+`tree-fingerprint.md`: `Committed tree` for a committed range, `Working tree` when the
+boundary holds uncommitted changes; both leave the record host out. Write it into the
+target identity: `cr-received` binds its decisions to it. The brief carries this
+fingerprint. Recheck it before the handoff; a material change makes the result stale.
 
 ### 5. Build the brief
 

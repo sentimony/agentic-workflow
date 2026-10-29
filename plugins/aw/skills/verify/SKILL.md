@@ -50,14 +50,14 @@ touched.
 
 ## 2. Claims before checks
 
-Write the claims down before running anything, numbered `C1`, `C2`, and so on. Take
-them from every source present - the spec's `AC<n>` (via `Spec:` in the plan header, or
-the spec that hosts the record), the plan's tasks with `Produces` and `Covers`, the
-record's `Task`, `Ruling`, and `Deferred` lines, each `ACCEPT` or `PARTIAL` finding of
-any review round, and the caller's words; the list and source tags are in [report.md](references/report.md). The
-marker `Ruling: plan revised after spec re-approval - <spec path>` is checked as a
-claim this way: the plan's `Spec` names that path, and that spec reads
-`Status: approved`.
+Write the claims down before running anything, numbered `C1`, `C2`, and so on. Take them
+from every source present - the spec's `AC<n>` (via `Spec:` in the plan header, or the
+spec that hosts the record), the plan's tasks with `Produces` and `Covers`, the record's
+`Task`, `Ruling`, and `Deferred` lines, each `ACCEPT` or `PARTIAL` finding of any review
+round, and the caller's words; the list and source tags are in
+[report.md](references/report.md). The marker
+`Ruling: plan revised after spec re-approval - <spec path>` is checked as a claim this
+way: the plan's `Spec` names that path, and that spec reads `Status: approved`.
 
 A claim that a `Ruling: R<n>-F<k> superseded by <Task <n> | R<m>-F<k> | marker> - ...`
 line covers gets the status `n/a: superseded`; the `Ruling` itself becomes the claim: the
@@ -130,8 +130,9 @@ Compute the fingerprint again with the same recipe. If it changed while checking
 results belong to no single tree: start over from step 1, at most twice. A third change
 gives `BLOCKED (tree keeps changing: <paths or commits>)`; a verdict never mixes trees.
 Then pick `PASS`, `FAIL`, `INCOMPLETE`, or `BLOCKED` by the definitions in
-[report.md](references/report.md), read before every verdict: any `failed` row is `FAIL`; `INCOMPLETE` names the owner and the next action;
-`BLOCKED` says what stops the verification itself.
+[report.md](references/report.md), read before every verdict: any `failed` row is `FAIL`;
+`INCOMPLETE` names the owner and the next action; `BLOCKED` says what stops the
+verification itself.
 
 Any `not verified`, any `failed`, any unreported weakening, or any open review blocker
 rules out `PASS`. A `PASS` grants no right to commit, push, or merge; those stay with the

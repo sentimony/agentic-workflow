@@ -69,7 +69,8 @@ Shared with `specify`, `implement`, and `cr-received`:
   instead of writing a second one;
 - no skill approves or replaces a spec on the user's behalf.
 
-Appending lines to a spec's `## Verification record` is not a material change and does not reset its approval.
+Appending lines to a spec's `## Verification record` is not a material change and does
+not reset its approval.
 
 This skill never edits an approved spec's content, not even a section it judges minor
 (a Security Model line, a criterion's wording). When planning shows the spec must change

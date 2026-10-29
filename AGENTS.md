@@ -29,6 +29,9 @@
 - `claude-review.yml` changes in a PR reach `workflow_run` only after merge (it uses the default
   branch copy); `pull_request` runs use the PR branch copy. `.auto-review/` is reserved for the
   review job and must not be tracked.
+  To test a changed workflow on its own PR, push, wait for green CI, then open the PR or request
+  yngwald: on the first head the `main` copy's `workflow_run` shares the review job's per-PR
+  group and can cancel the PR copy's review.
 - `claude-review.yml` keeps one run per head SHA (workflow-level concurrency), so automatic
   runs for one head no longer race, and a late CI run for an older head cannot cancel the review
   of a newer one; the review job's per-PR group lets a newer head's review cancel an older one,
@@ -36,6 +39,9 @@
   same head meet only in that job group, so one review cancels the other and the head can end
   with an `error` status and no review: an accepted trade-off, not a defect for review;
   re-requesting yngwald recovers, and the status is advisory.
+- A review run that fails with `is_error: true` after a few turns and the log line "You've hit
+  your session limit · resets <time>" hit the OAuth usage limit: re-request yngwald after that
+  time instead of changing the workflow.
 - The `publish` footer check accepts the signature with the measured duration followed by a
   `Next step` line in its full format, and the pre-0.0.6 order with the signature last. Its
   regexes have no CI test, because the workflow is self-contained; an edit to them is checked
@@ -47,8 +53,13 @@
   previous skill's file artifact or builds a minimal one, and ends with a `Next step` line;
   no orchestrator skill. One exception: on the user's explicit yes to a spec, `specify`
   gives its result without a `Next step` line and starts `plan-craft` in the same turn,
-  whose result ends the turn. `cross-cr` stays outside the chain: it runs only on request,
-  next to or in place of the cr-request step, and hands findings to cr-received.
+  whose result ends the turn. With `--auto` each skill starts its local next step in the
+  same turn and passes the flag on; it still stops on the user's decisions, the Round rule,
+  an `Outward` action, and before the `finalize` choice, so nothing is pushed without it.
+  Each skill commits its own paths locally at its checkpoint (spec approval, plan, task,
+  review round, record) as part of the chain. `cross-cr` stays outside the chain: it runs
+  only on request, next to or in place of the cr-request step, and hands findings to
+  cr-received.
 - aw skills replace their sentimony/skills devflow counterparts (scope-triage,
   plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
   review-request, review-resolution, cross-review): a description opens with
@@ -57,6 +68,12 @@
   `lenses.md`) by name, and its runner extracts the `Reviewer instructions`,
   `Result contract`, and `Severity` sections of `brief.md` and the `Intent`, `System`, and
   `Craft` sections of `lenses.md` by heading: renaming one breaks its briefs.
+  The runner keeps `Result contract` only up to the paragraph that starts with `` `Not
+  checkable ``: text after it stays host-only. After a `brief.md` edit run
+  `python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'`.
+- A change to the cr-request output contract (closing lines, footer order, separators) goes
+  into `SKILL.md`, `references/brief.md`, and the top `CHANGELOG.md` entry in one commit and in
+  the same terms: each place left behind comes back as a separate review finding.
 - License: MIT, Ihor Orlovskyi.
 - Branches: `YYMMDD-dev-session`, squash-merged into `main` via PR.
 - English only, plain hyphen.

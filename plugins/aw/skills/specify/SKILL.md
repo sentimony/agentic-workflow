@@ -216,13 +216,14 @@ Shared with `plan-craft`, `implement`, and `cr-received`:
   instead of writing a second one;
 - no skill approves or replaces a spec on the user's behalf.
 
-Appending lines to a spec's `## Verification record` is not a material change and does not reset its approval.
+Appending lines to a spec's `## Verification record` is not a material change and does
+not reset its approval.
 
 ## Result
 
 Report the route and any revision of it, the spec path (none for `direct`), the status,
-the approval commit (or why there is none), the open questions (naming each `blocking` one), the criteria count, and the
-fresh-reader verdicts. The last line of the result is:
+the approval commit (or why there is none), the open questions (naming each `blocking`
+one), the criteria count, and the fresh-reader verdicts. The last line of the result is:
 
 ```text
 Next step: <skill> - <one-line reason>

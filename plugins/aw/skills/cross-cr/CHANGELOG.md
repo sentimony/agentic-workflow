@@ -5,8 +5,8 @@
 - Before round 1 the skill commits this session's own uncommitted spec, plan, or code
   locally as `Checkpoint before cross-cr R1: <topic>`, through a temporary index when the
   real one holds foreign content, under the user's and project's commit policy; other
-  uncommitted paths are listed and left alone. "Never commit only to get a boundary" is
-  gone.
+  uncommitted paths are listed and left alone. The old ban on any commit made only to fit
+  the boundary is gone; foreign changes are still never committed to fit it.
 - Only automatic rounds count against the limit (three, or the named rounds); a round
   the user starts past the limit runs once and is recorded as a `Ruling` line, and the
   same cause twice escalates also in user-started rounds. Dispositions can be

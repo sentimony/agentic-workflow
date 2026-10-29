@@ -2,19 +2,21 @@
 
 ## [0.0.5] - 2026-10-29
 
-- Gate: the record host is the plan, else the spec with its `## Verification record`,
-  else none, and without a host there is no gate. `merge`, `squash`, and a ready `pr`
-  need a full `PASS` on the committed tree (recipe `## Committed tree`), never one that
-  ends with `working`; `merge` and `squash` also need a `Review` line with mode `code` or
-  `re-review`, or `Ruling: no review - <user's reason> - <cost if wrong>`, which
-  `finalize` appends from the user's words. `pr --draft` opens a draft without a verdict
-  and its body says `not verified on this tree`; turning it ready passes the `pr` gate.
-- The record host is committed alone as `Record <topic>` before integration, by the
-  checkpoint commit rule and the commit policy; other uncommitted paths no longer fail
-  the gate and are reported as not integrated.
+- Gate: the record host is the plan, else the spec with its `## Verification record`, else
+  none, and without a host there is no gate. `merge`, `squash`, and a ready `pr` need a
+  full `PASS` on the committed tree (recipe `## Committed tree`), never one that ends with
+  `working`; `merge` and `squash` also need a `Review` line with mode `code` or
+  `re-review` after the latest re-approval marker (else after `Base`), or
+  `Ruling: no review - <user's reason> - <cost if wrong>`, which `finalize` appends from
+  the user's words. `pr --draft` opens a draft without a verdict and its body says
+  `not verified on this tree`; turning it ready passes the `pr` gate.
+- The record host is committed alone as `Record <topic>` once `merge`, `squash`, or `pr`
+  is chosen and before its action, by the checkpoint commit rule and the commit policy;
+  other uncommitted paths no longer fail the gate and are reported as not integrated.
 - `--auto`: a gate failure that `verify` or `cr-request` heals runs that step in the same
-  turn and returns to the chosen option; the option choice confirms its integration and
-  push, while branch and worktree deletion keep their own confirmation.
+  turn and returns to the chosen option once that chain's `Next step` is `finalize`; the
+  option choice confirms its integration and push, while branch and worktree deletion keep
+  their own confirmation.
 - Squash: a PR that changes `.github/workflows/` is merged by the pinned `gh pr merge`,
   then the REST call; the `workflow` scope is explained only when a refusal names it
   (request 20261027-1356). The pinned head is the full object ID, 40 hex for SHA-1 and

@@ -27,7 +27,9 @@
   and is recorded with `Ruling: round R<n> started by the user past the limit`.
 - `--auto` starts the next local skill (`implement`, `cr-request`, `cr-received`) in the
   same turn and stops at the user's decisions, the Round rule, `Outward`, and the
-  `finalize` choice.
+  `finalize` choice; a chain that `finalize` started to heal its gate returns to it. Every
+  `FAIL` -> `implement` cycle is an automatic round. Work counts as uncommitted while the
+  latest `Commits` line says `forbidden` or `ask once`.
 
 ## [0.0.4] - 2026-10-28
 

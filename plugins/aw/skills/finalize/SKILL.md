@@ -34,9 +34,10 @@ carries it; a new session or a manual call runs without it.
 
 Under `--auto`, a gate failure that a local step heals (`verify`, `cr-request`, or
 `verify` after this run merged the base into the branch) runs that step in the same turn
-and comes back to the option already chosen; any other result stops. Choosing the option
-confirms its integration and its push; deleting a branch or a workspace and the `--force`
-in step 6 still need their own confirmation.
+and comes back to the option already chosen: the chain started from here returns to
+`finalize` when its `Next step` is `finalize`, instead of ending the turn there; any other
+result stops. Choosing the option confirms its integration and its push; deleting a
+branch or a workspace and the `--force` in step 6 still need their own confirmation.
 
 ## 1. Read the state
 
@@ -88,7 +89,8 @@ The gate guards the integrating options `merge`, `squash`, and a ready `pr`; `pr
    or `Branch:` of its `## Verification record`; before the first write there, only the
    argument or the conversation); otherwise none. With no host there is no verdict file:
    the `Verify:` line is printed in the report only, and the `finalize` gate does not
-   apply.
+   apply. That is by design, an accepted trade-off: work with neither a plan nor a spec
+   has no file to hold a verdict, and the option choice stays the user's confirmation.
 2. Compute the current fingerprint with the recipe `## Committed tree` in
    [tree-fingerprint.md](references/tree-fingerprint.md), leaving the host out. A failed
    recipe prints no ID and fails the gate.
@@ -100,14 +102,17 @@ The gate guards the integrating options `merge`, `squash`, and a ready `pr`; `pr
    stays on the branch. Also check the latest `Received` line: `Re-review: needed` with
    no later review on this tree means the chain is not finished.
 5. For `merge` and `squash`, the host also needs a code review: a `Review` line with mode
-   `code` or `re-review` after the plan's `Base` line, or, in a spec's record, after the
-   latest `Ruling: spec re-approved - <YYYY-MM-DD>` (the whole record when there is
-   none). The user may skip it in their own words; append
-   `Ruling: no review - <user's reason> - <cost if wrong>` to the record, and that line
-   counts in place of the review.
-6. Before integrating, commit the host's uncommitted record lines alone in one checkpoint
+   `code` or `re-review` after the latest re-approval marker, as `verify` counts it
+   (`Ruling: plan revised after spec re-approval - <spec path>` in a plan,
+   `Ruling: spec re-approved - <YYYY-MM-DD>` in a spec's record), else after the plan's
+   `Base` line or, in a spec's record, anywhere in it. The user may skip it in their own
+   words; append `Ruling: no review - <user's reason> - <cost if wrong>` to the record,
+   and that line counts in place of the review.
+6. Once the user has chosen `merge`, `squash`, or `pr` (a draft too), and before its
+   action in step 5, commit the host's uncommitted record lines alone in one checkpoint
    commit `Record <topic>`, the topic taken from the host's file name; a host with nothing
-   uncommitted needs none. The fingerprint leaves the host out, so it stays the same.
+   uncommitted needs none, and `keep`, `pause`, and `discard` make no such commit. The
+   fingerprint leaves the host out, so it stays the same.
 
    Checkpoint commit: commit locally, never push, with only this session's own paths (files it
    created or changed for this spec, plan, task, or round). Other uncommitted changes, and
@@ -189,7 +194,8 @@ The local base stays as it is; the report says how many commits it is ahead of
 For the chosen option:
 
 1. Re-read the state from step 1.
-2. Run the action.
+2. For `merge`, `squash`, and `pr`, make the `Record <topic>` commit of step 3, item 6.
+   Then run the action.
 3. Confirm the result from Git or the forge, not from the command's exit code: the PR
    URL exists, the base contains the commits, the branch is gone where it should be.
 

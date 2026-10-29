@@ -18,6 +18,8 @@
   Antigravity `run` and `resume`: a non-empty `permissions.allow`, or a file it cannot read
   or parse, is exit 2 before any brief is sent, with a message that names the file but not
   its content; a missing file lets the run proceed.
+- `Review` and `Finding` lines go to the record host, the plan or else the spec's
+  `## Verification record`, as in `cr-request`.
 - A runner test checks that `standard_sections()` leaves out the host-only text of
   cr-request `brief.md` (`Reviewed with`, `CI footer grammar`, `conversation comment`).
 

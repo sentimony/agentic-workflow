@@ -8,7 +8,8 @@
 - Commits follow the shared checkpoint rule: `Initial dirty state` names staged paths
   too, a task commit holds exactly the task's paths (own hunks for dirty files), content
   the user staged stays staged, and the record gets `Commits: allowed | ask once |
-  forbidden` from the user's and project's commit policy.
+  forbidden` after `Base`: the answer to the user's and project's commit policy, with
+  `ask once` only while the question is open and a later answer appended as a new line.
 - Work without a plan records into the spec's `## Verification record`, or only into the
   report when there is no spec; appending there does not reset the spec's approval.
 - Re-entry after a `FAIL`: each failing claim returns its task to `pending` with a

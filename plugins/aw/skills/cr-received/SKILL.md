@@ -64,8 +64,11 @@ actionable defects, then trade-offs that need a ruling, then noise.
 Findings are true or false about a specific revision. Compare the reviewed target with
 the current tree using read-only Git ([records.md](references/records.md)). The identity
 record carries `Tree: <fingerprint>` (the `## Committed tree` recipe in
-[tree-fingerprint.md](references/tree-fingerprint.md));
-decisions are bound to it, and one made on another tree is checked again:
+[tree-fingerprint.md](references/tree-fingerprint.md)); decisions are bound to it, and
+one made on another tree is checked again. A review of an uncommitted boundary carries a
+`## Working tree` ID, which a committed fingerprint never matches (the recipes differ):
+its identity is the same only when `Reviewed head` equals `HEAD` and the
+`Uncommitted fingerprint` of records.md is unchanged, else it has moved on.
 
 - same identity: proceed;
 - moved on: a finding whose code changed since the review is checked against the
@@ -224,7 +227,7 @@ when it has one) per [return.md](references/return.md); without a plan, at the e
 spec's `## Verification record` when it has one; else only report them.
 
 Then commit the round as `Address R<n> findings: <IDs>`, where `<IDs>` are the records
-fixed in it, together with the record lines just appended. A round with no changed path
+fixed in it, together with the record lines just appended. A round with no fix path
 has no commit; its record lines go with the next checkpoint commit.
 
 Checkpoint commit: commit locally, never push, with only this session's own paths (files it
@@ -235,8 +238,9 @@ commit policy in the user's and project's instruction files in force; the strict
 A policy that asks first gets one question for the whole chain (this stops `--auto`); a
 policy that forbids commits means no commit, and the report says so.
 
-A `Commits:` line already in the record is that answer for the chain. The report names the
-round commit.
+The latest `Commits:` line in the record is that answer for the chain when it says
+`allowed` or `forbidden`; `ask once` there means the question is still open. The report
+names the round commit.
 
 ## 10. Report and reply
 

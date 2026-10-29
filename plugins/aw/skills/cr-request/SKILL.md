@@ -163,9 +163,11 @@ no host there is no verdict file: the `Verify:` line is printed in the report on
 `finalize` gate does not apply.
 ```
 
-With a host, append to its record (the plan's `## Execution record` or the spec's
-`## Verification record`) after the result is accepted, at the end of the record (inside
-its ```` ```text ```` block, before the closing fence, when it has one), in this format:
+The block is shared with `verify`; for this skill, with no host the `Review`, `Finding`, and
+`Round` lines stay in the result only. With a host, append to its record (the plan's
+`## Execution record` or the spec's `## Verification record`) after the result is accepted,
+at the end of the record (inside its ```` ```text ```` block, before the closing fence, when
+it has one), in this format:
 
 ```text
 Review R<n>: <Summary line> tree <tree SHA> reviewer <model> mode <code|document|re-review>

@@ -15,8 +15,8 @@ are not rewritten, except the state of a `Task` line.
 
 ```text
 Base: <full SHA>   Root: <path>   Branch: <name>
-Initial dirty state: <paths or none>
 Commits: allowed | ask once | forbidden
+Initial dirty state: <paths or none>
 Task <n>: pending | in progress | done | blocked - <evidence: command -> result>
 Ruling: <decision> - <reason> - <cost if wrong>
 Deferred: <item> - <owner or place>
@@ -29,7 +29,7 @@ Round <loop> <n>: <cause>
 
 ## Lines this skill writes
 
-`implement` writes `Base`, `Root`, `Branch`, `Initial dirty state`, `Commits`, `Task`,
+`implement` writes `Base`, `Root`, `Branch`, `Commits`, `Initial dirty state`, `Task`,
 `Ruling`, `Deferred`, and its own `Round` lines. `Verify`, `Review`, `Finding`, and `Received`
 belong to other skills; read them, never write them, except the `Verify:` line a
 subagent returns, which the controller appends verbatim. `plan-craft` writes only these
@@ -42,14 +42,15 @@ fence like every new line. `verify` counts only the code reviews after the last 
 
 - **Start.** `plan-craft` leaves the placeholder `Base: unset`, meaning execution has not
   begun. Fill that placeholder line with the real values (it is a placeholder, like a
-  `pending` task state, not a record), then add `Initial dirty state` under it, with
-  each path someone already staged marked `(staged)`, and the `Commits` line with the
-  commit policy in force (skill, step 5):
+  `pending` task state, not a record), then add under it the `Commits` line with the
+  commit-policy answer (skill, step 5; `ask once` only while the question is open, and a
+  later answer is a new `Commits` line) and `Initial dirty state`, with each path someone
+  already staged marked `(staged)`:
 
   ```text
   Base: 3f9c2a7e1b4d8f6a0c5e9b2d7f1a4c8e6b3d0f92   Root: /path/to/repo   Branch: feature-x
-  Initial dirty state: README.md, src/config.ts (staged)
   Commits: allowed
+  Initial dirty state: README.md, src/config.ts (staged)
   ```
 
   `Base` is the full object ID of `HEAD` before the first task. `Root` is the

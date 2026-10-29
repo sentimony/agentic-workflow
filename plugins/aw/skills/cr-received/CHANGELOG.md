@@ -22,7 +22,10 @@
   block gains `Durable rulings: <paths or none>`.
 - Without a plan, record lines go to the spec's `## Verification record`, and appending
   there does not reset the spec's approval. The anchor uses the `## Committed tree`
-  fingerprint recipe.
+  fingerprint recipe; a review of an uncommitted boundary keeps its identity only while
+  `HEAD` and the uncommitted fingerprint are unchanged. `Previous verification` is `stale`
+  whenever `Changed paths` is not `none`, and only a `Commits` line that says `allowed` or
+  `forbidden` answers the commit-policy question.
 
 ## [0.0.5] - 2026-10-28
 

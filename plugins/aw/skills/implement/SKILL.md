@@ -112,9 +112,9 @@ is a full option, not a fallback. Details and limits are in
 
 On a fresh start (`Base: unset`), record the starting point before the first task: fill
 the `Base` placeholder with the full object ID of `HEAD`, `Root`, and `Branch`, and add
-`Initial dirty state` under it, naming staged paths as well as unstaged and untracked
-ones, then `Commits: allowed | ask once | forbidden` from the commit policy of step 5
-(format and example in [journal.md](references/journal.md)). Without a plan, the spec's
+`Commits: allowed | ask once | forbidden` under it from the commit policy of step 5, then
+`Initial dirty state`, naming staged paths as well as unstaged and untracked ones (format
+and example in [journal.md](references/journal.md)). Without a plan, the spec's
 `## Verification record` starts with `Branch: <name>` and takes the same lines.
 
 Uncommitted changes listed there, staged ones included, belong to someone else: work
@@ -186,9 +186,12 @@ A policy that asks first gets one question for the whole chain (this stops `--au
 policy that forbids commits means no commit, and the report says so.
 ```
 
-The policy goes into the `Commits` line of step 3. With `forbidden`, or while the one
-question is unanswered, tasks still reach `done` on their evidence, the work stays
-uncommitted, and `verify` judges the working tree.
+The `Commits` line of step 3 records the answer, not only the policy: `allowed` or
+`forbidden` once the policy or the user's answer settles it (an answer given earlier in
+the chain counts), `ask once` only while the one question is unanswered. When the answer
+comes later, append a new `Commits` line with it; the latest one counts. With
+`forbidden`, or while the question is unanswered, tasks still reach `done` on their
+evidence, the work stays uncommitted, and `verify` judges the working tree.
 
 A task is `done` only with evidence: a command run on this tree and its result, written
 into the `Task` line.

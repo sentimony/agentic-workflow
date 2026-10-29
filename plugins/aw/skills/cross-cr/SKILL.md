@@ -226,7 +226,8 @@ every reviewer of the round:
 - the excluded paths and the instruction not to read them;
 - `Respond in the language of the user's conversation: <language>.`;
 - finding IDs `R<n>-<reviewer>-F<k>` (`<reviewer>` is `codex`, `claude-code`, or
-  `antigravity`); take the round `n` from the plan's journal as `cr-request` does.
+  `antigravity`); take the round `n` from the record host's record as `cr-request`
+  does.
 
 The runner appends the rest, so never copy or embed it by hand:
 
@@ -319,10 +320,11 @@ Show the verdicts and findings to the user, then pass them to `cr-received`, whi
 validates each finding and chooses its disposition. Keep the run directory, the target
 fingerprint, and the reviewer session with the review record.
 
-When the plan is known, append to its `## Execution record` the lines `cr-request` step 7
-writes, one `Review` line per reviewer and one `Finding` line per finding, with
-`reviewer <agent> <model>` and mode `document` for `plan`, `code` for `implementation`,
-and `re-review` for a follow-up round. Never rewrite existing lines.
+With a record host, found as `cr-request` step 7 finds it (the plan, else the spec), append
+to its record (the plan's `## Execution record` or the spec's `## Verification record`) the
+lines `cr-request` step 7 writes, one `Review` line per reviewer and one `Finding` line per
+finding, with `reviewer <agent> <model>` and mode `document` for `plan`, `code` for
+`implementation`, and `re-review` for a follow-up round. Never rewrite existing lines.
 
 The last line of the result is the next step:
 
@@ -427,14 +429,14 @@ sections. For a Claude or Antigravity reviewer it also copies into the brief the
 untracked files in scope and requirement documents outside the repository; standard
 exclusions and `--exclude` paths never enter the brief. The runner starts each selected
 reviewer CLI (by default the opposite agent CLI, plus one per group the user names), and
-each contacts
-its own vendor API over the network with the brief and whatever files that reviewer reads. Run artifacts live only under the system temporary directory in
+each contacts its own vendor API over the network with the brief and whatever files that
+reviewer reads. Run artifacts live only under the system temporary directory in
 `cross-review/`; the runner writes nothing into the target repository. The skill itself
-edits only the plan's execution record, when the plan is known, and makes the local
-checkpoint commit of step 1 with this session's own paths; it never pushes. Before an
-Antigravity run it reads the `agy` settings file without printing its content.
-`usage.json` holds only numbers and model and skill names, with the same private
-permissions as the other artifacts.
+edits only the record of its record host (the plan, else the spec), when there is one, and
+makes the local checkpoint commit of step 1 with this session's own paths; it never pushes.
+Before an Antigravity run it reads the `agy` settings file without printing its content.
+`usage.json` holds only numbers and model and skill names, with the same private permissions
+as the other artifacts.
 
 Reviewer choice: the opposite CLI by default; more reviewers, Antigravity, and the same
 CLI as the host only from the user's explicit groups, the last reported as not

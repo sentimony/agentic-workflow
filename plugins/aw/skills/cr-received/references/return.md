@@ -68,9 +68,10 @@ Route: verify | specify | plan-craft (<why>)
 ```
 
 - `Changed paths` - every path the fixes touched, untracked files included.
-- `Previous verification` - `stale` whenever the tree fingerprint moved since the last
-  `Verify` line, a durable-ruling comment included; `still valid (tree unchanged)` only
-  when it did not.
+- `Previous verification` - `stale` whenever `Changed paths` is not `none`, even when
+  the fixes are still uncommitted and the committed fingerprint has not moved, and
+  whenever the tree fingerprint moved since the last `Verify` line, a durable-ruling
+  comment included; `still valid (tree unchanged)` only when neither holds.
 - `Checks to rerun` - for each resolved ID, the command that proves it.
 - `Re-review` - the step 8 decision and its reason.
 - `Blocking` lists every `ESCALATE` still open, from this round and every earlier one,

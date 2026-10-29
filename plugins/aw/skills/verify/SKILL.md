@@ -38,11 +38,11 @@ outside the verdict: the report lists them, and the checks run in a clean clone 
 `HEAD` ([clean-clone.md](references/clean-clone.md)) whenever there is one, whether or
 not it looks related.
 
-When the work under verification is itself uncommitted - the record says
-`Commits: forbidden`, the commit-policy question has no answer yet, or, with no host,
-the caller's change exists only in the working tree - use the `## Working tree` recipe
-instead and run the checks in the working tree. The `Verify` line then ends with
-`working`, and the report says the verdict is bound to no commit.
+When the work under verification is itself uncommitted - the record's latest `Commits`
+line says `forbidden`, or `ask once` (the commit-policy question has no answer yet), or,
+with no host, the caller's change exists only in the working tree - use the
+`## Working tree` recipe instead and run the checks in the working tree. The `Verify`
+line then ends with `working`, and the report says the verdict is bound to no commit.
 
 A recipe that exits non-zero or prints no ID gives
 `BLOCKED (fingerprint failed: <step>)`; there is no fallback. The real index is never
@@ -170,8 +170,8 @@ revert to an earlier tree starts a new verify-fix round too; a repeated `FAIL` o
 same fingerprint writes only a new `Verify` line, no `Round`. The cause names each
 failing claim by its source tag and promise, not by its `C<n>` number, which is
 reassigned every run; the same tag and promise in two rounds is the same cause. The
-counter lives in the record, so a fresh session continues it. Each `FAIL` -> `implement`
-cycle under `--auto` is an automatic round.
+counter lives in the record, so a fresh session continues it. Every `FAIL` -> `implement`
+cycle is an automatic round.
 
 ```text
 Round rule: only automatic rounds count. A round count the user gave explicitly allows
@@ -250,7 +250,8 @@ carries it; a new session or a manual call runs without it.
 ```
 
 So under `--auto` the `implement - Task <n> (outward, needs confirmation)` row and the
-`finalize` rows end the turn.
+`finalize` rows end the turn, except when `finalize` started this chain to heal its gate:
+then a `finalize` row returns to `finalize` and the option the user already chose.
 
 ## When not to use
 

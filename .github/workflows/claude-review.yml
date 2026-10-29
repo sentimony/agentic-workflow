@@ -3,11 +3,11 @@ name: Claude review
 # Posts a cr-request PR review as yngwald on each open, non-draft, same-repo PR whose head has a
 # green CI run: automatically on the first head and on new heads after a review with Critical or
 # Important findings (at most 3 reviews), and on every request for yngwald or dispatch. The agent
-# reviews with a read-only GITHUB_TOKEN and writes the body to a file; the publish job validates it,
-# and only its `post` step gets the yngwald PAT. That holds for the main copy of this file:
-# pull_request runs use the PR branch's copy, so anyone who can push a branch can reach the PAT.
-# The checks cover the body's structure and token-like strings, not its prose; the `Claude review`
-# status is advisory, not a required check.
+# reviews with a read-only GITHUB_TOKEN and writes the body and the inline comments to files; the
+# publish job validates them, and only its `post` step gets the yngwald PAT. That holds for the main
+# copy of this file: pull_request runs use the PR branch's copy, so anyone who can push a branch can
+# reach the PAT. The checks cover the body's structure and token-like strings, not its prose; the
+# `Claude review` status is advisory, not a required check.
 on:
   workflow_run:
     workflows: [CI]
@@ -149,8 +149,14 @@ jobs:
               # The Summary section only, up to the next ###, as publish reads it.
               last_summary=$(jq -rs 'sort_by(.submitted_at) | last | .body' <<< "$marked" \
                 | awk '/^### /{on = ($0 ~ /^### Summary[[:space:]]*$/); next} on')
-              blocking=$(awk -F'|' '/^\| *(Critical|Important) *\| *[0-9]+ *\|/ {s += $3} END {print s + 0}' \
-                <<< "$last_summary")
+              # The one-row table: the data row two lines under its header. Rows of `Severity | Count`,
+              # the vertical table of reviews posted before it, still count for open PRs.
+              blocking=$(awk -F'|' '
+                row == 2 { if ($0 ~ /^\| *[0-9]+ *\| *[0-9]+ *\|/) s += $2 + $3; row = 0; next }
+                row == 1 { row = 2; next }
+                /^\| *Critical *\| *Important *\| *Minor *\|/ { row = 1; next }
+                /^\| *(Critical|Important) *\| *[0-9]+ *\|/ { s += $3 }
+                END { print s + 0 }' <<< "$last_summary")
               [ "$last_sha" != "$head_sha" ] || skip_final "PR #$number already has a review of $head_sha"
               [ "$blocking" -gt 0 ] || skip_final "the latest review of PR #$number has no Critical or Important findings"
               [ "$total" -lt 3 ] || skip_final "PR #$number has $total reviews from $REVIEWER; request $REVIEWER for another"
@@ -187,10 +193,6 @@ jobs:
     env:
       NUMBER: ${{ needs.gate.outputs.number }}
       HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
-      # sentimony/agentic-workflow commit of tag v0.0.6 with the cr-request skill, unless the
-      # REVIEW_SKILLS_REF repo variable names another full SHA; the reviewer skill comes from a released
-      # tag, never from the PR head under review.
-      CR_REQUEST_REF: ${{ vars.REVIEW_SKILLS_REF || '1e151554148db6086fbb6a1f17374508cc321664' }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -253,12 +255,26 @@ jobs:
 
       # User scope: the prepare step removed every .claude/ from the checkout, and the action restores
       # .claude/ from the base branch only on pull_request events, not on workflow_run or dispatch.
+      # The reviewer skill comes from a released tag, never from the PR head under review: the newest
+      # vX.Y.Z tag, so the signature names the latest released cr-request, unless the
+      # REVIEW_SKILLS_REF repo variable pins a full commit SHA.
       - name: Install cr-request skill
         id: skill
+        env:
+          SOURCE: https://github.com/sentimony/agentic-workflow
+          REVIEW_SKILLS_REF: ${{ vars.REVIEW_SKILLS_REF }}
         run: |
-          [[ "$CR_REQUEST_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::REVIEW_SKILLS_REF must be a full commit SHA"; exit 1; }
+          if [ -n "$REVIEW_SKILLS_REF" ]; then
+            [[ "$REVIEW_SKILLS_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::REVIEW_SKILLS_REF must be a full commit SHA"; exit 1; }
+            ref="$REVIEW_SKILLS_REF"
+          else
+            ref=$(git ls-remote --tags --refs "$SOURCE" \
+              | sed -nE 's#^[0-9a-f]{40}[[:space:]]+(refs/tags/v[0-9]+\.[0-9]+\.[0-9]+)$#\1#p' | sort -V | tail -n 1)
+            test -n "$ref" || { echo "::error::No vX.Y.Z tag in $SOURCE"; exit 1; }
+          fi
+          echo "cr-request source: $ref"
           git init -q "$RUNNER_TEMP/aw"
-          git -C "$RUNNER_TEMP/aw" fetch -q --depth 1 https://github.com/sentimony/agentic-workflow "$CR_REQUEST_REF"
+          git -C "$RUNNER_TEMP/aw" fetch -q --depth 1 "$SOURCE" "$ref"
           git -C "$RUNNER_TEMP/aw" checkout -q FETCH_HEAD
           mkdir -p ~/.claude/skills .auto-review
           # Any plugin directory: the pinned tag may predate the rename of the plugin.
@@ -311,42 +327,79 @@ jobs:
             .auto-review/review.md; stop and report that the skill is missing.
 
             Write exactly one pull request review body in English, with plain hyphens only (the ` · ` of the two
-            closing lines excepted), to .auto-review/review.md; do not write or edit any other file. Do not post
-            it; a later step posts it as a review that neither approves nor requests changes. The body must start
-            with this exact line:
+            closing lines excepted), to .auto-review/review.md, and its inline comments to
+            .auto-review/comments.json; do not write or edit any other file. Do not post them; a later step posts
+            them as one review that neither approves nor requests changes.
+
+            Keep the body compact: a reader sees the target, the verdicts, and one line per finding at a glance,
+            and opens every detail on demand from a collapsed `<details>` block. Put a blank line after each
+            `<summary>...</summary>` line and before each `</details>`, so the Markdown inside renders. The body
+            must start with this exact line:
             <!-- claude-review sha=${{ needs.gate.outputs.head_sha }} -->
-            then the target identity, the reviewed range, the commits in it, and the coverage (files read,
-            what was skipped), then a `### Summary` section with two Markdown tables and one line.
+            then these parts, in this order:
 
-            Write the reviewed range as a compare link with short SHAs, followed by the number of files and lines:
+            **Target:** PR [#${{ needs.gate.outputs.number }}](<PR URL from pr.json>) (`<head branch>` -> `<base branch>`)
+
+            <details><summary>Target details</summary>
+
+            The target identity (base, head, tree, uncommitted state, excluded paths). **Range:** the reviewed
+            range as a compare link with short SHAs, followed by the number of files and lines from the last line
+            of .auto-review/target/stat.txt:
             [`<base7>...<head7>`](https://github.com/${{ github.repository }}/compare/<BASE SHA>...<HEAD SHA>)
-            Take the number of files and lines from the last line of .auto-review/target/stat.txt.
-            List the commits from .auto-review/target/log.txt, one line each, as
+            **Commits:** the commits from .auto-review/target/log.txt, one line each, as
             - [`<short sha>`](https://github.com/${{ github.repository }}/commit/<full sha>) <subject>
-            After 20 commits write `and <n> more`.
+            and after 20 commits `and <n> more`. **Coverage:** how the review ran, the files read, what was
+            skipped, and the intent sources.
 
-            The Summary section:
+            </details>
 
-            | Axis | Verdict |
-            | --- | --- |
-            | Intent | PASS, FINDINGS, or UNASSESSED |
-            | System | PASS, FINDINGS, or UNASSESSED |
-            | Craft | PASS, FINDINGS, or UNASSESSED |
+            ### Summary
 
-            | Severity | Count |
-            | --- | --- |
-            | Critical | <n> |
-            | Important | <n> |
-            | Minor | <n> |
+            | Critical | Important | Minor | Intent | System | Craft |
+            | --- | --- | --- | --- | --- | --- |
+            | <n> | <n> | <n> | <verdict> | <verdict> | <verdict> |
 
             **Merge readiness:** ready, ready with fixes, or not ready - <one line>
 
-            Use only the severities Critical, Important, and Minor; the counts must match the findings, and zero
-            findings means zeros. After the summary: the findings with severity, confidence, file:line, impact,
-            and evidence, optional suggestions, the set-aside list, open questions, and review gaps.
-            Never copy a token or secret into the body. Write GitHub logins, team names, and any other text that
-            starts with @ inside backticks, so the posted review notifies nobody.
-            End the body with the two CI closing lines that the cr-request skill states: the signature line below,
+            <details><summary>Axis verdicts</summary>
+
+            One bullet per axis with its verdict and reasons; on a fresh review pass, the status of each finding
+            of the previous yngwald review after them.
+
+            </details>
+
+            ### Findings
+
+            One line per finding, most severe first, or `No findings.` when there are none:
+            - **<severity>** <id> [`<path>:<line>`](https://github.com/${{ github.repository }}/blob/${{ needs.gate.outputs.head_sha }}/<path>#L<line>) <title>
+
+            <details><summary>Findings details</summary>
+
+            Each finding with severity, confidence, file:line, impact, and evidence, and an optional suggestion.
+
+            </details>
+
+            <details><summary>Set aside, open questions, and review gaps</summary>
+
+            The set-aside list, open questions, and review gaps.
+
+            </details>
+
+            Each verdict is PASS, FINDINGS, or UNASSESSED. Use only the severities Critical, Important, and Minor;
+            the counts must match the findings, and zero findings means zeros. Omit the Findings details block
+            when there are no findings.
+
+            .auto-review/comments.json is a JSON array with one object per finding that points at a line the PR
+            adds or keeps in diff.patch, so it shows next to the code: {"path": "<repo path>", "line": <line
+            number in the HEAD SHA file>, "body": "<Markdown>"}. The comment body starts with
+            `**<severity>** <id> - <title>`, then the impact and the evidence in a few lines, and an optional
+            suggestion. A finding with no such line stays in the review body only; write `[]` when none has one.
+            A later step drops a comment whose line is outside the diff.
+
+            Never copy a token or secret into the body or the comments. Write GitHub logins, team names, and any
+            other text that starts with @ inside backticks, so the posted review notifies nobody.
+            End the body with the two CI closing lines that the cr-request skill states, as plain text (the publish
+            step sets them in small type and links the version): the signature line below,
             backticks included, then the `Next step` line as the very last line, written with ` · ` before the
             reason and the skill, whichever it is, as inline code with a leading slash:
             ``Next step: `/<skill>` · <reason>``, for example ``Next step: `/cr-received` · 4 findings to rule on``;
@@ -357,13 +410,13 @@ jobs:
           # Reads stay in the workspace and the installed skill, so injected PR text cannot steer the agent
           # to runner files or /proc and copy a token into the body. Grep and Glob are allowed bare: the
           # blockReadsOutsideWorkingDirectories setting, not a path rule, refuses them outside the
-          # workspace. Write follows the Edit rule for the body file. Bash is denied, built-in read-only
+          # workspace. Write follows the Edit rules for the body and comments files. Bash is denied, built-in read-only
           # commands included: any allowed command can echo an expanded variable. .git/ is denied for
           # Read, Grep, and Glob: .git/config holds the action's token in the origin URL.
           claude_args: >-
             --model ${{ vars.CLAUDE_REVIEW_MODEL || 'claude-opus-5-5' }}
             --max-turns 60
-            --allowedTools "Skill,Agent,Task,Grep,Glob,Read(./**),Read(~/.claude/skills/**),Edit(./.auto-review/review.md),Write(./.auto-review/review.md)"
+            --allowedTools "Skill,Agent,Task,Grep,Glob,Read(./**),Read(~/.claude/skills/**),Edit(./.auto-review/review.md),Write(./.auto-review/review.md),Edit(./.auto-review/comments.json),Write(./.auto-review/comments.json)"
             --disallowedTools "Bash,Read(./.git/**)"
 
       # The duration is the agent step's wall time; the agent cannot measure it. Only the signature line
@@ -398,6 +451,62 @@ jobs:
           mv "$tmp" "$body"
           echo "Review duration: $DURATION"
 
+      # GitHub rejects a whole review when one inline comment points outside the diff, so only comments
+      # on a head-side line of a diff.patch hunk stay; the rest of the findings live in the body. The
+      # agent chooses the comments: the log gets counts only.
+      - name: Check inline comments
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re
+
+          root = pathlib.Path(".auto-review")
+          out = root / "comments.json"
+          if not (root / "review.md").is_file():
+              out.unlink(missing_ok=True)
+              raise SystemExit(0)
+
+          lines, path, old_left, new_left, right = {}, None, 0, 0, 0
+          for raw in (root / "target/diff.patch").read_text(encoding="utf-8", errors="replace").split("\n"):
+              if old_left > 0 or new_left > 0:
+                  if raw.startswith("+"):
+                      lines.setdefault(path, set()).add(right)
+                      right, new_left = right + 1, new_left - 1
+                  elif raw.startswith("-"):
+                      old_left -= 1
+                  elif not raw.startswith("\\"):
+                      lines.setdefault(path, set()).add(right)
+                      right, old_left, new_left = right + 1, old_left - 1, new_left - 1
+                  continue
+              if raw.startswith("diff --git "):
+                  path = None
+              elif raw.startswith("+++ "):
+                  # A quoted path (special characters) gets no comments.
+                  path = raw[6:] if raw.startswith("+++ b/") else None
+              else:
+                  hunk = re.match(r"@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", raw)
+                  if hunk:
+                      old_left = int(hunk.group(1) or 1)
+                      right = int(hunk.group(2))
+                      new_left = int(hunk.group(3) or 1)
+
+          try:
+              proposed = json.loads(out.read_text(encoding="utf-8")) if out.is_file() else []
+          except (ValueError, UnicodeDecodeError):
+              proposed = None
+          if not isinstance(proposed, list):
+              print("::warning::comments.json is not a JSON array; no inline comments")
+              proposed = []
+          kept = [
+              {"path": c["path"], "line": c["line"], "body": c["body"].strip()}
+              for c in proposed
+              if isinstance(c, dict) and isinstance(c.get("path"), str) and type(c.get("line")) is int
+              and isinstance(c.get("body"), str) and 0 < len(c["body"].strip()) <= 8000
+              and c["line"] in lines.get(c["path"], ())
+          ][:30]
+          out.write_text(json.dumps(kept), encoding="utf-8")
+          print(f"Inline comments: {len(kept)} kept of {len(proposed)}")
+          PY
+
       # The action hides the agent's output: list the paths it read and the calls the permission rules
       # refused (paths and commands only), and the result when it wrote no body.
       - name: Show file access and why no review was written
@@ -430,8 +539,10 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: claude-review
-          # Only the file publish reads: the review target and anything else stay on the runner.
-          path: .auto-review/review.md
+          # Only the files publish reads: the review target and anything else stay on the runner.
+          path: |
+            .auto-review/review.md
+            .auto-review/comments.json
           if-no-files-found: error
           retention-days: 1
           include-hidden-files: true
@@ -454,6 +565,9 @@ jobs:
       CONTEXT: Claude review
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       BODY_FILE: review-out/review.md
+      COMMENTS_FILE: review-out/comments.json
+      # The body as posted: the agent's body with the closing lines set in small type.
+      POST_FILE: review-out/post.md
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         continue-on-error: true
@@ -478,9 +592,6 @@ jobs:
           }
           summary_section() {
             tr -d '\r' < "$BODY_FILE" | awk '/^### /{on = ($0 ~ /^### Summary[[:space:]]*$/); next} on'
-          }
-          count() {
-            summary_section | grep -oE "^\| *$1 *\| *[0-9]+ *\|" | grep -oE '[0-9]+' | head -n 1 || true
           }
 
           # Only the run whose gate set the latest status reports: an older run must not overwrite a
@@ -533,24 +644,44 @@ jobs:
           else
             fail "The review body does not end with the signature and Next step lines"
           fi
+          # The closing lines in small type, the version linked to the skill's page; the Next step line
+          # follows the signature after a line break. A signature as the last line takes no break.
+          export SIGNATURE="$signature"
+          export RENDERED="Reviewed with: \`/cr-request\` [$VERSION](https://www.skills.sh/sentimony/agentic-workflow/cr-request) skill${signature#"Reviewed with: \`/cr-request\` $VERSION skill"}"
+          awk '
+            { sub(/\r$/, "") }
+            NR == FNR { if ($0 !~ /^[[:space:]]*$/) { prev = last; last = FNR } next }
+            FNR == prev || FNR == last {
+              line = $0; sub(/[[:space:]]+$/, "", line)
+              if (line == ENVIRON["SIGNATURE"]) $0 = "<sub>" ENVIRON["RENDERED"] "</sub>" (FNR == prev ? "<br>" : "")
+              else if (FNR == last) $0 = "<sub>" line "</sub>"
+            }
+            { print }
+          ' "$BODY_FILE" "$BODY_FILE" > "$POST_FILE"
           # GitHub rejects review bodies over 65536 characters; bytes are the stricter bound.
-          [ "$(wc -c < "$BODY_FILE")" -le 65536 ] || fail "The review body is longer than GitHub accepts"
-          if grep -qE '(ghp_|ghs_|gho_|ghu_|ghr_|github_pat_|sk-ant-|sb_secret_)[A-Za-z0-9]' "$BODY_FILE"; then
-            fail "Review body contains a token-like string"
+          [ "$(wc -c < "$POST_FILE")" -le 65536 ] || fail "The review body is longer than GitHub accepts"
+          [ -f "$COMMENTS_FILE" ] || echo '[]' > "$COMMENTS_FILE"
+          jq -e 'type == "array" and length <= 30 and all(.[]; type == "object" and (keys == ["body", "line", "path"])
+            and (.path | type == "string") and (.line | type == "number" and . >= 1 and floor == .)
+            and (.body | type == "string" and length > 0 and length <= 8000))' "$COMMENTS_FILE" > /dev/null \
+            || fail "The inline comments file is malformed"
+          if grep -qE '(ghp_|ghs_|gho_|ghu_|ghr_|github_pat_|sk-ant-|sb_secret_)[A-Za-z0-9]' "$POST_FILE" "$COMMENTS_FILE"; then
+            fail "Review body or comments contain a token-like string"
           fi
-          critical=$(count Critical)
-          important=$(count Important)
-          minor=$(count Minor)
-          readiness=$(summary_section | grep -oE '\*\*Merge readiness:\*\* *(ready with fixes|not ready|ready)' \
+
+          # The one-row Summary table: its header, the separator, then the data row.
+          header_re='^\| *Critical *\| *Important *\| *Minor *\| *Intent *\| *System *\| *Craft *\|$'
+          verdict='(PASS|FINDINGS|UNASSESSED)'
+          row_re="^\| *([0-9]+) *\| *([0-9]+) *\| *([0-9]+) *\| *$verdict *\| *$verdict *\| *$verdict *\|\$"
+          section=$(summary_section | sed 's/[[:space:]]*$//')
+          row=$(grep -A 2 -E "$header_re" <<< "$section" | sed -n 3p || true)
+          [[ "$row" =~ $row_re ]] || fail "The review has no valid Summary table"
+          critical="${BASH_REMATCH[1]}"
+          important="${BASH_REMATCH[2]}"
+          minor="${BASH_REMATCH[3]}"
+          readiness=$(grep -oE '\*\*Merge readiness:\*\* *(ready with fixes|not ready|ready)' <<< "$section" \
             | sed -E 's/.*\*\* *//' | head -n 1 || true)
-          if [ -z "$critical" ] || [ -z "$important" ] || [ -z "$minor" ] || [ -z "$readiness" ]; then
-            fail "The review has no Summary counts or merge readiness"
-          fi
-          section=$(summary_section)
-          for axis in Intent System Craft; do
-            grep -qE "^\| *$axis *\| *(PASS|FINDINGS|UNASSESSED) *\|" <<< "$section" \
-              || fail "The review has no valid $axis verdict in the Summary"
-          done
+          [ -n "$readiness" ] || fail "The review has no merge readiness"
 
           summary="Critical $critical, Important $important, Minor $minor; $readiness"
           state=success
@@ -558,12 +689,14 @@ jobs:
           {
             echo "ready_to_post=true"
             echo "validated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "signature=$signature"
+            echo "signature=$RENDERED"
             echo "summary=$summary"
             echo "state=$state"
           } >> "$GITHUB_OUTPUT"
 
-      # The only step with the yngwald PAT: it checks the token's owner and posts the body as is.
+      # The only step with the yngwald PAT: it checks the token's owner and posts the validated body
+      # and inline comments as is. Inline comments count in the PR list's comment counter; a review
+      # body alone does not. When GitHub refuses the comments, the body goes alone.
       - id: post
         if: steps.validate.outputs.ready_to_post == 'true'
         env:
@@ -572,8 +705,16 @@ jobs:
           test -n "$GH_TOKEN" || { echo "::error::YNGWALD_PR_TOKEN is not set"; exit 1; }
           login="$(gh api user --jq .login)"
           test "$login" = "$REVIEWER" || { echo "::error::YNGWALD_PR_TOKEN belongs to '$login', not $REVIEWER"; exit 1; }
-          id=$(gh api -X POST "repos/$REPO/pulls/$NUMBER/reviews" -f commit_id="$HEAD_SHA" -f event=COMMENT \
-            -F body=@"$BODY_FILE" --jq .id)
+          payload="$(mktemp)"
+          jq -n --arg commit "$HEAD_SHA" --rawfile body "$POST_FILE" --slurpfile comments "$COMMENTS_FILE" \
+            '{commit_id: $commit, event: "COMMENT", body: $body, comments: ($comments[0] | map(. + {side: "RIGHT"}))}' \
+            > "$payload"
+          if ! id=$(gh api -X POST "repos/$REPO/pulls/$NUMBER/reviews" --input "$payload" --jq .id); then
+            [ "$(jq length "$COMMENTS_FILE")" -gt 0 ] || exit 1
+            echo "::warning::GitHub refused the review with inline comments; posting the body alone"
+            id=$(gh api -X POST "repos/$REPO/pulls/$NUMBER/reviews" -f commit_id="$HEAD_SHA" -f event=COMMENT \
+              -F body=@"$POST_FILE" --jq .id)
+          fi
           echo "review_id=$id" >> "$GITHUB_OUTPUT"
 
       - name: Report review status

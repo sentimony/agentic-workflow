@@ -6,8 +6,10 @@
 - `plugins/aw/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
 - `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - validation; `claude-review.yml` - auto review: gate, review
-  (read-only agent writes the body), publish (validates it, posts a PR review as yngwald, sets
-  the `Claude review` status). An automatic trigger (green CI, opened, reopened, ready) reviews a
+  (read-only agent with the cr-request skill of the newest `vX.Y.Z` tag writes a compact body
+  with `<details>` blocks and inline comments on diff lines), publish (validates them, sets the
+  closing lines in small type, posts one PR review as yngwald, sets the `Claude review` status).
+  An automatic trigger (green CI, opened, reopened, ready) reviews a
   head when the PR has no yngwald review yet, or when the latest one has Critical or Important
   findings, reviewed another head, and is one of fewer than 3; a request for yngwald or a
   dispatch always reviews.
@@ -38,8 +40,10 @@
   re-requesting yngwald recovers, and the status is advisory.
 - The `publish` footer check accepts the signature with the measured duration followed by a
   `Next step` line in its full format, and the pre-0.0.6 order with the signature last. Its
-  regexes have no CI test, because the workflow is self-contained; an edit to them is checked
-  by hand on sample bodies. This is an accepted trade-off, not a defect for review.
+  regexes, the one-row Summary table parser, and the gate's parser of both Summary formats
+  (the vertical one of older reviews) have no CI test, because the workflow is
+  self-contained; an edit to them is checked by hand on sample bodies. This is an accepted
+  trade-off, not a defect for review.
 - Renaming a released skill: the new name starts at `0.0.1`, its CHANGELOG names the old one,
   and README Install says to remove the old skill or reinstall.
 - Skills form one chain: specify -> plan-craft -> implement -> verify -> cr-request ->

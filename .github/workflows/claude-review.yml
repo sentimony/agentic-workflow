@@ -410,9 +410,9 @@ jobs:
           # Reads stay in the workspace and the installed skill, so injected PR text cannot steer the agent
           # to runner files or /proc and copy a token into the body. Grep and Glob are allowed bare: the
           # blockReadsOutsideWorkingDirectories setting, not a path rule, refuses them outside the
-          # workspace. Write follows the Edit rules for the body and comments files. Bash is denied, built-in read-only
-          # commands included: any allowed command can echo an expanded variable. .git/ is denied for
-          # Read, Grep, and Glob: .git/config holds the action's token in the origin URL.
+          # workspace. Write follows the Edit rules for the body and comments files. Bash is denied,
+          # built-in read-only commands included: any allowed command can echo an expanded variable. .git/
+          # is denied for Read, Grep, and Glob: .git/config holds the action's token in the origin URL.
           claude_args: >-
             --model ${{ vars.CLAUDE_REVIEW_MODEL || 'claude-opus-5-5' }}
             --max-turns 60

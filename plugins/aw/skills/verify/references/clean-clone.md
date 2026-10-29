@@ -1,8 +1,9 @@
-# Clean clone of an uncommitted tree
+# Clean clone of `HEAD`
 
-Some projects run their checks in a fresh clone (`git clone -q . <tmp>`) to match CI. A
-clone takes only committed content, while `verify` often runs on an uncommitted tree that
-the user or `finalize` commits later. Rebuild the pinned tree in the clone instead.
+`verify` judges the committed tree. When `git status --porcelain` lists any uncommitted
+path other than the record host, the checks run in a clean clone of the pinned `HEAD`,
+so uncommitted changes, including someone else's, neither help nor break them. The same
+clone serves a project that runs its checks in a fresh clone to match CI.
 
 A copy of the files without `.git` (`git ls-files -co | rsync -R`, `cp -r`) is not a
 clean checkout: a test that reads Git fails in it, or passes for another reason than in
@@ -10,31 +11,25 @@ CI.
 
 ## Recipe
 
-Run from the repository root, with `<tmp>` a new empty directory outside the repository:
+Run from the repository root, with `<tmp>` a new empty directory outside the repository
+and `<HEAD SHA>` the full SHA pinned in step 1:
 
 ```sh
-git clone -q . '<tmp>'
-git diff --binary HEAD | git -C '<tmp>' apply --index
+git clone -q --no-checkout . '<tmp>' &&
+git -C '<tmp>' checkout -q --detach '<HEAD SHA>'
 ```
 
-Then copy only the untracked files that the fingerprint covers (not ignored, not the
-plan), keeping their paths (bash, for `read -d ''`):
-
-```bash
-git ls-files -z --others --exclude-standard -- . ':!<plan-path>' |
-  while IFS= read -r -d '' f; do
-    mkdir -p "<tmp>/$(dirname "$f")" && cp -p "$f" "<tmp>/$f"
-  done
-```
-
-Drop the `':!<plan-path>'` pathspec when there is no plan or it lives outside the
-repository.
+Nothing is applied on top: no diff, no untracked files. Uncommitted paths stay out of
+the verdict and are listed in the report.
 
 ## Check before trusting it
 
-Compute the fingerprint inside the clone with the recipe in
-[tree-fingerprint.md](tree-fingerprint.md), run there with the same `<plan-path>`, and
+Compute the fingerprint inside the clone with the `## Committed tree` recipe in
+[tree-fingerprint.md](tree-fingerprint.md), run there with the same `<host-path>`, and
 compare it with the fingerprint pinned in step 1. Equal means the clone holds the tree
-under verification; run the project's checks there. Different means the rebuild missed
-something: fix the rebuild, and never record checks from that clone as evidence for the
+under verification; run the project's checks there. Different means the clone is not
+the pinned commit: fix it, and never record checks from that clone as evidence for the
 pinned tree.
+
+A `working` run (SKILL.md step 1) judges the working tree itself and runs its checks
+there, without a clone.

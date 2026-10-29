@@ -146,9 +146,11 @@ jobs:
             total=$(jq -s length <<< "$marked")
             if [ "$total" -gt 0 ]; then
               last_sha=$(jq -rs 'sort_by(.submitted_at) | last | .sha' <<< "$marked")
-              # The Summary section only, up to the next ###, as publish reads it.
+              # The lines above the first ### heading and the Summary section, outside <details> blocks,
+              # as publish reads them: the table sits above any heading now and under ### Summary before.
               last_summary=$(jq -rs 'sort_by(.submitted_at) | last | .body' <<< "$marked" \
-                | awk '/^### /{on = ($0 ~ /^### Summary[[:space:]]*$/); next} on')
+                | awk '/^<details>/ {skip = 1} /^<\/details>/ {skip = 0; next} skip {next}
+                  /^### / {on = ($0 ~ /^### Summary[[:space:]]*$/); seen = 1; next} on || !seen')
               # The one-row table: the data row two lines under its header. Rows of `Severity | Count`,
               # the vertical table of reviews posted before it, still count for open PRs.
               blocking=$(awk -F'|' '
@@ -332,16 +334,27 @@ jobs:
             them as one review that neither approves nor requests changes.
 
             Keep the body compact: a reader sees the target, the verdicts, and one line per finding at a glance,
-            and opens every detail on demand from a collapsed `<details>` block. Put a blank line after each
-            `<summary>...</summary>` line, before each `</details>`, and after each `</details>`, so the Markdown
-            inside and after it renders. The body
-            must start with this exact line:
+            and opens every other detail on demand from the one collapsed `<details>` block, the only one in the
+            body; do not nest another inside it. Put a blank line after its `<summary>...</summary>` line, before
+            `</details>`, and after `</details>`, so the Markdown inside and after it renders. The body must start
+            with this exact line:
             <!-- claude-review sha=${{ needs.gate.outputs.head_sha }} -->
-            then these parts, in this order:
+            then these parts, in this order, with no headings outside the `<details>` block:
 
             **Target:** PR [#${{ needs.gate.outputs.number }}](<PR URL from pr.json>) (`<head branch>` -> `<base branch>`)
 
-            <details><summary>Target details</summary>
+            | Critical | Important | Minor | Intent | System | Craft |
+            | --- | --- | --- | --- | --- | --- |
+            | <n> | <n> | <n> | <verdict> | <verdict> | <verdict> |
+
+            **Merge readiness:** ready, ready with fixes, or not ready - <one line>
+
+            One line per finding, most severe first, and nothing in its place when there are none:
+            - **<severity>** <id> [`<path>:<line>`](https://github.com/${{ github.repository }}/blob/${{ needs.gate.outputs.head_sha }}/<path>#L<line>) <title>
+
+            <details><summary>Details</summary>
+
+            #### Target
 
             The target identity (base, head, tree, uncommitted state, excluded paths). **Range:** the reviewed
             range as a compare link with short SHAs, followed by the number of files and lines from the last line
@@ -352,43 +365,24 @@ jobs:
             and after 20 commits `and <n> more`. **Coverage:** how the review ran, the files read, what was
             skipped, and the intent sources.
 
-            </details>
-
-            ### Summary
-
-            | Critical | Important | Minor | Intent | System | Craft |
-            | --- | --- | --- | --- | --- | --- |
-            | <n> | <n> | <n> | <verdict> | <verdict> | <verdict> |
-
-            **Merge readiness:** ready, ready with fixes, or not ready - <one line>
-
-            <details><summary>Axis verdicts</summary>
+            #### Axis verdicts
 
             One bullet per axis with its verdict and reasons; on a fresh review pass, the status of each finding
             of the previous yngwald review after them.
 
-            </details>
-
-            ### Findings
-
-            One line per finding, most severe first, or `No findings.` when there are none:
-            - **<severity>** <id> [`<path>:<line>`](https://github.com/${{ github.repository }}/blob/${{ needs.gate.outputs.head_sha }}/<path>#L<line>) <title>
-
-            <details><summary>Findings details</summary>
+            #### Findings
 
             Each finding with severity, confidence, file:line, impact, and evidence, and an optional suggestion.
+            Omit this part when there are no findings.
 
-            </details>
-
-            <details><summary>Set aside, open questions, and review gaps</summary>
+            #### Set aside, open questions, and review gaps
 
             The set-aside list, open questions, and review gaps.
 
             </details>
 
             Each verdict is PASS, FINDINGS, or UNASSESSED. Use only the severities Critical, Important, and Minor;
-            the counts must match the findings, and zero findings means zeros. Omit the Findings details block
-            when there are no findings.
+            the counts must match the findings, and zero findings means zeros.
 
             .auto-review/comments.json is a JSON array with one object per finding that points at a line the PR
             adds or keeps in diff.patch, so it shows next to the code: {"path": "<repo path>", "line": <line
@@ -399,10 +393,10 @@ jobs:
 
             Never copy a token or secret into the body or the comments. Write GitHub logins, team names, and any
             other text that starts with @ inside backticks, so the posted review notifies nobody.
-            End the body with the two CI closing lines that the cr-request skill states, as plain text (the publish
-            step sets them in small type and links the version): the signature line below,
-            backticks included, then the `Next step` line as the very last line, written with ` · ` before the
-            reason and the skill, whichever it is, as inline code with a leading slash:
+            End the body with the two CI closing lines that the cr-request skill states (the publish step then
+            moves the `Next step` line above the signature): the signature line below, backticks included, then
+            the `Next step` line as the very last line, written with ` · ` before the reason and the skill,
+            whichever it is, as inline code with a leading slash:
             ``Next step: `/<skill>` · <reason>``, for example ``Next step: `/cr-received` · 4 findings to rule on``;
             `none` stays plain text (`Next step: none · <reason>`). The ` · ` in these two lines is the required
             format, not a dash. The skill writes the signature without a duration; the workflow appends the review
@@ -569,7 +563,7 @@ jobs:
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       BODY_FILE: review-out/review.md
       COMMENTS_FILE: review-out/comments.json
-      # The body as posted: the agent's body with the closing lines set in small type.
+      # The body as posted: the agent's body with the Next step line moved above the signature.
       POST_FILE: review-out/post.md
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -594,7 +588,8 @@ jobs:
               -f context="$CONTEXT" -f target_url="$RUN_URL" > /dev/null
           }
           summary_section() {
-            tr -d '\r' < "$BODY_FILE" | awk '/^### /{on = ($0 ~ /^### Summary[[:space:]]*$/); next} on'
+            tr -d '\r' < "$BODY_FILE" | awk '/^<details>/ {skip = 1} /^<\/details>/ {skip = 0; next} skip {next}
+              /^### / {on = ($0 ~ /^### Summary[[:space:]]*$/); seen = 1; next} on || !seen'
           }
 
           # Only the run whose gate set the latest status reports: an older run must not overwrite a
@@ -647,21 +642,18 @@ jobs:
           else
             fail "The review body does not end with the signature and Next step lines"
           fi
-          # The closing lines in small type, the version linked to the skill's page; the Next step line
-          # follows the signature after a line break. A signature as the last line takes no break. A blank
-          # line goes before the footer: right after `</details>` it would join that HTML block raw.
+          # The Next step line goes first and the signature right under it, with no blank line between
+          # (GitHub renders the line break). A signature as the last line stays there. A blank line goes
+          # before the footer: right after `</details>` it would join that HTML block raw.
           export SIGNATURE="$signature"
-          export RENDERED="Reviewed with: \`/cr-request\` [$VERSION](https://www.skills.sh/sentimony/agentic-workflow/cr-request) skill${signature#"Reviewed with: \`/cr-request\` $VERSION skill"}"
-          awk '
+          swap=0
+          [ "$signature" = "$last" ] || swap=1
+          awk -v swap="$swap" '
             { sub(/\r$/, "") }
             NR == FNR { if ($0 !~ /^[[:space:]]*$/) { prev = last; last = FNR } next }
-            FNR == prev || FNR == last {
-              line = $0; sub(/[[:space:]]+$/, "", line)
-              if (line == ENVIRON["SIGNATURE"]) {
-                $0 = "<sub>" ENVIRON["RENDERED"] "</sub>" (FNR == prev ? "<br>" : "")
-                if (before !~ /^[[:space:]]*$/) print ""
-              } else if (FNR == last) $0 = "<sub>" line "</sub>"
-            }
+            FNR == (swap ? prev : last) && before !~ /^[[:space:]]*$/ { print "" }
+            swap && FNR >= prev && FNR < last { next }
+            swap && FNR == last { sub(/[[:space:]]+$/, ""); print; print ENVIRON["SIGNATURE"]; next }
             { print; before = $0 }
           ' "$BODY_FILE" "$BODY_FILE" > "$POST_FILE"
           # GitHub rejects review bodies over 65536 characters; bytes are the stricter bound.
@@ -695,7 +687,7 @@ jobs:
           {
             echo "ready_to_post=true"
             echo "validated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "signature=$RENDERED"
+            echo "signature=$signature"
             echo "summary=$summary"
             echo "state=$state"
           } >> "$GITHUB_OUTPUT"

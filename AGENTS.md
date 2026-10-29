@@ -7,8 +7,9 @@
 - `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - validation; `claude-review.yml` - auto review: gate, review
   (read-only agent with the cr-request skill of the newest `vX.Y.Z` tag writes a compact body
-  with `<details>` blocks and inline comments on diff lines), publish (validates them, sets the
-  closing lines in small type, posts one PR review as yngwald, sets the `Claude review` status).
+  with one `<details>` block and inline comments on diff lines), publish (validates them, puts the
+  `Next step` line above the signature, posts one PR review as yngwald, sets the `Claude review`
+  status).
   An automatic trigger (green CI, opened, reopened, ready) reviews a
   head when the PR has no yngwald review yet, or when the latest one has Critical or Important
   findings, reviewed another head, and is one of fewer than 3; a request for yngwald or a

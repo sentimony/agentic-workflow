@@ -7,8 +7,8 @@
 - `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - validation; `claude-review.yml` - auto review: gate, review
   (read-only agent with the cr-request skill of the newest `vX.Y.Z` tag writes a compact body
-  with one `<details>` block and inline comments on diff lines), publish (validates them, puts the
-  `Next step` line above the signature, posts one PR review as yngwald, sets the `Claude review`
+  with one `<details>` block and inline comments on diff lines), publish (validates them, cuts the
+  reason from the `Next step` line, posts one PR review as yngwald, sets the `Claude review`
   status).
   An automatic trigger (green CI, opened, reopened, ready) reviews a
   head when the PR has no yngwald review yet, or when the latest one has Critical or Important
@@ -41,8 +41,8 @@
   re-requesting yngwald recovers, and the status is advisory.
 - The `publish` footer check accepts the signature with the measured duration followed by a
   `Next step` line in its full format, and the pre-0.0.6 order with the signature last. The
-  agent's body keeps the skill's order (`Next step` last); the posted review puts `Next step`
-  above the signature on the owner's choice, an accepted trade-off, not a defect for review.
+  posted review shows only the skill of the `Next step` line, its reason dropped, on the
+  owner's choice: an accepted trade-off, not a defect for review.
   The footer regexes, the one-row Summary table parser, and the gate's parser of three
   Summary layouts (verdicts first, counts first, and the vertical one of older reviews) have
   no CI test, because the workflow is self-contained; an edit to them is checked by hand on

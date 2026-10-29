@@ -338,9 +338,9 @@ jobs:
             .auto-review/comments.json; do not write or edit any other file. Do not post them; a later step posts
             them as one review that neither approves nor requests changes.
 
-            Keep the body compact: a reader sees the verdicts and one line per finding at a glance, and opens
-            every other detail, the target included, on demand from the one collapsed `<details>` block, the
-            only one in the body; do not nest another inside it. Put a blank line after its
+            Keep the body compact: a reader sees the verdicts and the readiness at a glance, and opens every
+            other detail, the findings and the target included, on demand from the one collapsed `<details>`
+            block, the only one in the body; do not nest another inside it. Put a blank line after its
             `<summary>...</summary>` line, before `</details>`, and after `</details>`, so the Markdown inside
             and after it renders. The body must start with this exact line:
             <!-- claude-review sha=${{ needs.gate.outputs.head_sha }} -->
@@ -350,12 +350,17 @@ jobs:
             | --- | --- | --- | --- | --- | --- |
             | <verdict> | <verdict> | <verdict> | <n> | <n> | <n> |
 
-            **Merge readiness:** ready, ready with fixes, or not ready - <one line>
-
-            One line per finding, most severe first, and nothing in its place when there are none:
-            - **<severity>** <id> [`<path>:<line>`](https://github.com/${{ github.repository }}/blob/${{ needs.gate.outputs.head_sha }}/<path>#L<line>) <title>
+            **Readiness:** ready, ready with fixes, or not ready, and nothing else on the line
 
             <details><summary>Details</summary>
+
+            #### Findings
+
+            One line per finding, most severe first:
+            - **<severity>** <id> [`<path>:<line>`](https://github.com/${{ github.repository }}/blob/${{ needs.gate.outputs.head_sha }}/<path>#L<line>) <title>
+
+            then each finding with severity, confidence, file:line, impact, and evidence, and an optional
+            suggestion. Omit this part when there are no findings.
 
             #### Target
 
@@ -372,13 +377,8 @@ jobs:
 
             #### Axis verdicts
 
-            One bullet per axis with its verdict and reasons; on a fresh review pass, the status of each finding
-            of the previous yngwald review after them.
-
-            #### Findings
-
-            Each finding with severity, confidence, file:line, impact, and evidence, and an optional suggestion.
-            Omit this part when there are no findings.
+            The reason for the readiness in one line, then one bullet per axis with its verdict and reasons; on
+            a fresh review pass, the status of each finding of the previous yngwald review after them.
 
             #### Set aside, open questions, and review gaps
 
@@ -399,7 +399,7 @@ jobs:
             Never copy a token or secret into the body or the comments. Write GitHub logins, team names, and any
             other text that starts with @ inside backticks, so the posted review notifies nobody.
             End the body with the two CI closing lines that the cr-request skill states (the publish step then
-            moves the `Next step` line above the signature): the signature line below, backticks included, then
+            cuts the reason from the `Next step` line): the signature line below, backticks included, then
             the `Next step` line as the very last line, written with ` · ` before the reason and the skill,
             whichever it is, as inline code with a leading slash:
             ``Next step: `/<skill>` · <reason>``, for example ``Next step: `/cr-received` · 4 findings to rule on``;
@@ -568,7 +568,7 @@ jobs:
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       BODY_FILE: review-out/review.md
       COMMENTS_FILE: review-out/comments.json
-      # The body as posted: the agent's body with the Next step line moved above the signature.
+      # The body as posted: the agent's body with the reason cut from the Next step line.
       POST_FILE: review-out/post.md
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -647,18 +647,17 @@ jobs:
           else
             fail "The review body does not end with the signature and Next step lines"
           fi
-          # The Next step line goes first and the signature right under it, with no blank line between
-          # (GitHub renders the line break). A signature as the last line stays there. A blank line goes
-          # before the footer: right after `</details>` it would join that HTML block raw.
-          export SIGNATURE="$signature"
-          swap=0
-          [ "$signature" = "$last" ] || swap=1
-          awk -v swap="$swap" '
+          # The Next step line keeps only the skill, its reason dropped, and sits right under the signature
+          # with no blank line between (GitHub renders the line break). A blank line goes before the footer:
+          # right after `</details>` it would join that HTML block raw.
+          pair=0
+          [ "$signature" = "$last" ] || pair=1
+          awk -v pair="$pair" '
             { sub(/\r$/, "") }
             NR == FNR { if ($0 !~ /^[[:space:]]*$/) { prev = last; last = FNR } next }
-            FNR == (swap ? prev : last) && before !~ /^[[:space:]]*$/ { print "" }
-            swap && FNR >= prev && FNR < last { next }
-            swap && FNR == last { sub(/[[:space:]]+$/, ""); print; print ENVIRON["SIGNATURE"]; next }
+            FNR == (pair ? prev : last) && before !~ /^[[:space:]]*$/ { print "" }
+            pair && FNR > prev && FNR < last { next }
+            pair && FNR == last { sub(/ · .*/, "") }
             { print; before = $0 }
           ' "$BODY_FILE" "$BODY_FILE" > "$POST_FILE"
           # GitHub rejects review bodies over 65536 characters; bytes are the stricter bound.
@@ -682,7 +681,7 @@ jobs:
           critical="${BASH_REMATCH[4]}"
           important="${BASH_REMATCH[5]}"
           minor="${BASH_REMATCH[6]}"
-          readiness=$(grep -oE '\*\*Merge readiness:\*\* *(ready with fixes|not ready|ready)' <<< "$section" \
+          readiness=$(grep -oE '\*\*Readiness:\*\* *(ready with fixes|not ready|ready)' <<< "$section" \
             | sed -E 's/.*\*\* *//' | head -n 1 || true)
           [ -n "$readiness" ] || fail "The review has no merge readiness"
 

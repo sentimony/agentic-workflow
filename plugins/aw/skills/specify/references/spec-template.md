@@ -41,7 +41,7 @@ What the change is for and who uses it, from the caller's side, in a few sentenc
 ## Decisions
 
 1. <Decision>. Take <X> over <Y>: <what is gained and what it costs>.
-   Rejected: <alternative> - <reason>.
+   Rejected: <alternative> - <reason>. (optional)
 
 ## Behavior
 
@@ -86,6 +86,36 @@ which shell commands or network calls the change makes.
 ## Acceptance criteria
 ```
 
+## Decision rules
+
+Name a rejected alternative ("over <Y>", `Rejected:`) only when it was actually
+considered; `Rejected:` is optional. A decision with one viable option says why the
+others fell away instead of inventing a second. A `note` decision may have no
+alternative.
+
+## Verification record (optional, both routes)
+
+The last section of a spec that is worked without a plan. `specify` never creates it;
+the first skill that writes there (`implement` or `verify`) adds it after every other
+section:
+
+````markdown
+## Verification record
+
+```text
+Branch: <name>
+```
+````
+
+After `Branch`, lines follow the same formats and append rules as a plan's execution
+record (`plan-craft` plan template): `Commits`, `Initial dirty state`, `Task`, `Verify`,
+`Round`, `Review`, `Finding`, `Received`, `Ruling`, `Deferred`, each added at the end of
+the block, right before its closing fence. On a re-approval of a spec that has this
+section, `specify` appends `Ruling: spec re-approved - <YYYY-MM-DD>`. The tree
+fingerprint excludes the spec that hosts the record, as it excludes a plan.
+
+Appending lines to a spec's `## Verification record` is not a material change and does not reset its approval.
+
 ## Acceptance criteria rules
 
 - One line per criterion: `AC<n>: <checkable predicate>`.
@@ -98,11 +128,13 @@ which shell commands or network calls the change makes.
 
 Check before saving the draft:
 
-- every material behavior in `Behavior` and every item in `Contract` has at least one
-  criterion;
+- `design`: every material behavior in `Behavior` and every item in `Contract` has at
+  least one criterion, and every criterion traces to `Behavior`, `Contract`, or a
+  decision;
+- `note`: every criterion traces to `Goal` or a decision, and every decision that
+  changes behavior has a criterion;
 - critical failure and boundary cases have criteria;
 - security and permission rules have criteria when they apply;
-- every criterion traces to `Behavior`, `Contract`, or a decision;
 - no ceremonial criteria for trivial cases.
 
 ## Fresh-reader checklist

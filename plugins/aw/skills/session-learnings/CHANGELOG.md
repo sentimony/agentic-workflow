@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.0.5] - 2026-10-29
+
+- The notes root is the main checkout of the session's repository: the Git repository of
+  the directory the session started in, which a subagent inherits from its parent. A note
+  about another repository goes into this root with `Target` naming it, never into a notes
+  folder in that repository.
+- Only a line ending in the bare path imports the notes. The report says `import`,
+  `mention only`, or `not wired`; recording leaves a mention in a code span or without `@`
+  as it is and adds no second pointer, and triage offers the replacement for approval.
+- The chain-size recipe adds the notes only when the root imports them by a bare path.
+- Triage first lists the notes files of the current root, of repositories its instruction
+  files name, and of repositories the session opened, with the number of notes in each,
+  without scanning the file system, and triages every non-empty one. A notes folder in
+  another repository is offered as a move item for approval. The report adds
+  `Notes files: <path> (<n>), ...`.
+
 ## [0.0.4] - 2026-10-27
 
 - Rename only: the plugin `awf` is now `aw`; the text changes only that name.

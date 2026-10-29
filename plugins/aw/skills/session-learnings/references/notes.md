@@ -10,10 +10,11 @@ moves each note to its real place.
 
 ## Where
 
-The root is the main checkout of the repository the work happened in: where this session
-edited files and committed, not the working directory the process started in. Take as
-`<dir>` the directory of a file the session changed (in a linked worktree, if it still
-exists, or in the main checkout itself) and run this with `bash -s -- <dir>`:
+The root is the main checkout of the session's repository: the Git repository of the
+directory the session started in, not the repository where it edited files. A subagent
+inherits that directory from its parent, so it writes into the same root even after
+working in a worktree of another repository. Take as `<dir>` the session's starting
+directory (for a subagent, the one it inherited) and run this with `bash -s -- <dir>`:
 
 ```bash
 dir=$1
@@ -31,18 +32,14 @@ echo "${root:-no main checkout}"
 A main checkout prints itself, and a linked worktree prints its main checkout (the work
 tree of the first `git worktree list` entry), also for a submodule. A linked worktree of a
 bare repository or of a clone with a separate Git directory prints `no main checkout`:
-then use the clone named in the brief, or else the worktree itself, and say in the report
-that notes in a worktree are lost when it is removed. When the worktree was already
-removed, use the clone named in the brief or the one the worktree path was created from,
-and say so. When the session changed no files, use the repository of the working
-directory. Outside a Git repository, use the working directory and skip the ignore step,
-saying so in the report.
+then use the worktree itself, and say in the report that notes in a worktree are lost
+when it is removed. When the starting directory is outside a Git repository, use it as
+the root and skip the ignore step, saying so in the report.
 
-When the work spanned several repositories, the root is the one holding most of it. A
-note about another of them goes into that repository's `docs/session-learnings/AGENTS.md`
-only when that folder already exists and is ignored there (`git -C <other> check-ignore -q
-docs/session-learnings/AGENTS.md` succeeds); otherwise it goes into the root's notes with
-`Target` naming the other repository.
+A note about another repository, also one the session worked in, goes into the root's
+notes with `Target` naming that repository. Never write into a notes folder in another
+repository, even one that already exists and is ignored there: triage offers to move such
+a folder into the root.
 
 ```text
 <root>/.gitignore                         docs/session-learnings/
@@ -111,8 +108,16 @@ variant below instead of steps 1 and 4.
 
    Keep the path bare and last on its line: Claude Code skips an import inside a code span
    or followed by punctuation (a trailing `;` breaks it). Search for the path first, in
-   the file this branch edits: a pointer already there, in any wording, is enough. A
-   pointer in the other root file does not count.
+   the file this branch edits, and name the result in the report:
+   - `import`: a line there ends in the bare path (`@docs/session-learnings/AGENTS.md`,
+     or `@docs/session-learnings/CLAUDE.md` in the root `CLAUDE.md`); add nothing.
+   - `mention only`: the path is there only in a code span, without `@`, or followed by
+     other text. Leave that line as it is and add no second pointer: the owner may have
+     dropped the import on purpose. Triage offers the replacement as an approval item.
+   - `not wired`: the path is not there; add the pointer above, or, in the local variant
+     below, report it.
+
+   A pointer in the other root file does not count.
 
 ### Local variant: a checkout that holds someone else's work
 
@@ -127,8 +132,8 @@ report in full, say they were not written and why, and end with `Learnings: 0 ->
    untracked.
 2. Steps 2 and 3 as above.
 3. No root pointer and no new root file. When no pointer is there yet, the report says
-   the notes are not wired: the next session will not load them until a triage or the
-   owner of the branch adds the pointer.
+   `not wired` (or `mention only`): the next session will not load the notes until a
+   triage or the owner of the branch adds the pointer.
 
 Check: `git -C <root> status --porcelain --untracked-files=no` prints the same before and
 after, and `git -C <root> status --porcelain -- docs/session-learnings` prints nothing.
@@ -176,8 +181,9 @@ after the edit. Prefer the project's own check script; otherwise, for `AGENTS.md
 run this from the repository root with `bash` (zsh does not split an unquoted file list,
 and `cat $files | wc -c` then prints 0). It lists tracked, untracked, and gitignored
 files on purpose, so the ignored notes count; a nested repository shows as one directory
-entry and is not entered. When the root `CLAUDE.md` or `AGENTS.md` links the notes, it
-adds them to every chain, since Claude Code imports them through the root:
+entry and is not entered. When the root `CLAUDE.md` or `AGENTS.md` imports the notes (a
+line ending in the bare path), it adds them to every chain, since Claude Code imports them
+through the root; a `mention only` line adds nothing:
 
 ```bash
 bash -s -- <target> <<'EOF'
@@ -196,7 +202,7 @@ for leaf in $( { echo "$target"; git ls-files -c -o -- "$dir" | grep -E '(^|/)AG
   notes=docs/session-learnings/AGENTS.md
   case " $files " in
     *" $notes "*) ;;
-    *) [ -f "$notes" ] && grep -qs '@docs/session-learnings/' AGENTS.md CLAUDE.md &&
+    *) [ -f "$notes" ] && grep -Eqs '@docs/session-learnings/(AGENTS|CLAUDE)\.md$' AGENTS.md CLAUDE.md &&
          files="$files $notes" ;;
   esac
   size=$(( $(cat $files | wc -c) ))

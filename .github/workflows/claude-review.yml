@@ -454,10 +454,11 @@ jobs:
 
       # GitHub rejects a whole review when one inline comment points outside the diff, so only comments
       # on a head-side line of a diff.patch hunk stay; the rest of the findings live in the body. The
-      # agent chooses the comments: the log gets counts only.
+      # agent chooses the comments: the log gets counts only. -I keeps a json.py or re.py at the root of
+      # the PR checkout from shadowing the standard library.
       - name: Check inline comments
         run: |
-          python3 - <<'PY'
+          python3 -I - <<'PY'
           import json, pathlib, re
 
           root = pathlib.Path(".auto-review")

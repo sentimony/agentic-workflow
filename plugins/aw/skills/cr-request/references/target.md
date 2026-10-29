@@ -18,9 +18,11 @@ The target identity makes a review reproducible and lets anyone tell when it is 
     Uncommitted state: none | tracked patch hash + untracked file hashes
     Captured at:
 
-`Tree` is filled for every boundary, including a committed range, from the recipe in
-[tree-fingerprint.md](tree-fingerprint.md). It is what the journal's `Review` line and
-`cr-received` compare against. Take it before writing anything to the journal.
+`Tree` is filled for every boundary, including a committed range, from
+[tree-fingerprint.md](tree-fingerprint.md): `Committed tree` for a committed range or
+commits, `Working tree` when the boundary holds uncommitted changes. Both leave out the
+record host (the plan or the spec that holds the record). It is what the record's `Review`
+line and `cr-received` compare against. Take it before writing anything to the record.
 
 ## Read-only commands
 
@@ -114,15 +116,15 @@ diff, and base copies of modified, deleted, and type-changed files. Review from 
 files, name them in the brief as the target, and tell the reviewer to read them instead of
 running Git. Check that the identity names the same head the files came from; a mismatch
 is a wrong target. Take `Tree` from the caller's identity. Without it, when Git is
-allowed, run the recipe in [tree-fingerprint.md](tree-fingerprint.md) with
-`GIT_INDEX_FILE="$tmp" git read-tree '<head>'` in place of its `cp` and `git add -A`
-lines, so the plan stays out; `git rev-parse '<head>^{tree}'` gives the same ID only
-when the plan is not committed. Else write `Tree: unknown - <reason>`.
+allowed, run the `Committed tree` recipe in [tree-fingerprint.md](tree-fingerprint.md)
+with `'<head>'` in place of `HEAD`, so the record host stays out;
+`git rev-parse '<head>^{tree}'` gives the same ID only when the host is not committed.
+Else write `Tree: unknown - <reason>`.
 
 ## Base discovery
 
 When the user names no base, use the `Base` line of the plan's execution record if it
-is set (not `unset`); otherwise take the merge-base with the default branch
+is set (not `unset`; a spec's `## Verification record` has no `Base`); otherwise take the merge-base with the default branch
 (`git merge-base origin/HEAD HEAD`, falling back to `main` or `master`). State the choice in
 the brief. If the branch has no upstream and no obvious parent, ask.
 

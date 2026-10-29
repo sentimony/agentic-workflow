@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.0.5] - 2026-10-29
+
+- The verdict belongs to the committed tree: the fingerprint is `HEAD^{tree}` without the
+  record host. Uncommitted paths are listed in the report and outside the verdict; when
+  there is any besides the host, checks run in a clean clone of `HEAD`
+  (`references/clean-clone.md` no longer applies a diff). Work that is itself
+  uncommitted (`Commits: forbidden`, no answer to the commit-policy question yet) is
+  judged on the working tree, and its `Verify` line ends with `working`. The description
+  no longer ties `verify` to the moment before a commit.
+- `references/tree-fingerprint.md` (shared by `verify`, `cr-request`, `cr-received`, and
+  `finalize`) has two fail-closed recipes, `## Committed tree` and `## Working tree`: one
+  `&&` chain each, the ID printed only after every step succeeded, the temporary index
+  removed by a `trap`. A failed recipe gives `BLOCKED (fingerprint failed: <step>)`.
+- Re-pin restarts at most twice; a third change gives
+  `BLOCKED (tree keeps changing: <paths or commits>)`.
+- Record host, in one order: the plan, then the spec with its `## Verification record`
+  (created by the first write), then none. No plan-journal is created any more: with no
+  host the `Verify:` line is printed in the report only.
+- A claim covered by `Ruling: R<n>-F<k> superseded by ...` is `n/a: superseded` and the
+  `Ruling` is checked; an `ESCALATE` blocks until `Ruling: R<n>-F<k> escalation decided`.
+  A criterion covered only by `Outward` tasks is `deferred to Task <n>` and does not
+  block `PASS`; after `PASS` and a closed review the next step is
+  `implement - Task <n> (outward, needs confirmation)`.
+- Round rule: only automatic rounds count; a user-started round past the limit runs once
+  and is recorded with `Ruling: round R<n> started by the user past the limit`.
+- `--auto` starts the next local skill (`implement`, `cr-request`, `cr-received`) in the
+  same turn and stops at the user's decisions, the Round rule, `Outward`, and the
+  `finalize` choice.
+
 ## [0.0.4] - 2026-10-28
 
 - A single fresh command run on the fingerprint can be the evidence for several claims

@@ -6,11 +6,15 @@ only after the user chose `squash` in this conversation.
 
 ## Before the merge
 
-1. Re-read the state (SKILL.md "Read the state") and the gate ("Gate on the verdict"),
-   including its rule that nothing outside the plan is uncommitted. The PR head must be
-   the local `HEAD`: `gh pr view <pr> --json headRefOid` prints the full SHA of
-   `git rev-parse HEAD`. Then the PR carries the content the `Verify: PASS` line names;
-   a different head stops the merge, and a later push needs a new verdict.
+1. Re-read the state (SKILL.md "Read the state"), the stacked-base check ("Find the base
+   branch"), and the gate ("Gate on the verdict"), including its `Review` line or
+   `Ruling: no review` and the `Record <topic>` commit; uncommitted paths stay out of the
+   merge and are reported as not integrated. Push the `Record <topic>` commit to the PR
+   branch (the option choice covers this push). The PR head must be the local `HEAD`:
+   `gh pr view <pr> --json headRefOid` prints the full SHA of `git rev-parse HEAD`. Then
+   the PR carries the content the `Verify: PASS` line names, since the record commit
+   leaves the fingerprint as it was; a different head stops the merge, and a later push
+   of other content needs a new verdict.
 2. Confirm the PR title and body describe the whole branch
    ([pr-body.md](pr-body.md)): the squash commit takes the PR title as its subject.
 3. Wait for the required checks. Read them, do not guess:
@@ -34,18 +38,12 @@ only after the user chose `squash` in this conversation.
    still `UNKNOWN` as a stop. Any other state (`UNSTABLE`, `BLOCKED`, `DIRTY`, `BEHIND`,
    `DRAFT`) stops the merge with the state in the report. The report says which checks
    were read: required, or all because none are required.
-4. When the PR diff touches `.github/workflows/`, check the token's scopes with
-   `gh auth status --hostname github.com`. GitHub refuses an OAuth token without the
-   `workflow` scope to merge such a PR, behind a generic policy message. Without that
-   scope, stop before the merge and offer two ways: the user runs
-   `gh auth refresh -h github.com -s workflow` in their own terminal (its device flow
-   does not finish inside an agent shell), or merges in the web interface.
 
 ## The merge
 
 Pin the merge to the head that was verified, so a push that lands in between makes the
-merge fail instead of merging unverified commits. The option takes the full 40-character
-SHA; a short prefix is rejected.
+merge fail instead of merging unverified commits. The option takes the full object ID
+(40 hex for SHA-1, 64 for SHA-256); a short prefix is rejected.
 
 ```sh
 head="$(git rev-parse HEAD)"
@@ -53,7 +51,7 @@ gh pr merge <pr> --squash --match-head-commit "$head"
 ```
 
 Never pass `--delete-branch` here: it switches the local checkout to the base before
-"After the merge" saves the journal. Delete the branch only after those steps, only
+"After the merge" saves the record. Delete the branch only after those steps, only
 when the user asked for it and the branch barrier in SKILL.md "Clean up behind two
 barriers" allows it (see the end of "After the merge").
 
@@ -70,7 +68,15 @@ gh api -X PUT repos/<owner>/<repo>/pulls/<pr>/merge -f merge_method=squash -f sh
 
 This is the merge the user already authorized, not a bypass: it uses no admin rights,
 and it merges only when the forge allows the same merge. Its `message` field goes into the
-report; a missing `workflow` scope (step 4) is the usual cause.
+report.
+
+A PR that changes `.github/workflows/` is merged the same way, pinned `gh pr merge` first
+and the REST call after a refusal, whatever scopes the token has: a token without the
+`workflow` scope often merges it anyway. Only when a refusal names the `workflow` scope,
+explain it and offer two ways: the user runs `gh auth refresh -h github.com -s workflow`
+in their own terminal (its device flow does not finish inside an agent shell), or merges
+in the web interface. When the merge went through with the scope missing
+(`gh auth status --hostname github.com`), the report says so.
 
 ## After the merge
 
@@ -78,10 +84,11 @@ The session's worktree ends on the fresh base, or detached on `origin/<base>` wh
 another worktree holds the base, whether or not the branch is deleted. Work in this
 order; branch deletion comes last.
 
-1. Save the journal. `verify` writes its line after the last commit and the gate allows
-   the plan to stay uncommitted, so the squash usually merged the plan without its last
-   `Verify` line. When `git status --porcelain` lists the plan, keep its content outside
-   the repository and restore the file to `HEAD`, so the switch cannot fail on it:
+1. Save the record. The `Record <topic>` commit usually brought the record host into the
+   squash with all its lines. When `git status --porcelain` still lists the host (the
+   commit policy forbids commits, or lines were written after that commit), keep its
+   content outside the repository and restore the file to `HEAD`, so the switch cannot
+   fail on it (`<plan-path>` is the host, plan or spec):
 
    ```sh
    saved="$(mktemp)"
@@ -89,7 +96,7 @@ order; branch deletion comes last.
    git checkout -- '<plan-path>'
    ```
 
-   A plan that `HEAD` does not track is moved aside instead (`mv '<plan-path>' "$saved"`):
+   A host that `HEAD` does not track is moved aside instead (`mv '<plan-path>' "$saved"`):
    `git checkout` has no version to restore it to.
 
 2. Bring the base up to date and move this worktree onto it:
@@ -104,11 +111,11 @@ order; branch deletion comes last.
    refuses: run `git pull --ff-only` in that worktree, then put this one on
    `git switch --detach origin/<base>`.
    `--ff-only` refuses to create a merge commit when the local base has diverged; report
-   that case instead of resolving it. A dirty tree outside the plan stops here with a
-   report.
+   that case instead of resolving it. A switch that uncommitted paths outside the host
+   refuse stops here with a report; those paths stay as they are.
 
-3. Put the journal back: `cp "$saved" '<plan-path>'`, then `git diff -- '<plan-path>'`
-   must show only added record lines. Anything else (the base lacks the plan, or has
+3. Put the record back: `cp "$saved" '<plan-path>'`, then `git diff -- '<plan-path>'`
+   must show only added record lines. Anything else (the base lacks the host, or has
    another version of it) is reported, and the saved copy stays where the report says.
    The record lines stay uncommitted on the base; the report names them and asks whether
    to commit them.

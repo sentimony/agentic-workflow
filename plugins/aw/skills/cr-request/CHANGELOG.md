@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.0.10] - 2026-10-29
+
+- A re-review may report a finding outside the fix diff only when the fix caused it,
+  tagged `[regression]` with evidence of the link, in `SKILL.md`, the `Re-review kind` of
+  `references/brief.md`, and `references/lenses.md`; the finding header has a
+  `[regression]` slot next to `[plan-mandated]`. Older code stays out of scope, and a
+  rejected finding stays closed.
+- The reviewer never runs a test that writes into the tree, reaches an external service,
+  or needs credentials; it lists such a test under `Not checkable from the diff` with the
+  reason.
+- `references/brief.md` names the object the CI review is published as: a PR review
+  (event `COMMENT`) or a conversation comment, and which one the PR list counts; the
+  sentence sits after the `Not checkable` paragraph, outside what `cross-cr` sends to
+  reviewers (request 20261025-1922).
+- Record host: the plan, else the spec's `## Verification record`, else none; `Review`,
+  `Finding`, and `Round` lines go to that host. The fingerprint uses the `Committed tree`
+  or `Working tree` recipe by boundary and leaves the host out.
+- Round rule: only automatic rounds count; a user-started round past the limit runs once
+  and is recorded with a `Ruling` line; the same cause twice escalates in any round.
+- `--auto` starts `cr-received` or `verify` in the same turn and stops at the user's
+  decisions, the Round rule, and before the `finalize` option choice; `Next step` lines,
+  the CI one included, never carry it.
+
 ## [0.0.9] - 2026-10-28
 
 - The fingerprint recipe in `references/tree-fingerprint.md` records the full object ID

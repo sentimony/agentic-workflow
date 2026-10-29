@@ -37,7 +37,9 @@ Fill every field with task-specific content; drop empty fields instead of paddin
 
     Tests: do not rerun the whole suite; the caller's results are signals. Run at
     most one focused test, only to settle a specific doubt, and report the command
-    and its output.
+    and its output. Never run a test that writes into the tree (snapshots, caches,
+    generated files), reaches an external service, or needs credentials; list it
+    under Not checkable from the diff with that reason.
 
     Inspect and report. Do not modify files, the index, HEAD, or branches. Read other
     revisions with git show <rev>:<path>, or from the prepared base copies when
@@ -51,9 +53,11 @@ Fill every field with task-specific content; drop empty fields instead of paddin
 ### Re-review kind
 
     For each previous finding, answer ADDRESSED or NOT ADDRESSED with evidence; a
-    partial attempt is NOT ADDRESSED. Report new findings only inside the fix diff.
-    A finding ruled REJECT stays closed unless you bring evidence the ruling did
-    not have. Keep the earlier IDs; new findings take the new round's IDs.
+    partial attempt is NOT ADDRESSED. Report new findings inside the fix diff.
+    Outside it, report only a regression the fix caused, tagged [regression], with
+    evidence that links it to the fix; older code outside the fix diff is out of
+    scope. A finding ruled REJECT stays closed unless you bring evidence the ruling
+    did not have. Keep the earlier IDs; new findings take the new round's IDs.
 
 ### Document kind
 
@@ -78,7 +82,7 @@ Fill every field with task-specific content; drop empty fields instead of paddin
     Previous findings: <re-review only: ID ADDRESSED | NOT ADDRESSED - evidence>
 
     Findings:
-      <R<n>-F<k>> [Critical|Important|Minor] [confidence: high|medium|low] [plan-mandated]
+      <R<n>-F<k>> [Critical|Important|Minor] [confidence: high|medium|low] [plan-mandated] [regression]
       Location: <file:line, or §<heading> for a document>
       Issue:
       Impact: <on which requirement, user, or system property>
@@ -109,6 +113,9 @@ a leading slash: ``Next step: `/<skill>` · <reason>``, for example
 the workflow may append ` · In <m> min <s> sec` to it afterwards (`In 0 min 42 sec`
 under a minute).
 Only these two CI lines use ` · `; every other `Next step` line keeps ` - `.
+The workflow chooses what it publishes the body as: a PR review (event `COMMENT`) leaves
+the approval state unchanged and is not counted in the comment count of the PR list,
+while a conversation comment is counted there but is not a review.
 
 ### CI footer grammar
 

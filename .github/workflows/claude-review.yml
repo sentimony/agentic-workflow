@@ -151,12 +151,17 @@ jobs:
               last_summary=$(jq -rs 'sort_by(.submitted_at) | last | .body' <<< "$marked" \
                 | awk '/^<details>/ {skip = 1} /^<\/details>/ {skip = 0; next} skip {next}
                   /^### / {on = ($0 ~ /^### Summary[[:space:]]*$/); seen = 1; next} on || !seen')
-              # The one-row table: the data row two lines under its header. Rows of `Severity | Count`,
-              # the vertical table of reviews posted before it, still count for open PRs.
+              # The one-row table: the data row two lines under its header, the counts from column 5 or,
+              # in reviews posted before the verdicts moved first, column 2. Rows of `Severity | Count`,
+              # the vertical table of older reviews, still count for open PRs.
               blocking=$(awk -F'|' '
-                row == 2 { if ($0 ~ /^\| *[0-9]+ *\| *[0-9]+ *\|/) s += $2 + $3; row = 0; next }
+                row == 2 {
+                  if ($col ~ /^ *[0-9]+ *$/ && $(col + 1) ~ /^ *[0-9]+ *$/) s += $col + $(col + 1)
+                  row = 0; next
+                }
                 row == 1 { row = 2; next }
-                /^\| *Critical *\| *Important *\| *Minor *\|/ { row = 1; next }
+                /^\| *Intent *\| *System *\| *Craft *\| *Critical *\| *Important *\|/ { row = 1; col = 5; next }
+                /^\| *Critical *\| *Important *\| *Minor *\|/ { row = 1; col = 2; next }
                 /^\| *(Critical|Important) *\| *[0-9]+ *\|/ { s += $3 }
                 END { print s + 0 }' <<< "$last_summary")
               [ "$last_sha" != "$head_sha" ] || skip_final "PR #$number already has a review of $head_sha"
@@ -333,19 +338,17 @@ jobs:
             .auto-review/comments.json; do not write or edit any other file. Do not post them; a later step posts
             them as one review that neither approves nor requests changes.
 
-            Keep the body compact: a reader sees the target, the verdicts, and one line per finding at a glance,
-            and opens every other detail on demand from the one collapsed `<details>` block, the only one in the
-            body; do not nest another inside it. Put a blank line after its `<summary>...</summary>` line, before
-            `</details>`, and after `</details>`, so the Markdown inside and after it renders. The body must start
-            with this exact line:
+            Keep the body compact: a reader sees the verdicts and one line per finding at a glance, and opens
+            every other detail, the target included, on demand from the one collapsed `<details>` block, the
+            only one in the body; do not nest another inside it. Put a blank line after its
+            `<summary>...</summary>` line, before `</details>`, and after `</details>`, so the Markdown inside
+            and after it renders. The body must start with this exact line:
             <!-- claude-review sha=${{ needs.gate.outputs.head_sha }} -->
             then these parts, in this order, with no headings outside the `<details>` block:
 
-            **Target:** PR [#${{ needs.gate.outputs.number }}](<PR URL from pr.json>) (`<head branch>` -> `<base branch>`)
-
-            | Critical | Important | Minor | Intent | System | Craft |
+            | Intent | System | Craft | Critical | Important | Minor |
             | --- | --- | --- | --- | --- | --- |
-            | <n> | <n> | <n> | <verdict> | <verdict> | <verdict> |
+            | <verdict> | <verdict> | <verdict> | <n> | <n> | <n> |
 
             **Merge readiness:** ready, ready with fixes, or not ready - <one line>
 
@@ -355,6 +358,8 @@ jobs:
             <details><summary>Details</summary>
 
             #### Target
+
+            **Target:** PR [#${{ needs.gate.outputs.number }}](<PR URL from pr.json>) (`<head branch>` -> `<base branch>`)
 
             The target identity (base, head, tree, uncommitted state, excluded paths). **Range:** the reviewed
             range as a compare link with short SHAs, followed by the number of files and lines from the last line
@@ -668,15 +673,15 @@ jobs:
           fi
 
           # The one-row Summary table: its header, the separator, then the data row.
-          header_re='^\| *Critical *\| *Important *\| *Minor *\| *Intent *\| *System *\| *Craft *\|$'
+          header_re='^\| *Intent *\| *System *\| *Craft *\| *Critical *\| *Important *\| *Minor *\|$'
           verdict='(PASS|FINDINGS|UNASSESSED)'
-          row_re="^\| *([0-9]+) *\| *([0-9]+) *\| *([0-9]+) *\| *$verdict *\| *$verdict *\| *$verdict *\|\$"
+          row_re="^\| *$verdict *\| *$verdict *\| *$verdict *\| *([0-9]+) *\| *([0-9]+) *\| *([0-9]+) *\|\$"
           section=$(summary_section | sed 's/[[:space:]]*$//')
           row=$(grep -A 2 -E "$header_re" <<< "$section" | sed -n 3p || true)
           [[ "$row" =~ $row_re ]] || fail "The review has no valid Summary table"
-          critical="${BASH_REMATCH[1]}"
-          important="${BASH_REMATCH[2]}"
-          minor="${BASH_REMATCH[3]}"
+          critical="${BASH_REMATCH[4]}"
+          important="${BASH_REMATCH[5]}"
+          minor="${BASH_REMATCH[6]}"
           readiness=$(grep -oE '\*\*Merge readiness:\*\* *(ready with fixes|not ready|ready)' <<< "$section" \
             | sed -E 's/.*\*\* *//' | head -n 1 || true)
           [ -n "$readiness" ] || fail "The review has no merge readiness"

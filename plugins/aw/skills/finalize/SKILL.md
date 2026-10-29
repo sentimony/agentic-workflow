@@ -102,12 +102,13 @@ The gate guards the integrating options `merge`, `squash`, and a ready `pr`; `pr
    stays on the branch. Also check the latest `Received` line: `Re-review: needed` with
    no later review on this tree means the chain is not finished.
 5. For `merge` and `squash`, the host also needs a code review: a `Review` line with mode
-   `code` or `re-review` after the latest re-approval marker, as `verify` counts it
+   `code`, or `re-review` after a code review (a document re-review never counts), after the
+   latest re-approval marker, as `verify` counts it
    (`Ruling: plan revised after spec re-approval - <spec path>` in a plan,
    `Ruling: spec re-approved - <YYYY-MM-DD>` in a spec's record), else after the plan's
    `Base` line or, in a spec's record, anywhere in it. The user may skip it in their own
-   words; append `Ruling: no review - <user's reason> - <cost if wrong>` to the record,
-   and that line counts in place of the review.
+   words; append `Ruling: no review - <user's reason> - <cost if wrong>` to the record, and
+   that line counts in place of the review.
 6. Once the user has chosen `merge`, `squash`, or `pr` (a draft too), and before its
    action in step 5, commit the host's uncommitted record lines alone in one checkpoint
    commit `Record <topic>`, the topic taken from the host's file name; a host with nothing

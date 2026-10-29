@@ -24,11 +24,13 @@ local diff drivers from rewriting the output.
     git status --porcelain=v1 --untracked-files=all
     git diff --no-ext-diff --no-textconv --name-status <reviewed-head> HEAD
     git diff --no-ext-diff --no-textconv HEAD -- . ':(exclude)<host-path>' | git hash-object --stdin
-    git ls-files --others --exclude-standard -- . ':(exclude)<host-path>'
+    git ls-files --others --exclude-standard -- . ':(exclude)<host-path>' | git hash-object --stdin-paths
 
 `<host-path>` is the record host relative to the root; drop the `-- . ':(exclude)...'`
 part when there is no host in the repository. Leaving the host out keeps the record lines
-that `cr-request` appends after a review from changing the uncommitted state.
+that `cr-request` appends after a review from changing the uncommitted state. The last two
+commands are the `Uncommitted state` recipe of `cr-request` `references/target.md`, word
+for word, so the two values compare.
 The tree fingerprint comes from the `## Committed tree` recipe in
 [tree-fingerprint.md](tree-fingerprint.md).
 
@@ -37,7 +39,7 @@ The tree fingerprint comes from the `## Committed tree` recipe in
     Reviewed head: <full SHA from the review, or unknown>
     Base: <base ref and SHA, or unknown>
     Included paths: <paths or whole tree>
-    Uncommitted state: <diff hash and untracked files without the host, or none>
+    Uncommitted state: <diff hash and untracked file hashes without the host, or none>
     Tree: <fingerprint>
 
 Keep one record for the reviewed target (`Tree` from the review when it states one) and

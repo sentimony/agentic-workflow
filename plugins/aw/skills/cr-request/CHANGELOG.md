@@ -25,7 +25,10 @@
   `plan-craft` started for a step it owns returns to that skill: a clean plan review goes
   back to `plan-craft` and `implement`, not to `verify`.
 - The skill never creates a spec's `## Verification record`; until `implement` or `verify`
-  does, the `Review` and `Finding` lines stay in the result.
+  does, the `Review` and `Finding` lines stay in the result. A clean document review ends
+  with `implement - <plan path>` or `plan-craft - <spec path>`, not `verify`.
+- `Uncommitted state` leaves the record host out and hashes each untracked file with the
+  same two commands `cr-received` uses.
 
 ## [0.0.9] - 2026-10-28
 

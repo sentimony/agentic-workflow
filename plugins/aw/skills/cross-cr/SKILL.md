@@ -325,7 +325,9 @@ to its record (the plan's `## Execution record` or the spec's `## Verification r
 lines `cr-request` step 7 writes, one `Review` line per reviewer, one `Finding` line per
 finding, and the `Round review <n>` line of the round, with `reviewer <agent> <model>` and
 mode `document` for `plan`, `code` for `implementation`, and `re-review` for a follow-up
-round. Never rewrite existing lines.
+round. Never rewrite existing lines. Like `cr-request`, this skill never creates a spec's
+`## Verification record`: before `implement` or `verify` adds it, the lines stay in the
+result.
 
 The last line of the result is the next step:
 
@@ -435,11 +437,11 @@ reviewer CLI (by default the opposite agent CLI, plus one per group the user nam
 each contacts its own vendor API over the network with the brief and whatever files that
 reviewer reads. Run artifacts live only under the system temporary directory in
 `cross-review/`; the runner writes nothing into the target repository. The skill itself
-edits only the record of its record host (the plan, else the spec), when there is one, and
-makes the local checkpoint commit of step 1 with this session's own paths; it never pushes.
-Before an Antigravity run it reads the `agy` settings file without printing its content.
-`usage.json` holds only numbers and model and skill names, with the same private permissions
-as the other artifacts.
+edits only the record of its record host (the plan, else the spec), when there is one (it
+never creates a spec's record), and makes the local checkpoint commit of step 1 with this
+session's own paths; it never pushes. Before an Antigravity run it reads the `agy` settings
+file without printing its content. `usage.json` holds only numbers and model and skill
+names, with the same private permissions as the other artifacts.
 
 Reviewer choice: the opposite CLI by default; more reviewers, Antigravity, and the same
 CLI as the host only from the user's explicit groups, the last reported as not

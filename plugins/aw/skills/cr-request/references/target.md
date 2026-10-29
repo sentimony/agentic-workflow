@@ -67,10 +67,15 @@ staged, and unstaged changes arrive together, plus the untracked files:
 Use it when the task or branch is partly committed; the `Tree` field then names exactly
 the state the reviewer saw.
 
-Fingerprint for uncommitted state:
+Fingerprint for uncommitted state (`Uncommitted state`):
 
-    git diff --no-ext-diff --no-textconv HEAD | git hash-object --stdin
-    git hash-object <each included untracked file>
+    git diff --no-ext-diff --no-textconv HEAD -- . ':(exclude)<host-path>' | git hash-object --stdin
+    git ls-files --others --exclude-standard -- . ':(exclude)<host-path>' | git hash-object --stdin-paths
+
+`<host-path>` is the record host relative to the root; drop the `-- . ':(exclude)...'`
+part when there is no host in the repository. Leaving the host out keeps the record lines
+appended after a review from changing the uncommitted state. `cr-received` uses the same
+two commands, so the recorded and the current state compare.
 
 ## Secret scan before sending
 

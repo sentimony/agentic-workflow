@@ -6,10 +6,10 @@
   none, and without a host there is no gate. `merge`, `squash`, and a ready `pr` need a
   full `PASS` on the committed tree (recipe `## Committed tree`), never one that ends with
   `working`; `merge` and `squash` also need a `Review` line with mode `code` or
-  `re-review` after the latest re-approval marker (else after `Base`), or
-  `Ruling: no review - <user's reason> - <cost if wrong>`, which `finalize` appends from
-  the user's words. `pr --draft` opens a draft without a verdict and its body says
-  `not verified on this tree`; turning it ready passes the `pr` gate.
+  `re-review` after a code review, counted after the latest re-approval marker (else after
+  `Base`), or `Ruling: no review - <user's reason> - <cost if wrong>`, which `finalize`
+  appends from the user's words. `pr --draft` opens a draft without a verdict and its body
+  says `not verified on this tree`; turning it ready passes the `pr` gate.
 - The record host is committed alone as `Record <topic>` once `merge`, `squash`, or `pr`
   is chosen and before its action, by the checkpoint commit rule and the commit policy;
   other uncommitted paths no longer fail the gate and are reported as not integrated.

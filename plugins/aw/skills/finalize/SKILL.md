@@ -76,7 +76,9 @@ Before `pr` and `squash`, check that the remote base holds the branch's fork poi
 not, the PR diff would carry commits of another unmerged branch: integrate nothing, report
 how many (`git rev-list --count origin/<base>..$(git merge-base HEAD <base>)`), and advise
 pushing the base first, or targeting the branch of the stacked PR instead, with the line
-`Stacked on #<n>` in the PR body ([pr-body.md](references/pr-body.md)).
+`Stacked on #<n>` in the PR body ([pr-body.md](references/pr-body.md)). Work on the base
+branch itself (step 4) skips this check: its commits ahead of `origin/<base>` are the work,
+and pushing the base would publish them unreviewed.
 
 ## 3. Gate on the verdict
 

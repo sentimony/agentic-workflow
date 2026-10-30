@@ -404,9 +404,10 @@ jobs:
             reason; pick the line by the result:
             - Findings, or a previous yngwald finding left not addressed, with no reason:
               `` Next step: `/cr-received PR #${{ needs.gate.outputs.number }}` ``
-            - No findings: ``Next step: `/verify <plan path>` -> `/finalize` squash``, where the plan path is
-              the plan the PR description names, else a file under `docs/plans/` in diff.patch; with no plan
-              found, ``Next step: `/verify` -> `/finalize` squash``. `squash` recommends the merge method.
+            - No findings, and no full `Verify: PASS` on this tree in the plan's record in diff.patch:
+              ``Next step: `/verify <plan path>` -> `/finalize` squash``, where the plan path is the plan
+              the PR description names, else a file under `docs/plans/` in diff.patch; with no plan found,
+              ``Next step: `/verify` -> `/finalize` squash``. `squash` recommends the merge method.
             - Any other result: ``Next step: `/<skill>` · <reason>``; `none` stays plain text
               (`Next step: none · <reason>`).
             The publish step cuts the reason after ` · ` and leaves the first two forms whole. The ` · ` and

@@ -75,7 +75,9 @@ Fingerprint for uncommitted state (`Uncommitted state`):
 `<host-path>` is the record host relative to the root; drop the `-- . ':(exclude)...'`
 part when there is no host in the repository. Leaving the host out keeps the record lines
 appended after a review from changing the uncommitted state. `cr-received` uses the same
-two commands, so the recorded and the current state compare.
+two commands, so the recorded and the current state compare. `--stdin-paths` unquotes the
+C-quoted names that `ls-files` prints under `core.quotePath`, so untracked names with
+non-ASCII bytes, quotes, tabs, or newlines hash as they are.
 
 ## Secret scan before sending
 

@@ -44,6 +44,12 @@
   `Axis verdicts`, and `Set aside, open questions, and review gaps`, the blank lines
   around `<details>`, and the footer. `SKILL.md` links it; the workflow prompt keeps its
   full description of the format until a release tag carries this file.
+- Under `--auto`, a clean document review starts `implement` or `plan-craft` in the same
+  turn, and a clean review of a spec that is not approved ends with
+  `Next step: none - <spec path> is a draft, awaiting approval` instead of `plan-craft`.
+  A plan review that `plan-craft` started returns to it on `REVIEWER UNAVAILABLE` too, as
+  `plan-craft` goes on to `implement` then. The CI prompt gives the chain line only when
+  no full `Verify: PASS` on the tree is in the plan's record.
 
 ## [0.0.9] - 2026-10-28
 

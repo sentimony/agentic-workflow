@@ -255,7 +255,8 @@ So under `--auto` the `implement - Task <n> (outward, needs confirmation)` row a
 Under `--auto`, a chain that another skill started for a step it owns returns to that
 skill: `finalize` (healing its gate) at a `finalize` row, `cross-cr` at a re-review (its
 next round, never a same-host `cr-request`), and `plan-craft` after a clean document
-review of its plan, which then starts `implement` instead of `verify`.
+review of its plan or `REVIEWER UNAVAILABLE` on it, which then starts `implement`
+instead of `verify`.
 
 ## When not to use
 

@@ -203,14 +203,15 @@ The last line of the result is the next step:
 | Result | Last line |
 | --- | --- |
 | Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | `Next step: cr-received - <n> findings to rule on` |
-| Clean document review (mode `document`, or its re-review) | `Next step: implement - <plan path>` for a plan, `Next step: plan-craft - <spec path>` for a spec |
+| Clean document review (mode `document`, or its re-review) | `Next step: implement - <plan path>` for a plan, `Next step: plan-craft - <spec path>` for an approved spec, `Next step: none - <spec path> is a draft, awaiting approval` for any other spec |
 | Clean, and a full `Verify: PASS` exists on this tree | `Next step: finalize - reviewed and verified on this tree` |
 | Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |
 
 ```text
 With `--auto` in the arguments, a `Next step` that names a local skill (`cr-received`,
-`verify`) is not handed back: start that skill in the same turn and pass `--auto` on.
+`verify`, and after a clean document review `implement` or `plan-craft`) is not handed
+back: start that skill in the same turn and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
 a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
@@ -223,7 +224,8 @@ carries it; a new session or a manual call runs without it.
 Under `--auto`, a chain that another skill started for a step it owns returns to that
 skill: `finalize` (healing its gate) at a `finalize` row, `cross-cr` at a re-review (its
 next round, never a same-host `cr-request`), and `plan-craft` after a clean document
-review of its plan, which then starts `implement` instead of `verify`.
+review of its plan or `REVIEWER UNAVAILABLE` on it, which then starts `implement`
+instead of `verify`.
 
 When the caller requires a closing line, that line goes right before the `Next step`
 line, in its exact text, and the `Next step` line stays the very last one. The CI

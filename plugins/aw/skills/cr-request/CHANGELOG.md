@@ -3,6 +3,10 @@
 ## [0.0.11] - 2026-10-30
 
 - Align the automatic outward exception with authorized defer actions and the bounded REJECT reply.
+- Separate yngwald review/issue/reply/ledger publication from API-only thread resolve
+  as `github-actions[bot]`. Keep the PAT unchanged, isolate the short-lived write
+  GITHUB_TOKEN from reviewers and model-output parsers, and require independent
+  completion readback while preserving yngwald source-author checks.
 
 - Share a compact local/CI result: verdicts, severity counts, readiness, and next step;
   local calls link the full host-owned review archive, while CI retains one Details

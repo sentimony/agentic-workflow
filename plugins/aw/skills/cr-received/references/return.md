@@ -97,21 +97,26 @@ that any `ESCALATE` makes it `Next step: none - awaiting user`.
 
 ## Replies to the reviewer
 
-Replies state facts: what changed and where, or why the finding does not hold, with
-the evidence. No praise or thanks in place of a fix, and no fix announced before it
-is verified. A correction of your own earlier pushback is one factual line. Post
-replies to a review thread when authorized, in that same thread. Under `--auto`,
-already authorized defer issue and reply actions may proceed. With CI, the host only
-proposes a defer and replies; the yngwald reviewer accepts or declines the proposal
-on the same head, and trusted publish creates the issue, replies, and resolves the
-thread after acceptance. Without CI, the host decides from evidence and
-authorization and uses the configured repository account for those actions. An
-accepted Minor or Important defer creates one issue in the code repository with
-thread link, origin ID, severity, reason, and owner. Record the `DEFERRED #<issue>`
-and API evidence of issue, reply, and resolve in the existing host before the gate
-closes. Pending or failed writes block; retry reuses the issue and completes only
-missing actions. Critical findings cannot use this mechanism. `DECLINED` declines
-defer and leaves the finding unresolved.
+Replies state facts: what changed and where, or why the finding does not hold, with the
+evidence. No praise or thanks in place of a fix, and no fix announced before it is
+verified. A correction of your own earlier pushback is one factual line. Post replies to
+a review thread when authorized, in that same thread. Under `--auto`, already authorized
+defer issue and reply actions may proceed. With CI, the host only proposes a defer and
+replies; the yngwald reviewer accepts or declines the proposal on the same head. After
+acceptance, trusted publish creates the issue and replies as yngwald; a separate
+API-only resolver closes the verified thread as `github-actions[bot]`. Completion
+independently reads back the canonical review, issue, reply, and thread before recording
+progress as yngwald. Resolve readback accepts earlier actors too; source review, issue,
+and reply author checks remain yngwald. The credential boundary and API guards are
+defined in cr-request
+[review-actions.md](../../cr-request/references/review-actions.md). Without CI, the host
+decides from evidence and authorization and uses the configured repository account for
+those actions. An accepted Minor or Important defer creates one issue in the code
+repository with thread link, origin ID, severity, reason, and owner. Record the
+`DEFERRED #<issue>` and API evidence of issue, reply, and resolve in the existing host
+before the gate closes. Pending or failed writes block; retry reuses the issue and
+completes only missing actions. Critical findings cannot use this mechanism. `DECLINED`
+declines defer and leaves the finding unresolved.
 
 The host may also reply REJECT only in the current PR/head's yngwald finding thread.
 Use the host CLI from the skill package (run `--help` for its full interface):

@@ -131,14 +131,27 @@ review's API author as `yngwald`, repository/PR, reviewed SHA, container ID equa
 `published_review_id`, and both versions before importing it. Another author's marker
 or a marker on a different head cannot authorize an action on the current head.
 
-Before issue, reply, or resolve writes, persist the canonical envelope with
-`PUT /repos/{owner}/{repo}/pulls/{pr_number}/reviews/{published_review_id}` and GET it
-back from that same review. Continue only after validating the readback. After each
-action, update progress in the same ledger. A failed PUT or readback leaves actions
-pending. A rerun reconstructs any completed write from API readback and stable markers
-before retrying, including a write that succeeded before a ledger update failed.
+Before issue, reply, or resolve writes, trusted publish persists the canonical envelope
+with `PUT /repos/{owner}/{repo}/pulls/{pr_number}/reviews/{published_review_id}` and
+reads it back with GET from that same review. Continue only after validating the
+readback. Publish creates or reuses accepted defer issues and replies as yngwald. A
+separate API-only resolver closes verified threads as `github-actions[bot]`; completion
+independently reads the canonical review, issue, reply, and thread from GitHub before
+updating action progress in the same ledger as yngwald. A failed PUT or readback leaves
+actions pending. A rerun reconstructs any completed write from API readback and stable
+markers before retrying, including a write that succeeded before a ledger update failed.
 The one-day workflow artifact may expire; durable history comes from GitHub reviews,
 thread replies, and linked issues. The reviewer never writes that history.
+
+The yngwald PAT and its rights stay unchanged. Publish and completion keep
+`pull-requests: read`, `statuses: write` on GITHUB_TOKEN; only the isolated resolver
+gets `contents: write` and `pull-requests: write`. Its GITHUB_TOKEN expires with the
+job. The resolver has no PAT, checkout, PR code, artifacts, or model-output parser.
+It accepts bounded metadata, validates repository/PR/current head/current review and
+origin review/root from the API, and obtains the thread ID through API readback. An
+agent-supplied or handoff thread ID grants no authority. Immediately before mutation,
+it rechecks source metadata and the current PR/head/review; accepted defer also
+requires an open yngwald issue and a yngwald reply bound to the source root.
 
 ### Action progress
 
@@ -183,8 +196,12 @@ key, not the current round's ID:
 
 Use this marker in both the deferred issue and its thread reply, search the appropriate
 API collection before POST, and confirm provenance and contents before reuse. The
-thread's resolved state comes from API readback. Markers are identity data; they do
-not authorize defer or imply completion.
+thread's resolved state comes from API readback, with no requirement that
+`resolvedBy` be yngwald. New resolver writes use `github-actions[bot]`; an already
+resolved thread may have another actor. The source review, issue, and reply must
+still have yngwald as their API author. Completion independently validates their
+canonical identities and markers before recording success. Markers are identity
+data; they do not authorize defer or imply completion.
 
 ### Host disposition events and replies
 

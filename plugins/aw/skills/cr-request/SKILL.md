@@ -153,8 +153,12 @@ For CI action proposals, also validate the agent draft against
 `null`; previous findings carry confirmed origin IDs, `status`, and a separate
 `defer_decision`. A reviewer reports evidence and defer decisions; the trusted host
 records dispositions. `REJECT` of a finding and `DECLINED` of a defer proposal are
-different events. An unfavorable verdict with no findings stays unfavorable: report
-the evidence gap and ask for the user's ruling, without inventing fixes or a PASS.
+different events. CI keeps yngwald as review/issue/reply/ledger author; a separate
+API-only resolver closes verified threads as `github-actions[bot]`, and completion
+independently reads back the evidence before recording success. The reference defines
+the credential boundary and source-author checks. An unfavorable verdict with no
+findings stays unfavorable: report the evidence gap and ask for the user's ruling,
+without inventing fixes or a PASS.
 
 "Looks good" without verdicts is incomplete; re-request. Do not merge or rerank the
 axes into one score: a change can satisfy the spec and still break the system.
@@ -333,7 +337,9 @@ The trusted host edits the record host's record (the plan's `## Execution record
 spec's `## Verification record`), writes the private local archive after the reviewer
 finishes, and adds its Git `info/exclude` entry. The reviewer never writes that archive.
 The skill does not edit code, commit, push, or publish. CI publish is a separate trusted
-host capability, described in [review-actions.md](references/review-actions.md).
+host capability, described in [review-actions.md](references/review-actions.md). Its
+separate API-only resolver alone gets the short-lived write GITHUB_TOKEN; model-output
+parsers never receive that token, and the reviewer never receives the yngwald PAT.
 `--auto` starts only the local next skill; it never pushes or publishes by itself.
 
 Archive context: snapshots and briefs omit `.cross-review/`, including the host-written

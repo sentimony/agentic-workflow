@@ -93,5 +93,5 @@ One `auto-review-rounds-N` label overrides the limit for that PR. Inspect its re
 jobs with:
 
 ```bash
-gh pr checks <number> --repo sentimony/agentic-workflow
+gh pr checks <number> --repo sentimony/agentic-workflow --workflow CI
 ```

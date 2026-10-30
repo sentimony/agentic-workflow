@@ -13,7 +13,7 @@ on:
     types: [completed]
   # A PR opened, reopened, or marked ready after its CI went green gets no new CI run.
   pull_request:
-    types: [opened, reopened, ready_for_review, review_requested]
+    types: [opened, reopened, ready_for_review, review_requested, closed]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -31,6 +31,7 @@ concurrency:
   group: >-
     claude-review-${{ github.event.pull_request.head.repo.full_name || github.event.workflow_run.head_repository.full_name || github.repository }}-${{
     github.event.workflow_run.head_sha || github.event.pull_request.head.sha || format('pr-{0}', inputs.pr_number) }}${{
+    github.event.action == 'closed' && format('-closed-{0}', github.run_id) ||
     github.event.action == 'review_requested' && github.event.requested_reviewer.login != 'yngwald'
     && format('-{0}', github.run_id) || '' }}
   cancel-in-progress: true
@@ -38,10 +39,339 @@ concurrency:
 permissions: {}
 
 jobs:
+  merged_summary:
+    name: Summarize merged reviews
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    concurrency:
+      group: claude-review-summary-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    env:
+      REPO: ${{ github.repository }}
+      NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Gather merged review summary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, re, subprocess, sys
+          from datetime import datetime
+          from pathlib import Path
+
+          class Stop(Exception): pass
+
+          def unique(pairs):
+              out = {}
+              for key, value in pairs:
+                  if key in out: raise Stop('duplicate JSON key')
+                  out[key] = value
+              return out
+
+          def loads(s): return json.loads(s, object_pairs_hook=unique)
+          def encoded(v):
+              return json.dumps(v, ensure_ascii=True, separators=(',', ':')).replace('<', r'\u003c').replace('>', r'\u003e')
+          def gh(endpoint, method='GET', payload=None):
+              args = ['gh', 'api', endpoint, '--method', method]
+              p = subprocess.run(args + (['--input', '-'] if payload is not None else []),
+                                 input=json.dumps(payload) if payload is not None else None,
+                                 text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+              if p.returncode: raise Stop('GitHub API request failed')
+              try: return loads(p.stdout)
+              except (ValueError, TypeError): raise Stop('invalid GitHub API response')
+          def pages(endpoint):
+              output=[]; page=1
+              while True:
+                  rows=gh(endpoint + ('&' if '?' in endpoint else '?') + f'per_page=100&page={page}')
+                  if not isinstance(rows,list): raise Stop('invalid paginated response')
+                  output.extend(rows)
+                  if len(rows)<100: return output
+                  page+=1
+
+          def positive(v): return type(v) is int and v>0
+          def text(v): return isinstance(v,str) and bool(v.strip())
+          def require(condition, error):
+              if not condition: raise Stop(error)
+
+          def valid_path(path):
+              return (isinstance(path, str) and bool(path) and '\\' not in path and not path.startswith('/')
+                      and all(x not in ('', '.', '..', '.git', '.cross-review') for x in path.split('/')))
+
+          def is_positive(value):
+              return type(value) is int and value > 0
+
+
+          def nonempty(value):
+              return isinstance(value, str) and bool(value.strip())
+
+
+          def finding_identity(item):
+              return (is_positive(item.get('origin_review_id'))
+                      and isinstance(item.get('original_id'), str)
+                      and re.fullmatch(r'R[1-9][0-9]*-(?:[A-Za-z0-9_-]+-)?F[1-9][0-9]*', item['original_id'])
+                      and valid_path(item.get('path')))
+
+
+          def valid_envelope(v):
+              fields = {'schema_version', 'repository', 'pr_number', 'head_sha', 'review_source_id',
+                        'findings', 'previous_findings', 'envelope_version', 'published_review_id',
+                        'run_id', 'duration_seconds', 'action_progress', 'disposition_events'}
+              if not isinstance(v, dict) or set(v) != fields: return False
+              if (type(v['schema_version']) is not int or v['schema_version'] != 1
+                  or type(v['envelope_version']) is not int or v['envelope_version'] != 1
+                  or not isinstance(v['repository'], str) or not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', v['repository'])
+                  or not is_positive(v['pr_number']) or not isinstance(v['head_sha'], str)
+                  or not re.fullmatch(r'[0-9a-f]{40}', v['head_sha'])
+                  or not is_positive(v['published_review_id']) or not is_positive(v['review_source_id'])
+                  or v['published_review_id'] != v['review_source_id'] or not is_positive(v['run_id'])
+                  or not (v['duration_seconds'] is None or type(v['duration_seconds']) is int and v['duration_seconds'] >= 0)
+                  or any(not isinstance(v[k], list) for k in ('findings', 'previous_findings', 'action_progress', 'disposition_events'))): return False
+              base = {'origin_review_id', 'original_id', 'path', 'severity'}
+              previous = base | {'status', 'defer_decision', 'reason', 'owner'}
+              seen = {}
+              for current, item in [(True, x) for x in v['findings']] + [(False, x) for x in v['previous_findings']]:
+                  if not isinstance(item, dict): return False
+                  if set(item) != (base if current else previous) or not finding_identity(item) or item['severity'] not in ('Critical', 'Important', 'Minor'): return False
+                  if current and item['origin_review_id'] != v['published_review_id']: return False
+                  if not current:
+                      status, defer, owner = item['status'], item['defer_decision'], item['owner']
+                      if (status not in ('ADDRESSED', 'NOT_ADDRESSED') or defer not in ('NONE', 'PROPOSED', 'ACCEPTED', 'DECLINED')
+                          or not nonempty(item['reason']) or not (owner is None or nonempty(owner))
+                          or defer in ('PROPOSED', 'ACCEPTED') and owner is None
+                          or defer == 'ACCEPTED' and (status != 'NOT_ADDRESSED' or item['severity'] == 'Critical')
+                          or status == 'ADDRESSED' and defer != 'NONE'): return False
+                  key = (item['origin_review_id'], item['original_id'])
+                  if key in seen: return False
+                  seen[key] = item['path']
+              def known(item):
+                  return finding_identity(item) and seen.get((item['origin_review_id'], item['original_id'])) == item['path']
+              states = ('NOT_REQUESTED', 'PENDING', 'SUCCEEDED', 'WRITE_FAILED')
+              for item in v['action_progress']:
+                  if (not isinstance(item, dict) or set(item) != {'origin_review_id', 'original_id', 'path', 'issue', 'reply', 'resolve', 'error'}
+                      or not known(item) or not (item['error'] is None or nonempty(item['error']))): return False
+                  for name, keys, ident in (('issue', {'state', 'number', 'url'}, 'number'), ('reply', {'state', 'comment_id'}, 'comment_id'), ('resolve', {'state', 'thread_id'}, 'thread_id')):
+                      action = item[name]
+                      if not isinstance(action, dict) or set(action) != keys or action['state'] not in states: return False
+                      value = action[ident]
+                      if not (value is None or (nonempty(value) if name == 'resolve' else is_positive(value))): return False
+                      if action['state'] == 'SUCCEEDED' and value is None: return False
+                      if name == 'issue' and (not (action['url'] is None or nonempty(action['url'])) or action['state'] == 'SUCCEEDED' and action['url'] is None): return False
+              for item in v['disposition_events']:
+                  if (not isinstance(item, dict) or set(item) != {'origin_review_id', 'original_id', 'path', 'disposition', 'reason', 'source_comment_id', 'source_author', 'source_updated_at'}
+                      or not known(item) or item['disposition'] not in ('ACCEPT', 'REJECT', 'PARTIAL', 'DEFER', 'ESCALATE', 'OUTDATED')
+                      or not nonempty(item['reason']) or not is_positive(item['source_comment_id'])
+                      or not nonempty(item['source_author']) or not isinstance(item['source_updated_at'], str)
+                      or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z', item['source_updated_at'])): return False
+                  try:
+                      from datetime import datetime
+                      datetime.fromisoformat(item['source_updated_at'].replace('Z', '+00:00'))
+                  except ValueError: return False
+              return True
+
+
+          def query(q, **variables):
+              result=gh('graphql','POST',{'query':q,'variables':variables})
+              require(not result.get('errors') and isinstance(result.get('data'),dict),'GraphQL response failed')
+              return result['data']
+
+          def threads():
+              fields='databaseId author { login } authorAssociation body createdAt updatedAt pullRequestReview { databaseId }'
+              tq='query($owner:String!, $repo:String!, $number:Int!, $cursor:String) { repository(owner:$owner,name:$repo) { pullRequest(number:$number) { reviewThreads(first:100,after:$cursor) { nodes { id path isResolved comments(first:100) { nodes { '+fields+' } pageInfo { hasNextPage endCursor } } } pageInfo { hasNextPage endCursor } } } } }'
+              cq='query($id:ID!, $cursor:String) { node(id:$id) { ... on PullRequestReviewThread { comments(first:100,after:$cursor) { nodes { '+fields+' } pageInfo { hasNextPage endCursor } } } } }'
+              owner,name=repo.split('/',1); cursor=None; seen=set(); result=[]
+              def advance(page, seen):
+                  info=page['pageInfo']
+                  if not info['hasNextPage']: return None
+                  c=info['endCursor']; require(text(c) and c not in seen,'invalid pagination'); seen.add(c); return c
+              while True:
+                  page=query(tq,owner=owner,repo=name,number=number,cursor=cursor)['repository']['pullRequest']['reviewThreads']
+                  for thread in page['nodes']:
+                      cs=thread['comments']; rows=list(cs['nodes']); cseen=set()
+                      while (cc:=advance(cs,cseen)) is not None:
+                          cs=query(cq,id=thread['id'],cursor=cc)['node']['comments']; rows.extend(cs['nodes'])
+                      thread['comments']=rows; result.append(thread)
+                  cursor=advance(page,seen)
+                  if cursor is None: return result
+
+          def matching_thread(f, all_threads):
+              result=[]
+              # Only the inline heading identifies the finding; IDs cited in prose are context.
+              pattern=r'^\*\*'+re.escape(f['severity'])+r'\*\* '+re.escape(f['original_id'])+r'(?:\s|$)'
+              for t in all_threads:
+                  cs=t.get('comments',[])
+                  if t.get('path') != f['path'] or not cs: continue
+                  root=cs[0]
+                  if (root.get('author') or {}).get('login')==reviewer and (root.get('pullRequestReview') or {}).get('databaseId')==f['origin_review_id'] and re.search(pattern,root.get('body','')):
+                      result.append((t,root))
+              require(len(result)==1, 'source thread is missing or ambiguous')
+              return result[0]
+
+          def markers(thread, f):
+              events=[]
+              fields={'schema_version','repository','pr_number','head_sha','origin_review_id','original_id','path','disposition','reason','owner'}
+              for c in thread['comments'][1:]:
+                  body=c.get('body','')
+                  if 'cr-received-disposition:v1' not in body: continue
+                  raw=disposition_re.findall(body)
+                  require(len(raw)==1,'malformed disposition marker')
+                  v=loads(raw[0])
+                  require(isinstance(v,dict) and set(v)==fields and type(v['schema_version']) is int and v['schema_version']==1
+                      and v['repository']==repo and type(v['pr_number']) is int and v['pr_number']==number
+                      and type(v['origin_review_id']) is int and v['origin_review_id']==f['origin_review_id']
+                      and v['original_id']==f['original_id'] and v['path']==f['path']
+                      and isinstance(v['head_sha'],str) and re.fullmatch('[0-9a-f]{40}',v['head_sha'])
+                      and v['disposition'] in ('ACCEPT','REJECT','PARTIAL','DEFER','ESCALATE','OUTDATED')
+                      and text(v['reason']) and (v['owner'] is None or text(v['owner']))
+                      and (v['disposition']!='DEFER' or text(v['owner'])),'invalid disposition marker')
+                  author=(c.get('author') or {}).get('login')
+                  require(text(author) and re.fullmatch('[A-Za-z0-9-]+',author),'invalid disposition author')
+                  permission=gh(f'{prefix}/collaborators/{author}/permission').get('permission')
+                  require(permission in ('admin','maintain','write') and c.get('authorAssociation') in ('OWNER','MEMBER','COLLABORATOR'), 'untrusted disposition author')
+                  require(positive(c.get('databaseId')) and text(c.get('updatedAt')),'invalid disposition metadata')
+                  datetime.fromisoformat(c['updatedAt'].replace('Z','+00:00'))
+                  events.append((v,c))
+              require(len(events)<=1,'marker_conflict')
+              return events
+
+          try:
+              repo=os.environ['REPO']; number=int(os.environ['NUMBER']); reviewer='yngwald'; prefix=f'repos/{repo}'
+              ledger_re=re.compile(r'<!--\s*claude-review-ledger:v1\s+(\{.*?\})\s*-->',re.S)
+              disposition_re=re.compile(r'<!--\s*cr-received-disposition:v1\s+(\{.*?\})\s*-->',re.S)
+              pr=gh(f'{prefix}/pulls/{number}')
+              require(pr.get('number')==number and pr.get('merged') is True, 'PR is not merged')
+              reviews=[r for r in pages(f'{prefix}/pulls/{number}/reviews') if (r.get('user') or {}).get('login')==reviewer]
+              if not reviews:
+                  Path('summary.txt').unlink(missing_ok=True)
+                  sys.exit(0)
+              all_threads=threads()
+              valid=[]; unknown=False; durations=[]
+              for r in reviews:
+                  raw=ledger_re.findall(r.get('body') or '')
+                  try:
+                      require(len(raw)==1, 'missing ledger')
+                      d=loads(raw[0])
+                      require(valid_envelope(d) and d['repository']==repo and d['pr_number']==number and d['published_review_id']==r.get('id') and d['head_sha']==r.get('commit_id'),'ledger identity')
+                      valid.append((r,d))
+                      if d['duration_seconds'] is not None: durations.append(d['duration_seconds'])
+                  except (Stop, ValueError, KeyError, TypeError):
+                      unknown=True
+                      signature=re.findall(r'^Reviewed with: `/cr-request` [^\n]+ skill · In ([0-9]+) min ([0-9]+) sec$',r.get('body') or '',re.M)
+                      if len(signature)==1 and int(signature[0][1])<60: durations.append(int(signature[0][0])*60+int(signature[0][1]))
+              origins={}
+              for r,d in valid:
+                  for f in d['findings']:
+                      key=(f['origin_review_id'],f['original_id'])
+                      if key in origins: unknown=True
+                      else: origins[key]=f
+              states={key:None for key in origins}; history_gap=unknown
+              timeline={key:[] for key in origins}
+              known_heads={d['head_sha'] for _,d in valid}
+              current_head=(pr.get('head') or {}).get('sha')
+              if isinstance(current_head,str) and re.fullmatch(r'[0-9a-f]{40}',current_head): known_heads.add(current_head)
+              def timestamp(value):
+                  require(isinstance(value,str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z',value),'invalid evidence time')
+                  return datetime.fromisoformat(value.replace('Z','+00:00'))
+              for r,d in valid:
+                  for f in d['previous_findings']:
+                      key=(f['origin_review_id'],f['original_id'])
+                      if origins.get(key)!={k:f[k] for k in ('origin_review_id','original_id','path','severity')}:
+                          history_gap=True; continue
+                      try:
+                          timeline[key].append((timestamp(r.get('submitted_at')),0,r['id'],'review',f['status']))
+                      except (Stop, ValueError, TypeError, KeyError): history_gap=True
+              # Read host replies directly; ledger event metadata is never treated as proof of source.
+              for key,f in origins.items():
+                  try:
+                      thread,root=matching_thread(f,all_threads)
+                      candidates=[]
+                      # Validate each marker with the same checks as publish; independent replies can supersede one another.
+                      for comment in thread['comments'][1:]:
+                          if 'cr-received-disposition:v1' not in (comment.get('body') or ''): continue
+                          one={**thread,'comments':[root,comment]}
+                          candidates.extend(markers(one,f))
+                      for v,c in candidates:
+                          if v['head_sha'] not in known_heads:
+                              history_gap=True; continue
+                          timeline[key].append((timestamp(c['updatedAt']),1,c['databaseId'],'host',v['disposition']))
+                      # Host dispositions are explicit; NOT_ADDRESSED only clears a prior fixed status.
+                      # A later ADDRESSED proves a fix, while a later explicit host decision replaces it.
+                      for _,_,_,kind,value in sorted(timeline[key]):
+                          if kind=='host': states[key]=value
+                          elif value=='ADDRESSED': states[key]='fixed'
+                          elif states[key]=='fixed': states[key]=None
+                      if states[key]=='DEFER':
+                          complete=False
+                          for _,d in valid:
+                              accepted=[p for p in d['previous_findings'] if (p['origin_review_id'],p['original_id'])==key and p['defer_decision']=='ACCEPTED']
+                              for p in d['action_progress']:
+                                  if not accepted or (p['origin_review_id'],p['original_id'])!=key or not all(p[x]['state']=='SUCCEEDED' for x in ('issue','reply','resolve')): continue
+                                  issue=gh(f'{prefix}/issues/{p["issue"]["number"]}')
+                                  marker='<!-- claude-review-deferred:v1 '+encoded({'repository':repo,'pr_number':number,'origin_review_id':key[0],'original_id':key[1],'path':f['path']})+' -->'
+                                  url=f'https://github.com/{repo}/issues/{p["issue"]["number"]}'
+                                  reply=[c for c in thread['comments'][1:] if c.get('databaseId')==p['reply']['comment_id'] and (c.get('author') or {}).get('login')==reviewer and (c.get('body') or '').count(marker)==1 and url in c['body']]
+                                  if (issue.get('number')==p['issue']['number'] and 'pull_request' not in issue and (issue.get('user') or {}).get('login')==reviewer and issue.get('html_url')==url and p['issue']['url']==url and (issue.get('body') or '').count(marker)==1 and '#discussion_r'+str(root['databaseId']) in issue['body'] and f['original_id'] in issue['body'] and f['severity'] in issue['body'] and accepted[0]['owner'].replace('<','&lt;').replace('>','&gt;') in issue['body'] and accepted[0]['reason'].replace('<','&lt;').replace('>','&gt;') in issue['body'] and thread['id']==p['resolve']['thread_id'] and thread['isResolved'] is True and len(reply)==1): complete=True
+                          states[key]='deferred' if complete else None
+                  except (Stop, ValueError, KeyError, TypeError):
+                      history_gap=True
+              counts={name:sum(v==name for v in states.values()) for name in ('fixed','REJECT','deferred')}
+              # Unclassified findings or absent histories cannot prove zero for disposition buckets.
+              gap=history_gap or any(v is None for v in states.values())
+              show=lambda n: str(n) + (' + unknown' if gap else '')
+              lines=['<!-- claude-review summary -->','## Review cycle summary','',f'Reviews: {len(reviews)}',f'Findings: {len(origins)}'+(' + unknown' if history_gap else ''),f'Fixed: {show(counts["fixed"])}',f'Rejected: {show(counts["REJECT"])}',f'Deferred: {show(counts["deferred"])}',f'Duration measured: {len(durations)}/{len(reviews)}', 'Duration total: '+(str(sum(durations))+' sec' if durations else 'unknown'), 'Duration mean: '+(f'{sum(durations)/len(durations):.2f} sec' if durations else 'unknown')]
+              lines[5:5]=[f'{severity}: {sum(f["severity"]==severity for f in origins.values())}'+(' + unknown' if history_gap else '') for severity in ('Critical','Important','Minor')]
+              lines.insert(-3, 'Undetermined: '+show(sum(v not in ('fixed','REJECT','deferred') for v in states.values())))
+              Path('summary.txt').write_text('\n'.join(lines)+'\n',encoding='utf-8')
+          except (Stop, ValueError, KeyError, TypeError, OSError):
+              print('::error::Merged summary gathering failed', file=sys.stderr)
+              sys.exit(1)
+          PYCODE
+      - name: Publish merged review summary
+        env:
+          GH_TOKEN: ${{ secrets.YNGWALD_PR_TOKEN }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          p=Path('summary.txt')
+          if not p.is_file(): sys.exit(0)
+          repo=os.environ['REPO']; number=int(os.environ['NUMBER']); prefix=f'repos/{repo}'
+          def gh(endpoint, method='GET', payload=None):
+              result=subprocess.run(['gh','api',endpoint,'--method',method]+(['--input','-'] if payload is not None else []),input=json.dumps(payload) if payload is not None else None,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+              if result.returncode: raise RuntimeError('GitHub API request failed')
+              return json.loads(result.stdout)
+          def pages(endpoint):
+              rows=[]; page=1
+              while True:
+                  part=gh(endpoint+f'?per_page=100&page={page}')
+                  if not isinstance(part,list): raise RuntimeError('invalid page')
+                  rows.extend(part)
+                  if len(part)<100: return rows
+                  page+=1
+          try:
+              if gh('user').get('login')!='yngwald': raise RuntimeError('reviewer token owner mismatch')
+              pr=gh(f'{prefix}/pulls/{number}')
+              if pr.get('number')!=number or pr.get('merged') is not True: raise RuntimeError('PR is not merged')
+              comments=pages(f'{prefix}/issues/{number}/comments')
+              own=[c for c in comments if (c.get('user') or {}).get('login')=='yngwald' and '<!-- claude-review summary -->' in (c.get('body') or '')]
+              if len(own)>1: raise RuntimeError('ambiguous summary comments')
+              body=p.read_text(encoding='utf-8')
+              if own:
+                  if type(own[0].get('id')) is not int or own[0]['id']<=0: raise RuntimeError('invalid summary ID')
+                  if own[0].get('body')!=body: gh(f'{prefix}/issues/comments/{own[0]["id"]}','PATCH',{'body':body})
+              else: gh(f'{prefix}/issues/{number}/comments','POST',{'body':body})
+          except (RuntimeError, ValueError, KeyError, TypeError):
+              print('::error::Merged summary publish failed',file=sys.stderr); sys.exit(1)
+          PYCODE
+
   gate:
     name: Review gate
     # Failed CI runs pass too: the gate turns a pending request's status into `error` and skips.
-    if: github.event.action != 'review_requested' || github.event.requested_reviewer.login == 'yngwald'
+    if: github.event.action != 'closed' && (github.event.action != 'review_requested' || github.event.requested_reviewer.login == 'yngwald')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

@@ -468,3 +468,205 @@ sys.exit(2)
         install=step('Install cr-request skill')
         self.assertIn('REVIEW_SKILLS_REF',install)
         self.assertIn('v[0-9]',install)
+
+class MergedSummaryTest(unittest.TestCase):
+    def test_summary_job_is_isolated_and_closed_only(self):
+        ruby = os.environ.get('RUBY', 'ruby')
+        workflow = json.loads(subprocess.check_output([ruby, '-e', "require 'yaml'; require 'json'; puts JSON.generate(YAML.load_file(ARGV[0]))", str(WORKFLOW)], text=True))
+        job = workflow['jobs']['merged_summary']
+        self.assertIn('closed', job['if'])
+        self.assertIn('merged', job['if'])
+        self.assertFalse(any('checkout' in str(s.get('uses', '')) for s in job['steps']))
+        self.assertIn("github.event.action != 'closed'", workflow['jobs']['gate']['if'])
+        self.assertIn('closed', workflow['concurrency']['group'])
+        self.assertIn('Gather merged review summary', [s.get('name') for s in job['steps']])
+        self.assertIn('Publish merged review summary', [s.get('name') for s in job['steps']])
+
+class SummaryRunTest(unittest.TestCase):
+    def run_summary(self, state, repeat=False):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            os.symlink(ROOT/'scripts/fixtures/claude-review/gh_summary',root/'gh')
+            (root/'state.json').write_text(json.dumps(state))
+            env={**os.environ,'PATH':str(root)+os.pathsep+os.environ['PATH'], 'FIXTURE_DIR':str(root),'REPO':'owner/repo','NUMBER':'42'}
+            def invoke(name):
+                return subprocess.run(['bash','-eo','pipefail','-c',step(name)],cwd=root,env=env,capture_output=True,text=True)
+            gather=invoke('Gather merged review summary')
+            self.assertEqual(gather.returncode,0,gather.stderr)
+            publish=invoke('Publish merged review summary')
+            self.assertEqual(publish.returncode,0,publish.stderr)
+            if repeat:
+                self.assertEqual(invoke('Gather merged review summary').returncode,0)
+                self.assertEqual(invoke('Publish merged review summary').returncode,0)
+            return json.loads((root/'state.json').read_text()), [json.loads(x) for x in (root/'trace.jsonl').read_text().splitlines()]
+
+    @staticmethod
+    def review(ident=101, duration=20):
+        finding={'origin_review_id':ident,'original_id':'R1-F1','path':'a.py','severity':'Important'}
+        d={'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':'a'*40,'review_source_id':ident,'findings':[finding],'previous_findings':[], 'envelope_version':1,'published_review_id':ident,'run_id':200,'duration_seconds':duration,'action_progress':[],'disposition_events':[]}
+        return {'id':ident,'user':{'login':'yngwald'},'commit_id':'a'*40,'body':'<!-- claude-review-ledger:v1 '+json.dumps(d)+' -->'}
+
+    def test_no_reviews_and_legacy_duration(self):
+        state,trace=self.run_summary({'reviews':[]})
+        self.assertFalse(state.get('comments'))
+        review={'id':1,'user':{'login':'yngwald'},'body':'Reviewed with: `/cr-request` 1.0 skill · In 1 min 3 sec'}
+        state,trace=self.run_summary({'reviews':[review]},repeat=True)
+        self.assertEqual(len(state['comments']),1)
+        body=state['comments'][0]['body']
+        self.assertIn('Findings: 0 + unknown',body)
+        self.assertIn('Duration total: 63 sec',body)
+        self.assertEqual(sum(x['method']=='POST' and '/issues/42/comments' in x['endpoint'] for x in trace),1)
+
+    def test_forged_marker_and_last_host_reply(self):
+        review=self.review()
+        marker={'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':'a'*40,'origin_review_id':101,'original_id':'R1-F1','path':'a.py','disposition':'REJECT','reason':'invalid','owner':None}
+        comment=lambda i,author,body,review: {'databaseId':i,'author':{'login':author},'authorAssociation':'MEMBER','body':body,'updatedAt':'2026-10-30T00:00:00Z','pullRequestReview':review}
+        thread={'id':'t','path':'a.py','isResolved':False,'comments':[comment(1,'yngwald','**Important** R1-F1 - finding',{'databaseId':101}),comment(2,'alice','<!-- cr-received-disposition:v1 '+json.dumps(marker)+' -->',None)]}
+        fake={'id':88,'user':{'login':'mallory'},'body':'<!-- claude-review summary -->'}
+        state,_=self.run_summary({'reviews':[review], 'threads':[thread], 'comments':[fake]},repeat=True)
+        self.assertEqual(len(state['comments']),2)
+        self.assertIn('Rejected: 1',state['comments'][1]['body'])
+        self.assertIn('Duration mean: 20.00 sec',state['comments'][1]['body'])
+
+    def test_paginated_reviews_and_unknown_duration(self):
+        reviews=[{'id':n,'user':{'login':'yngwald'},'body':'legacy'} for n in range(1,102)]
+        state,trace=self.run_summary({'reviews':reviews})
+        self.assertIn('Reviews: 101',state['comments'][0]['body'])
+        self.assertIn('Duration total: unknown',state['comments'][0]['body'])
+        self.assertTrue(any('page=2' in x['endpoint'] for x in trace))
+
+    def test_malformed_ledger_is_unknown_not_zero(self):
+        review=self.review()
+        review['body']=review['body'].replace('"envelope_version": 1','"envelope_version": true')
+        state,_=self.run_summary({'reviews':[review]})
+        body=state['comments'][0]['body']
+        self.assertIn('Findings: 0 + unknown',body)
+        self.assertIn('Rejected: 0 + unknown',body)
+        self.assertIn('Duration measured: 0/1',body)
+
+    def test_later_explicit_disposition_wins(self):
+        review=self.review()
+        def marker(disposition):
+            return '<!-- cr-received-disposition:v1 '+json.dumps({'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':'a'*40,'origin_review_id':101,'original_id':'R1-F1','path':'a.py','disposition':disposition,'reason':'reason','owner':None})+' -->'
+        def c(i,body,stamp,author='alice',review=None): return {'databaseId':i,'author':{'login':author},'authorAssociation':'MEMBER','body':body,'updatedAt':stamp,'pullRequestReview':review}
+        thread={'id':'t','path':'a.py','isResolved':False,'comments':[c(1,'**Important** R1-F1 - finding','2026-10-30T00:00:00Z','yngwald',{'databaseId':101}),c(2,marker('REJECT'),'2026-10-30T00:00:01Z'),c(3,marker('ACCEPT'),'2026-10-30T00:00:02Z')]}
+        state,_=self.run_summary({'reviews':[review],'threads':[thread]})
+        self.assertIn('Rejected: 0',state['comments'][0]['body'])
+
+    def test_declined_defer_does_not_erase_reject_or_duplicate_finding(self):
+        origin=self.review()
+        d=json.loads(origin['body'].split('v1 ',1)[1].split(' -->')[0])
+        finding=d['findings'][0]
+        prev={**finding,'status':'NOT_ADDRESSED','defer_decision':'DECLINED','reason':'still required','owner':None}
+        d.update(head_sha='b'*40,review_source_id=202,published_review_id=202,findings=[],previous_findings=[prev],duration_seconds=40)
+        carry={'id':202,'user':{'login':'yngwald'},'commit_id':'b'*40,'submitted_at':'2026-10-30T00:00:02Z','body':'<!-- claude-review-ledger:v1 '+json.dumps(d)+' -->'}
+        marker={'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':'a'*40,'origin_review_id':101,'original_id':'R1-F1','path':'a.py','disposition':'REJECT','reason':'no defect','owner':None}
+        def c(i,author,body,review): return {'databaseId':i,'author':{'login':author},'authorAssociation':'MEMBER','body':body,'updatedAt':'2026-10-30T00:00:00Z','pullRequestReview':review}
+        thread={'id':'t','path':'a.py','isResolved':False,'comments':[c(1,'yngwald','**Important** R1-F1 - finding',{'databaseId':101}),c(2,'alice','<!-- cr-received-disposition:v1 '+json.dumps(marker)+' -->',None)]}
+        state,_=self.run_summary({'reviews':[origin,carry],'threads':[thread]})
+        body=state['comments'][0]['body']
+        self.assertIn('Findings: 1\n',body)
+        self.assertIn('Important: 1\n',body)
+        self.assertIn('Undetermined: 0\n',body)
+        self.assertIn('Rejected: 1\n',body)
+        self.assertIn('Duration total: 60 sec',body)
+        self.assertIn('Duration mean: 30.00 sec',body)
+
+    def test_defer_requires_all_readbacks(self):
+        origin=self.review()
+        d=json.loads(origin['body'].split('v1 ',1)[1].split(' -->')[0]); finding=d['findings'][0]
+        prev={**finding,'status':'NOT_ADDRESSED','defer_decision':'ACCEPTED','reason':'Later','owner':'alice'}
+        progress={'origin_review_id':101,'original_id':'R1-F1','path':'a.py','issue':{'state':'SUCCEEDED','number':57,'url':'https://github.com/owner/repo/issues/57'},'reply':{'state':'SUCCEEDED','comment_id':3},'resolve':{'state':'SUCCEEDED','thread_id':'t'},'error':None}
+        d.update(head_sha='b'*40,review_source_id=202,published_review_id=202,findings=[],previous_findings=[prev],action_progress=[progress])
+        carry={'id':202,'user':{'login':'yngwald'},'commit_id':'b'*40,'submitted_at':'2026-10-30T00:00:02Z','body':'<!-- claude-review-ledger:v1 '+json.dumps(d)+' -->'}
+        payload={'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':'b'*40,'origin_review_id':101,'original_id':'R1-F1','path':'a.py','disposition':'DEFER','reason':'Later','owner':'alice'}
+        deferred='<!-- claude-review-deferred:v1 '+json.dumps({k:payload[k] for k in ('repository','pr_number','origin_review_id','original_id','path')},separators=(',',':'))+' -->'
+        def c(i,author,body,review): return {'databaseId':i,'author':{'login':author},'authorAssociation':'MEMBER','body':body,'updatedAt':'2026-10-30T00:00:00Z','pullRequestReview':review}
+        thread={'id':'t','path':'a.py','isResolved':True,'comments':[c(1,'yngwald','**Important** R1-F1 - finding',{'databaseId':101}),c(2,'alice','<!-- cr-received-disposition:v1 '+json.dumps(payload)+' -->',None),c(3,'yngwald','https://github.com/owner/repo/issues/57\n'+deferred,None)]}
+        issue={'number':57,'user':{'login':'yngwald'},'html_url':'https://github.com/owner/repo/issues/57','body':'R1-F1 Important #discussion_r1 alice Later\n'+deferred}
+        data={'reviews':[origin,carry],'threads':[thread],'issue':issue}
+        state,_=self.run_summary(data)
+        self.assertIn('Deferred: 1\n',state['comments'][0]['body'])
+        thread['isResolved']=False
+        state,_=self.run_summary(data)
+        self.assertIn('Deferred: 0 + unknown',state['comments'][0]['body'])
+
+    def test_thread_and_reply_pagination(self):
+        review=self.review()
+        marker={'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':'a'*40,'origin_review_id':101,'original_id':'R1-F1','path':'a.py','disposition':'REJECT','reason':'invalid','owner':None}
+        def c(i,author,body,review=None): return {'databaseId':i,'author':{'login':author},'authorAssociation':'MEMBER','body':body,'updatedAt':'2026-10-30T00:00:00Z','pullRequestReview':review}
+        comments=[c(1,'yngwald','**Important** R1-F1 - finding',{'databaseId':101})]+[c(i,'alice','unstructured') for i in range(2,101)]+[c(101,'alice','<!-- cr-received-disposition:v1 '+json.dumps(marker)+' -->')]
+        threads=[{'id':'other'+str(i),'path':'other','isResolved':False,'comments':[]} for i in range(100)]
+        threads.append({'id':'target','path':'a.py','isResolved':False,'comments':comments})
+        state,trace=self.run_summary({'reviews':[review],'threads':threads})
+        self.assertIn('Rejected: 1',state['comments'][0]['body'])
+        self.assertGreaterEqual(sum(x['endpoint']=='graphql' for x in trace),3)
+
+    def test_unmerged_rejected_before_write_and_existing_comment_updated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); os.symlink(ROOT/'scripts/fixtures/claude-review/gh_summary',root/'gh')
+            (root/'state.json').write_text(json.dumps({'merged':False,'reviews':[self.review()]}))
+            env={**os.environ,'PATH':str(root)+os.pathsep+os.environ['PATH'],'FIXTURE_DIR':str(root),'REPO':'owner/repo','NUMBER':'42'}
+            result=subprocess.run(['bash','-eo','pipefail','-c',step('Gather merged review summary')],cwd=root,env=env,capture_output=True,text=True)
+            self.assertNotEqual(result.returncode,0)
+            self.assertFalse((root/'summary.txt').exists())
+            trace=[json.loads(x) for x in (root/'trace.jsonl').read_text().splitlines()]
+            self.assertTrue(all(x['method']=='GET' for x in trace))
+        existing={'id':7,'user':{'login':'yngwald'},'body':'<!-- claude-review summary -->\nold'}
+        state,trace=self.run_summary({'reviews':[self.review()],'comments':[existing]})
+        self.assertEqual(len(state['comments']),1)
+        self.assertIn('Duration total: 20 sec',state['comments'][0]['body'])
+        self.assertEqual(sum(x['method']=='PATCH' for x in trace),1)
+
+    def test_untrusted_host_marker_cannot_prove_rejection(self):
+        review=self.review()
+        marker={'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':'a'*40,'origin_review_id':101,'original_id':'R1-F1','path':'a.py','disposition':'REJECT','reason':'fake','owner':None}
+        def c(i,author,body,association,review=None): return {'databaseId':i,'author':{'login':author},'authorAssociation':association,'body':body,'updatedAt':'2026-10-30T00:00:00Z','pullRequestReview':review}
+        thread={'id':'t','path':'a.py','isResolved':False,'comments':[c(1,'yngwald','**Important** R1-F1 - finding','MEMBER',{'databaseId':101}),c(2,'mallory','<!-- cr-received-disposition:v1 '+json.dumps(marker)+' -->','NONE')]}
+        state,_=self.run_summary({'reviews':[review],'threads':[thread]})
+        self.assertIn('Rejected: 0 + unknown',state['comments'][0]['body'])
+
+    def timeline_fixture(self, statuses, disposition=None, marker_head='a'*40):
+        origin=self.review()
+        d=json.loads(origin['body'].split('v1 ',1)[1].split(' -->')[0]); finding=d['findings'][0]
+        reviews=[origin]
+        for index,status in enumerate(statuses):
+            n=202+index; sha=chr(ord('b')+index)*40
+            previous={**finding,'status':status,'defer_decision':'NONE','reason':'evidence','owner':None}
+            data={**d,'head_sha':sha,'review_source_id':n,'published_review_id':n,'findings':[], 'previous_findings':[previous]}
+            reviews.append({'id':n,'user':{'login':'yngwald'},'commit_id':sha,'submitted_at':f'2026-10-30T00:00:0{index+2}Z','body':'<!-- claude-review-ledger:v1 '+json.dumps(data)+' -->'})
+        def c(i,author,body,review=None): return {'databaseId':i,'author':{'login':author},'authorAssociation':'MEMBER','body':body,'updatedAt':'2026-10-30T00:00:01Z','pullRequestReview':review}
+        comments=[c(1,'yngwald','**Important** R1-F1 - finding',{'databaseId':101})]
+        if disposition:
+            marker={'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':marker_head,'origin_review_id':101,'original_id':'R1-F1','path':'a.py','disposition':disposition,'reason':'evidence','owner':None}
+            comments.append(c(2,'alice','<!-- cr-received-disposition:v1 '+json.dumps(marker)+' -->'))
+        return {'reviews':reviews,'threads':[{'id':'t','path':'a.py','isResolved':False,'comments':comments}]}
+
+    def test_host_accept_then_later_addressed_is_fixed(self):
+        state,_=self.run_summary(self.timeline_fixture(['ADDRESSED'],'ACCEPT'))
+        self.assertIn('Fixed: 1\n',state['comments'][0]['body'])
+        self.assertIn('Undetermined: 0\n',state['comments'][0]['body'])
+
+    def test_addressed_without_marker_is_known_fixed(self):
+        state,_=self.run_summary(self.timeline_fixture(['ADDRESSED']))
+        self.assertIn('Fixed: 1\n',state['comments'][0]['body'])
+
+    def test_later_not_addressed_resets_fixed_but_not_reject(self):
+        state,_=self.run_summary(self.timeline_fixture(['ADDRESSED','NOT_ADDRESSED']))
+        self.assertIn('Fixed: 0 + unknown',state['comments'][0]['body'])
+        state,_=self.run_summary(self.timeline_fixture(['NOT_ADDRESSED'],'REJECT'))
+        self.assertIn('Rejected: 1\n',state['comments'][0]['body'])
+
+    def test_unrelated_head_cannot_supply_reject(self):
+        state,_=self.run_summary(self.timeline_fixture(['ADDRESSED'],'REJECT','f'*40))
+        self.assertNotIn('Rejected: 1',state['comments'][0]['body'])
+        self.assertIn('Rejected: 0 + unknown',state['comments'][0]['body'])
+
+    def test_host_disposition_equal_timestamp_uses_comment_id(self):
+        fixture=self.timeline_fixture([],'REJECT')
+        original=fixture['threads'][0]['comments'][1]
+        marker=json.loads(original['body'].split('v1 ',1)[1].split(' -->')[0]); marker['disposition']='ACCEPT'
+        later={**original,'databaseId':3,'body':'<!-- cr-received-disposition:v1 '+json.dumps(marker)+' -->'}
+        fixture['threads'][0]['comments']=[fixture['threads'][0]['comments'][0],later,original]
+        state,_=self.run_summary(fixture)
+        self.assertIn('Rejected: 0\n',state['comments'][0]['body'])

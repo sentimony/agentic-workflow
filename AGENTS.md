@@ -34,7 +34,10 @@
   review job and must not be tracked.
   To test a changed workflow on its own PR, push, wait for green CI, then open the PR or request
   yngwald: on the first head the `main` copy's `workflow_run` shares the review job's per-PR
-  group and can cancel the PR copy's review.
+  group and can cancel the PR copy's review. The `workflow_run` run carries the `main` head SHA,
+  not the PR head: wait for `gh run list --commit <full head SHA> --workflow CI` and then for
+  `gh run list --event workflow_run --limit 1` to complete before requesting yngwald. The
+  `/cr-request` version in the review footer shows which workflow copy posted it.
 - `claude-review.yml` keeps one run per head SHA (workflow-level concurrency), so automatic
   runs for one head no longer race, and a late CI run for an older head cannot cancel the review
   of a newer one; the review job's per-PR group lets a newer head's review cancel an older one,
@@ -87,9 +90,17 @@
   The runner keeps `Result contract` only up to the paragraph that starts with `` `Not
   checkable ``: text after it stays host-only. After a `brief.md` edit run
   `python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'`.
+  In `RunnerTestCase` tests do not remove a file in the temporary directory with
+  `self.addCleanup(...)`: `tearDown` deletes the directory first and the cleanup fails with
+  `FileNotFoundError`.
 - A change to the cr-request output contract (closing lines, footer order, separators) goes
-  into `SKILL.md`, `references/brief.md`, and the top `CHANGELOG.md` entry in one commit and in
-  the same terms: each place left behind comes back as a separate review finding.
+  into `SKILL.md`, `references/brief.md` (the `Result contract` paragraph and
+  `### CI footer grammar`), the `claude-review.yml` prompt and `next_re`, and the top
+  `CHANGELOG.md` entry in one commit and in the same terms; find them all with
+  ``git grep -n 'Next step: `/'``. Each place left behind comes back as a separate review
+  finding.
+- A review fix that rewords a skill's `SKILL.md` also updates the same wording in that skill's
+  unreleased top `CHANGELOG.md` entry, in the same commit.
 - License: MIT, Ihor Orlovskyi.
 - Branches: `YYMMDD-dev-session`, squash-merged into `main` via PR.
 - English only, plain hyphen.

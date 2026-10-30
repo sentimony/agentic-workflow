@@ -24,6 +24,15 @@
   re-review comes back to `cross-cr` as its next round, never as a same-host `cr-request`.
 - A runner test checks that `standard_sections()` leaves out the host-only text of
   cr-request `brief.md` (`Reviewed with`, `CI footer grammar`, `conversation comment`).
+- Step 7 shows each reviewer's result in the chat as one compact block (request
+  20261030-0208): the verdict and count table and `Readiness` from `review.md`, as in
+  cr-request `references/compact.md` without `<details>`, a one-line run report
+  `Reviewer: <reviewer> · <model> · effort <effort> · ~$<cost>` with the conditional
+  `Session`, `Target`, `Warning`, and `Stopped` lines, and `Details: <run dir>/review.md`.
+  The token line and the separate cost line of the run report are gone, and findings are
+  no longer listed in the chat; `cr-received` reads them from `review.md`. Several
+  reviewers get one block each and one shared `Next step` line, whose findings form now
+  ends with the `review.md` path.
 
 ## [0.0.1] - 2026-10-27
 

@@ -38,6 +38,12 @@
   The "CI footer grammar" regular expression accepts arguments inside the skill span, a
   ` -> ` tail, and a line without a reason, and has samples for the new forms. The local
   `Next step: <skill> - <reason>` grammar is unchanged.
+- New `references/compact.md` (request 20261030-0208) describes the compact result the CI
+  review posts: the one-row `Intent | System | Craft | Critical | Important | Minor`
+  table, the `Readiness` line, one collapsed `<details>` block with `Findings`, `Target`,
+  `Axis verdicts`, and `Set aside, open questions, and review gaps`, the blank lines
+  around `<details>`, and the footer. `SKILL.md` links it; the workflow prompt keeps its
+  full description of the format until a release tag carries this file.
 
 ## [0.0.9] - 2026-10-28
 

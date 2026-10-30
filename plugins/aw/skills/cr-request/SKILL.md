@@ -251,7 +251,10 @@ use ` · ` and ` -> `; every other `Next step` line keeps the local
 `Next step: <skill> - <reason>` form that `--auto` and the chain read. The exact grammar
 of both lines, as regular expressions a workflow validator uses, and the accepted and
 rejected samples are in [brief.md](references/brief.md) "CI footer grammar"; the grammar
-is part of the contract.
+is part of the contract. The CI body itself is the compact result of
+[compact.md](references/compact.md): a one-row verdict and count table, a `Readiness`
+line, one collapsed `<details>` block with the findings, target, axis verdicts, and gaps,
+then the two closing lines.
 
 ## When not to use
 
@@ -288,4 +291,5 @@ or publishes.
 - [Target pinning](references/target.md)
 - [Tree fingerprint](references/tree-fingerprint.md)
 - [Reviewer brief and result contract](references/brief.md)
+- [Compact result](references/compact.md)
 - [Review lenses](references/lenses.md)

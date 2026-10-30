@@ -292,33 +292,44 @@ names the reviewed target, states coverage, gives every verdict, and lists findi
 IDs, severities, and locations, or states that there are none. A result without verdicts
 and coverage is incomplete; exit code 0 alone proves neither.
 
-With several reviewers, check each result on its own, show a run report and the verdicts
-for each, then hand all findings to `cr-received` in one list. Finding IDs carry the
-reviewer (`R1-codex-F1`, `R1-antigravity-F1`); mark findings several reviewers raised about
-the same location and defect as one, citing each.
+With several reviewers, check each result on its own, then hand all findings to
+`cr-received` in one list. Finding IDs carry the reviewer (`R1-codex-F1`,
+`R1-antigravity-F1`); mark findings several reviewers raised about the same location and
+defect as one, citing each.
 
-Above the verdicts, show a run report built from `usage.json` (or the `usage:` line):
+Show each reviewer's result in the chat as one compact block; the full text stays in its
+`review.md`:
 
 ```text
-Reviewer: <reviewer> · <model> · effort <effort>
-Tokens: <input> in (<cached_input> cached) · <output> out (<reasoning> reasoning)
-Cost: ~$<cost_usd> (<price table DATE | Claude CLI list price>)
+| Intent | System | Craft | Critical | Important | Minor |
+| --- | --- | --- | --- | --- | --- |
+| <verdict> | <verdict> | <verdict> | <n> | <n> | <n> |
+
+Readiness: <ready | ready with fixes | not ready>
+Reviewer: <reviewer> · <model> · effort <effort> · ~$<cost_usd>
 Session: ~$<session_total.cost_usd> over <runs> runs[, incomplete]   (after resume only)
 Target: ~$<target_total.cost_usd> over <rounds> rounds[, incomplete]   (from round 2)
 Warning: same CLI as the host, not a cross-vendor review   (same_cli group only)
 Stopped: agy answered and did not exit   (exit 25 only)
+Details: <run dir>/review.md
 ```
 
-Token counts carry thousands separators (`282,797`). Add "incomplete" when the total's
-`complete` is false. Write `unknown` for any field without data, and `cost unknown` when
-the model has no price; `agy` reports no cost, so an Antigravity run always shows
-`cost unknown`. The cost is a list-price equivalent, not a bill. A missing
-`usage.json` does not make the review incomplete. Write sums as `~$`, as the runner's
-`usage:` line does.
+The table and `Readiness` come from the checked `review.md` (its axis verdicts, `Summary`,
+and `Merge readiness`), as in the installed cr-request `references/compact.md` without its
+`<details>` block. The `Reviewer` line and the conditional lines after it are the run
+report, built from `usage.json` (or the `usage:` line); show a conditional line only where
+its note applies. Numbers carry thousands separators (`1,204`). Add "incomplete" when the
+total's `complete` is false. Write `unknown` for any field without data, and `cost unknown`
+in place of `~$<cost_usd>` when the model has no price; `agy` reports no cost, so an
+Antigravity run always shows `cost unknown`. The cost is a list-price equivalent, not a
+bill. A missing `usage.json` does not make the review incomplete. Write sums as `~$`, as the
+runner's `usage:` line does.
 
-Show the verdicts and findings to the user, then pass them to `cr-received`, which
-validates each finding and chooses its disposition. Keep the run directory, the target
-fingerprint, and the reviewer session with the review record.
+Findings are not listed in the chat: `cr-received` reads them from the `Details` path,
+validates each, and chooses its disposition. With several reviewers, show one block per
+reviewer, each with its own `Details`, and one shared `Next step` line after the last.
+Keep the run directory, the target fingerprint, and the reviewer session with the review
+record.
 
 With a record host, found as `cr-request` step 7 finds it (the plan, else the spec), append
 to its record (the plan's `## Execution record` or the spec's `## Verification record`) the
@@ -333,11 +344,13 @@ The last line of the result is the next step:
 
 | Result | Last line |
 | --- | --- |
-| Findings, or a follow-up leaves a previous finding `NOT ADDRESSED` | `Next step: cr-received - <n> findings to rule on` |
+| Findings, or a follow-up leaves a previous finding `NOT ADDRESSED` | `Next step: cr-received - <n> findings to rule on: <run dir>/review.md` |
 | Clean, and a full `Verify: PASS` exists on this tree | `Next step: finalize - reviewed and verified on this tree` |
 | Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
 | Clean `plan` mode | `Next step: implement - <plan path>` |
 | Unavailable | `Next step: none - choose another reviewer or retry` |
+
+With several reviewers, the findings line lists every `review.md` path, separated by `, `.
 
 With `--auto` in the arguments, a `Next step` that names a local skill (`cr-received`,
 `verify`, `implement` after a clean `plan` round, the next `cross-cr` round of step 8)

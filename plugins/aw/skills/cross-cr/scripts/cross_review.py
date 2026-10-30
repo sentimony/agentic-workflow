@@ -8,6 +8,7 @@ import argparse
 import fcntl
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -80,6 +81,7 @@ EXIT_REVIEWER_FAILED = 22
 EXIT_EMPTY_RESULT = 23
 EXIT_NO_SESSION = 24
 EXIT_IDLE_AFTER_ANSWER = 25  # agy answered, then did not exit; review.md holds the answer
+EXIT_ARCHIVE_INCOMPLETE = 26
 EXIT_INTERRUPTED = 130  # SIGINT or SIGTERM
 
 LOG_SCHEMA_VERSION = 1
@@ -491,10 +493,19 @@ def is_standard_exclusion(path: str) -> bool:
     parts = path.lower().split("/")
     lower = parts[-1]
     # A .local directory (local overrides) excludes everything under it.
-    return (lower == ".env" or lower.startswith(".env.")
+    # Archives can still be read by same-host reviewers outside this supplied context;
+    # this exclusion minimizes data, without promising filesystem read isolation.
+    return (".cross-review" in parts or lower == ".env" or lower.startswith(".env.")
             or any(".local" in part for part in parts)
             or lower in _SECRET_NAMES or lower.endswith(_SECRET_SUFFIXES)
             or lower.startswith(_SECRET_PREFIXES))
+
+
+def _reject_archive_attachment(path: Path) -> None:
+    if any(part.lower() == ".cross-review" for candidate in (path, path.resolve())
+           for part in candidate.parts):
+        raise CrossReviewError(EXIT_INVALID_INPUT,
+                               "archive paths cannot be brief/document attachments: %s" % path)
 
 
 def parse_target(tokens) -> tuple:
@@ -566,7 +577,9 @@ def compute_target(repo: Path, kind: str, ref: Optional[str], exclude=()) -> dic
         base, head = _commit(repo, base_ref), _commit(repo, head_ref)
         files = _paths(_git_bytes(repo, "diff", "--name-only", "--no-renames", "-z", base,
                                   head, "--"))
-        diff = _git_bytes(repo, "diff", "--binary", base, head, "--")
+        diff = _git_bytes(repo, "diff", "--binary", base, head, "--", ".",
+                          ":(exclude,glob)**/.cross-review/**",
+                          ":(exclude,literal).cross-review")
         info.update(base=base, head=head, diff_sha256=hashlib.sha256(diff).hexdigest())
     elif kind == "tree":
         commit = _commit(repo, ref)
@@ -578,12 +591,17 @@ def compute_target(repo: Path, kind: str, ref: Optional[str], exclude=()) -> dic
         base = _commit(repo, ref) if ref else head
         files = _paths(_git_bytes(repo, "diff", "--name-only", "--no-renames", "-z", base,
                                   "--"))
-        diff = _git_bytes(repo, "diff", "--binary", base, "--")
+        diff = _git_bytes(repo, "diff", "--binary", base, "--", ".",
+                          ":(exclude,glob)**/.cross-review/**",
+                          ":(exclude,literal).cross-review")
         if ref:
             info["base"] = base
         info.update(head=head, diff_sha256=hashlib.sha256(diff).hexdigest())
         for path in _paths(_git_bytes(repo, "ls-files", "--others", "--exclude-standard",
                                       "-z")):
+            files.append(path)
+            if is_standard_exclusion(path) or _excluded_by_user(path, exclude):
+                continue  # Never read excluded untracked files, even just to hash them.
             full = repo / path
             # An untracked symlink can point at an excluded file inside the repository
             # too; it is never read.
@@ -598,7 +616,6 @@ def compute_target(repo: Path, kind: str, ref: Optional[str], exclude=()) -> dic
                 untracked_hashes[path] = digest.hexdigest()
             except OSError:
                 untracked_hashes[path] = None
-            files.append(path)
     exclude = [item for item in (exclude or ()) if item]
     excluded = sorted(path for path in set(files)
                       if is_standard_exclusion(path) or _excluded_by_user(path, exclude))
@@ -652,8 +669,10 @@ def embed_material(repo: Path, info: Mapping) -> str:
     """The diff of the in-scope tracked files and the content of each in-scope untracked
     file, for a reviewer that cannot run Git. Over MAX_EMBED_BYTES is invalid input."""
     repo = Path(repo).resolve()
-    untracked = sorted(info.get("untracked_sha256", {}))
-    tracked = [path for path in info["files"] if path not in untracked]
+    untracked = sorted(path for path in info.get("untracked_sha256", {})
+                       if not is_standard_exclusion(path))
+    tracked = [path for path in info["files"]
+               if path not in untracked and not is_standard_exclusion(path)]
     revs = []
     if info["kind"] == "range":
         revs = [info["base"], info["head"]]
@@ -709,6 +728,7 @@ def compute_documents(paths: Mapping[str, Optional[str]]) -> dict:
         if not paths.get(kind):
             continue
         path = Path(paths[kind]).absolute()
+        _reject_archive_attachment(path)
         try:
             data = path.read_bytes()
         except OSError as exc:
@@ -743,6 +763,7 @@ def embed_documents(repo: Path, documents: Mapping) -> str:
         if kind not in documents:
             continue
         path = Path(documents[kind]["path"])
+        _reject_archive_attachment(path)
         if repo == path.resolve() or repo in path.resolve().parents:
             continue
         try:
@@ -1393,6 +1414,7 @@ def _create_private_file(path: Path) -> int:
 
 
 def _read_brief(brief: Path) -> bytes:
+    _reject_archive_attachment(Path(brief).absolute())
     try:
         data = Path(brief).read_bytes()
     except OSError as exc:
@@ -1542,6 +1564,228 @@ def _read_usage(run_dir: Path) -> Optional[dict]:
     except (OSError, ValueError):
         return None
     return data if isinstance(data, dict) else None
+
+
+def resolve_session_root(session_root: Path) -> Path:
+    """Resolve the trusted host's explicit session repository, never the review target."""
+    supplied = Path(session_root)
+    if not supplied.is_absolute() or supplied.is_symlink():
+        raise ValueError("session_root must be an absolute real repository path: %s" % supplied)
+    root = Path(os.fsdecode(_git_bytes(supplied, "rev-parse", "--show-toplevel")).strip()).resolve()
+    _owned_archive_path(root, directory=True)
+    return root
+
+
+def _owned_archive_path(path: Path, directory: bool = False) -> None:
+    st = path.lstat()
+    expected = stat.S_ISDIR if directory else stat.S_ISREG
+    if not expected(st.st_mode) or st.st_uid != os.getuid():
+        raise ValueError("unsafe archive path (symlink, type, or foreign owner): %s" % path)
+
+
+def _archive_directory(path: Path, create: bool = True) -> None:
+    if create:
+        try:
+            path.mkdir(mode=0o700)
+        except FileExistsError:
+            pass
+        else:
+            path.chmod(0o700)
+    _ensure_private_dir(path)
+
+
+def _archive_run_id(run_id: str) -> None:
+    if (not isinstance(run_id, str)
+            or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", run_id)
+            or run_id == "local"):
+        raise ValueError("invalid or reserved archive run ID: %r" % run_id)
+
+
+def _archive_pin(identity: Mapping) -> None:
+    def pinned(value):
+        if not isinstance(value, dict):
+            return False
+        return any((isinstance(key, str) and key.lower() in ("tree", "sha256")
+                    and isinstance(item, str)
+                    and re.fullmatch(r"(?:Working tree )?(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})"
+                                     if key.lower() == "tree" else r"[0-9a-fA-F]{64}", item))
+                   or pinned(item) for key, item in value.items())
+    if not isinstance(identity, dict) or not pinned(identity):
+        raise ValueError("target_identity needs the host's full Tree or document sha256 pin")
+    # Reject non-JSON data and NaN rather than retaining an ambiguous identity.
+    json.dumps(identity, allow_nan=False)
+
+
+def _archive_exclude(root: Path) -> None:
+    if _git_bytes(root, "ls-files", "-z", "--", ".cross-review"):
+        raise ValueError("archive is already tracked: %s" % (root / ".cross-review"))
+    exclude = Path(os.fsdecode(_git_bytes(
+        root, "rev-parse", "--path-format=absolute", "--git-path", "info/exclude")).strip())
+    common = Path(os.fsdecode(_git_bytes(
+        root, "rev-parse", "--path-format=absolute", "--git-common-dir")).strip())
+    if common.is_symlink():
+        raise ValueError("symlink Git common directory: %s" % common)
+    common = common.resolve()
+    try:
+        relative = exclude.relative_to(common)
+    except ValueError:
+        raise ValueError("info/exclude escapes Git common directory: %s" % exclude)
+    _owned_archive_path(common, directory=True)
+    parent = common
+    for component in relative.parts[:-1]:
+        parent = parent / component
+        try:
+            parent.mkdir(mode=0o700)
+        except FileExistsError:
+            pass
+        _owned_archive_path(parent, directory=True)
+    flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(exclude, flags, 0o600)
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode) or st.st_uid != os.getuid():
+            raise ValueError("unsafe info/exclude: %s" % exclude)
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        with os.fdopen(os.dup(fd), "rb") as stream:
+            content = stream.read()
+        if b"/.cross-review/" not in content.splitlines():
+            os.lseek(fd, 0, os.SEEK_END)
+            os.write(fd, (b"\n" if content and not content.endswith(b"\n") else b"")
+                     + b"/.cross-review/\n")
+            os.fsync(fd)
+    finally:
+        os.close(fd)
+    _git_bytes(root, "check-ignore", "--quiet", "--no-index", "--",
+               ".cross-review/.archive-ignore-check")
+
+
+def _atomic_archive_file(path: Path, data: bytes) -> None:
+    _ensure_private_dir(path.parent)
+    if path.exists() or path.is_symlink():
+        raise ValueError("archive destination already exists: %s" % path)
+    fd, name = tempfile.mkstemp(prefix=".writing-", dir=str(path.parent))
+    temporary = Path(name)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        _ensure_private_dir(path.parent)
+        if path.exists() or path.is_symlink():
+            raise ValueError("archive destination already exists: %s" % path)
+        # link is atomic and fails if a destination appeared after validation.
+        os.link(temporary, path, follow_symlinks=False)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def _persist_host_archive(session_root: Path, run_id: str, entries, local=False) -> Path:
+    """Host-only writes after completion; read access by same-host reviewers remains possible."""
+    path = Path(session_root) / ".cross-review"
+    try:
+        _archive_run_id(run_id)
+        root = resolve_session_root(session_root)
+        path = root / ".cross-review"
+        _archive_directory(path)
+        _archive_exclude(root)
+        if local:
+            path = path / "local"
+            _archive_directory(path)
+        path = path / run_id
+        # Exclusive creation rejects collisions, including empty directories and symlinks.
+        path.mkdir(mode=0o700)
+        path.chmod(0o700)
+        _ensure_private_dir(path)
+        for index, (report, identity) in enumerate(entries, 1):
+            _archive_directory(root / ".cross-review", create=False)
+            directory = path if local else path / ("reviewer-%d" % index)
+            if not local:
+                _archive_directory(directory)
+            identity = dict(identity, schema_version=1, run_id=run_id,
+                            session_root=str(root), review_file="review.md")
+            _atomic_archive_file(directory / "review.md", report)
+            _atomic_archive_file(directory / "identity.json",
+                                 (json.dumps(identity, indent=2, allow_nan=False) + "\n")
+                                 .encode("utf-8"))
+            for filename in ("review.md", "identity.json"):
+                _git_bytes(root, "check-ignore", "--quiet", "--no-index", "--",
+                           str(directory / filename))
+        return path
+    except (OSError, ValueError, CrossReviewError) as exc:
+        raise CrossReviewError(EXIT_ARCHIVE_INCOMPLETE,
+                               "INCOMPLETE archive write/validation at %s: %s; retain temporary "
+                               "output and do not hand off" % (path, getattr(exc, "message", str(exc))))
+
+
+def _archive_identity(target_root: Path, target_identity: Mapping, model: str,
+                      effort=None, cost_usd=None) -> dict:
+    _archive_pin(target_identity)
+    if not isinstance(model, str) or not model.strip():
+        raise ValueError("reviewer_model must be non-empty")
+    if effort is not None and (not isinstance(effort, str) or not effort.strip()):
+        raise ValueError("reviewer_effort must be a non-empty string or null")
+    if cost_usd is not None and (type(cost_usd) not in (int, float)
+                                 or not math.isfinite(cost_usd) or cost_usd < 0):
+        raise ValueError("cost_usd must be a finite non-negative number or null")
+    target_root = Path(target_root)
+    if not target_root.is_absolute() or not target_root.is_dir():
+        raise ValueError("target_root must be an existing absolute directory")
+    return {"target_root": str(target_root.resolve()), "target_identity": target_identity,
+            "reviewer_model": model, "reviewer_effort": effort, "cost_usd": cost_usd}
+
+
+def archive_local_review(session_root: Path, run_id: str, target_root: Path,
+                         target_identity: Mapping, review: str, reviewer_model: str,
+                         reviewer_effort=None, cost_usd=None) -> Path:
+    """Shared host helper for cr-request; called only after its read-only reviewer finishes."""
+    try:
+        identity = _archive_identity(target_root, target_identity, reviewer_model,
+                                     reviewer_effort, cost_usd)
+        if not isinstance(review, str) or not review.strip():
+            raise ValueError("full review is empty")
+        return _persist_host_archive(session_root, run_id, [(review.encode("utf-8"), identity)],
+                                     local=True)
+    except (OSError, ValueError, CrossReviewError) as exc:
+        raise CrossReviewError(EXIT_ARCHIVE_INCOMPLETE,
+                               "INCOMPLETE local archive at %s/.cross-review/local/%s: %s"
+                               % (session_root, run_id, getattr(exc, "message", str(exc))))
+
+
+def archive_reviews(session_root: Path, run_id: str, run_dirs, target_identity: Mapping) -> Path:
+    """Archive full checked results without changing or moving their legacy temp sessions."""
+    try:
+        _archive_pin(target_identity)
+        if not run_dirs:
+            raise ValueError("at least one completed run directory is required")
+        entries = []
+        for run_dir in run_dirs:
+            run_dir = Path(run_dir).absolute()
+            meta = _load_run_header(run_dir, EXIT_ARCHIVE_INCOMPLETE, "archive")
+            marker = _read_private_file(run_dir / "completed.txt", 32)
+            if marker not in (b"0\n", b"25\n"):
+                raise ValueError("run has no successful completion marker: %s" % run_dir)
+            for name in ("run.log", "review.md", "completed.txt"):
+                file = run_dir / name
+                _owned_archive_path(file)
+                if stat.S_IMODE(file.stat().st_mode) != 0o600:
+                    raise ValueError("archive source is not private: %s" % file)
+            report = _read_private_file(run_dir / "review.md", 64 << 20)
+            if (run_dir / "review.md").stat().st_size != len(report):
+                raise ValueError("full review exceeds archive read limit: %s" % run_dir)
+            if not report.decode("utf-8").strip():
+                raise ValueError("full review is empty: %s" % run_dir)
+            usage = _read_usage(run_dir) or {}
+            identity = _archive_identity(Path(meta["repo"]),
+                                         {"pin": target_identity, "runner": meta},
+                                         meta["model"], meta["effort"], usage.get("cost_usd"))
+            entries.append((report, identity))
+        return _persist_host_archive(session_root, run_id, entries)
+    except (OSError, ValueError, CrossReviewError) as exc:
+        raise CrossReviewError(EXIT_ARCHIVE_INCOMPLETE,
+                               "INCOMPLETE archive at %s/.cross-review/%s: %s; retain temporary output"
+                               % (session_root, run_id, getattr(exc, "message", str(exc))))
 
 
 def _record_usage(run_dir: Path, log_fd: int, reviewer: str, model: str, effort: str,
@@ -1812,6 +2056,12 @@ def _execute(reviewer: str, repo: Path, model: str, effort: str, brief_data: byt
         if not review.strip():
             raise CrossReviewError(EXIT_EMPTY_RESULT, "%s returned an empty review" % reviewer,
                                    run_dir)
+        marker_fd = _create_private_file(run_dir / "completed.txt")
+        try:
+            os.write(marker_fd, b"25\n" if exit_reason else b"0\n")
+            os.fsync(marker_fd)
+        finally:
+            os.close(marker_fd)
         if exit_reason:
             raise CrossReviewError(EXIT_IDLE_AFTER_ANSWER,
                                    "agy answered but did not exit; stopped after %ss idle; "
@@ -2089,10 +2339,29 @@ def _main(argv, env) -> int:
         resume.add_argument("--run-dir", required=True, type=Path)
         resume.add_argument("--prompt", required=True)
         resume.add_argument("--pass-env", action="append", default=[], metavar="NAME")
+        archive = sub.add_parser("archive", help="host archives completed checked reviews")
+        archive.add_argument("--session-root", required=True, type=Path)
+        archive.add_argument("--run-id", required=True)
+        archive.add_argument("--run-dir", required=True, action="append", type=Path)
+        archive.add_argument("--identity-file", required=True, type=Path)
         args = parser.parse_args(argv)
         if args.command == "resolve":
             for reviewer in resolve_reviewers(args.groups, args.host):
                 print(json.dumps(reviewer))
+            return EXIT_OK
+        if args.command == "archive":
+            try:
+                identity = json.loads(_read_brief(args.identity_file).decode("utf-8"))
+            except (ValueError, OSError, CrossReviewError) as exc:
+                raise CrossReviewError(EXIT_ARCHIVE_INCOMPLETE,
+                                       "INCOMPLETE read archive identity %s: %s"
+                                       % (args.identity_file, getattr(exc, "message", str(exc))))
+            archive_dir = archive_reviews(args.session_root, args.run_id, args.run_dir, identity)
+            print("archive_dir: %s" % archive_dir)
+            for index in range(1, len(args.run_dir) + 1):
+                for filename in ("review.md", "identity.json"):
+                    print("reviewer-%d %s: %s" % (
+                        index, filename, archive_dir / ("reviewer-%d" % index) / filename))
             return EXIT_OK
         if args.command == "run":
             run_dir = run_review(FAMILIES.get(args.agent, args.agent), args.repo, args.brief,

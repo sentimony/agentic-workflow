@@ -10,6 +10,7 @@ Contents:
 - [Runner interface](#runner-interface): argument groups, reviewer table, models,
   environment allowlist, `--target`, the runner-built brief, follow-up rounds;
 - [Artifacts](#artifacts): run directory files and usage parsing per reviewer;
+- [Host archive](#host-archive): persistent reports and the local review helper;
 - [Production commands](#production-commands): the exact argv per reviewer and its flags;
 - [Launch from the host](#launch-from-the-host): background launch per host and reviewer;
 - [Exit codes](#exit-codes).
@@ -31,6 +32,10 @@ Call the runner by the absolute path of `scripts/cross_review.py` inside the ins
 
     python3 <skill-dir>/scripts/cross_review.py resume --run-dir <previous-run-dir> \
       --prompt "<follow-up>" [--pass-env <NAME>]...
+
+    python3 <skill-dir>/scripts/cross_review.py archive --session-root <host-root> \
+      --run-id <unique-id> --identity-file <host-json> --run-dir <completed-run-dir> \
+      [--run-dir <another-completed-run-dir>]...
 
 The runner reads the brief as UTF-8, starts the reviewer with `cwd` set to the repository,
 passes the brief on stdin, and sets no timeout on a reviewer that is still working
@@ -113,7 +118,8 @@ fingerprint.
 | `working-tree` | tracked changes against `HEAD` plus untracked files that gitignore keeps | `HEAD`, a SHA-256 of `git diff --binary HEAD`, and a SHA-256 per untracked file |
 | `working-tree BASE` | `git diff BASE` (committed, staged, and unstaged) plus untracked files that gitignore keeps | `BASE`, `HEAD`, a SHA-256 of `git diff --binary BASE`, and a SHA-256 per untracked file |
 
-Standard exclusions, matched without regard to case: `.env`, `.env.*`, any path with
+Standard exclusions, matched without regard to case: `.cross-review/` at any depth,
+`.env`, `.env.*`, any path with
 `.local` in a name or directory, untracked files that cannot be read, key and credential
 names (`*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, `*.ppk`, `*.tfvars`,
 `id_rsa*`, `id_dsa*`, `id_ecdsa*`, `id_ed25519*`, `.npmrc`, `.netrc`, `.pypirc`,
@@ -437,12 +443,43 @@ about 259k input tokens, mostly cached.
 UNASSESSED: escalation behavior in the interactive Codex TUI and under approval policies
 other than `never`; only `codex exec` was observed as a host.
 
+## Host archive
+
+After every reviewer exits and the host checks its result, `archive` copies each full
+`review.md` to `<session-root>/.cross-review/<run-id>/reviewer-<n>/` with an
+`identity.json`. The host writes the identity JSON with the complete target pin,
+including `Tree` or a requirement document `sha256`; the runner adds its own run
+metadata and model, effort, and available cost. A private `completed.txt` marker in
+the temporary run records runner exit 0 or 25 after output processing; an absent or
+other marker prevents archiving. The host must also check completeness and the target
+fingerprint before archiving; the marker alone establishes neither.
+Argument order determines reviewer
+numbers. The session root is captured from the host repository before switching to the
+target repository. Neither the report nor the target selects the archive location.
+
+Local `cr-request` can import `archive_local_review(session_root, run_id, target_root,
+target_identity, review, reviewer_model, reviewer_effort=None, cost_usd=None)` from
+this script. It returns the directory `.cross-review/local/<run-id>/`, holding the same
+two files. The host supplies the full report and identity after the reviewer finishes.
+The shared contract is `cr-request/references/review-actions.md`.
+
+Directories are mode 0700 and files 0600. The helper validates ownership and symlinks,
+rejects tracked archives and existing destinations, and adds `/.cross-review/` to Git's
+`info/exclude` idempotently, including in worktrees. Failures return 26 with the path
+and operation; temporary artifacts remain for recovery. `run` and `resume` continue to
+use their temporary directories, including legacy sessions. A legacy run without a
+marker cannot be archived by this command; validate its completion and recover its
+report manually, or resume it and archive the new completed run. Archive paths and symlinks
+to them are rejected as briefs, dispositions, or requirement documents. Exclusion from
+supplied material does not prevent a reviewer from independently reading the archive.
+
 ## Exit codes
 
 | Code | Meaning | Agent action |
 | --- | --- | --- |
-| 0 | `review.md` holds a non-empty answer | check completeness, then hand off to `cr-received` |
+| 0 | `review.md` holds a non-empty answer | check completeness and target, archive, then hand off to `cr-received` |
 | 25 | `agy` wrote a complete answer and did not exit; the runner stopped it after `AGY_IDLE_SECONDS` and `review.md` holds the answer | check completeness as for 0 and name the stop in the run report |
+| 26 | archive validation or write failed | report `INCOMPLETE`, retain temporary output, and stop automatic handoff |
 | 2 | invalid input: unknown agent, a malformed argument group, effort outside the fixed set, empty or option-like model, missing repository, invalid `--target` or `--pass-env`, unreadable `--plan` or `--spec`, unusable `--followup` or `--dispositions`, embedded
 material over 4 MiB, cr-request missing for `--mode`, a follow-up without `--brief` whose
 previous run records no host brief, a Codex trust path that cannot be determined or holds a control character, `agy` settings with a non-empty `permissions.allow` or that cannot be read or parsed, missing or non-UTF-8 brief, empty prompt, unsafe run root, or a failure to create the run root | fix the invocation once; otherwise report unavailable |

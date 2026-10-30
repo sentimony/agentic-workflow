@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.3] - 2026-10-30
+
+- Archive checked full reviews and host-provided target identities in the session
+  repository before compact handoff, with separate paths per reviewer and a shared
+  helper for local `cr-request`. Private permissions, Git exclusion, and collision
+  checks protect the archive; failures stop automatic handoff as `INCOMPLETE`.
+- Exclude `.cross-review/` archives from generated review material and reject archive
+  attachments. Temporary sessions remain available for legacy resume and follow-up.
+  Reviewers may still read repository-local archives outside supplied context.
+
 ## [0.0.2] - 2026-10-29
 
 - Before round 1 the skill commits this session's own uncommitted spec, plan, or code

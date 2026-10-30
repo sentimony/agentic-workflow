@@ -855,7 +855,7 @@ class SummaryRefreshTest(unittest.TestCase):
                  'FIXTURE_DIR':str(root),'REPO':'owner/repo','NUMBER':'42'}
             def invoke(job):
                 for item in jobs[job]['steps']:
-                    result=subprocess.run(['bash','-eo','pipefail','-c',item['run']],cwd=root,env=env,capture_output=True,text=True)
+                    result=subprocess.run(['bash','-eo','pipefail','-c',step(item['name'])],cwd=root,env=env,capture_output=True,text=True)
                     self.assertEqual(result.returncode,0,result.stderr)
             invoke('merged_summary')
             state=json.loads((root/'state.json').read_text()); self.assertEqual(state['comments'],[])
@@ -877,7 +877,7 @@ class SummaryRefreshTest(unittest.TestCase):
                  'FIXTURE_DIR':str(root),'REPO':'owner/repo','NUMBER':'42',
                  'SUMMARY_REFRESH':job['env']['SUMMARY_REFRESH']}
             for item in job['steps']:
-                result=subprocess.run(['bash','-eo','pipefail','-c',item['run']],cwd=root,env=env,capture_output=True,text=True)
+                result=subprocess.run(['bash','-eo','pipefail','-c',step(item['name'])],cwd=root,env=env,capture_output=True,text=True)
                 self.assertEqual(result.returncode,0,result.stderr)
             state=json.loads((root/'state.json').read_text())
             self.assertEqual(state['comments'],[])

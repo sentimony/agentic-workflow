@@ -19,7 +19,7 @@
     "workflow": "b41d8161d832906d978290c1816ca8f014b4281c1a8722950ffc37a89f76f12e",
     "scripts/check_review_parity.py": "a25314ea56aa121f7f1fc2efdc162d0c53eacd9da416c74167539e1a14871528",
     "scripts/test_review_parity.py": "32a2bc9046fddc1bc74d634ef2f816e2b80aa43c1637927cae6abfe1f8c7e721",
-    "scripts/test_claude_review.py": "42ea9814953babbacc0052ea012ee221010ee97e235f9bc86dab000d6a4fae77",
+    "scripts/test_claude_review.py": "f3d64d3518df694ec0c69d36452f71d1de7fda1ffcacaaa311a5877aea69b432",
     "scripts/fixtures/claude-review/gh": "342b51b48b2bd7b3113264453b9b696e313ec3dc9de71f87fbfb6c91a1ebc66e",
     "scripts/fixtures/claude-review/gh_defer": "82eb9b55cec0acabceb739c16c89f85f2f0c1d1333689b1e1f51bca6f4597926",
     "scripts/fixtures/claude-review/gh_summary": "e56914e70c36557ce421bed5fec8bd7e2db93fb458923842f0f9de0eccc83710"

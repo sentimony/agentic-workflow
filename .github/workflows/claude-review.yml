@@ -1142,7 +1142,7 @@ jobs:
           prev=$(head -n 1 <<< "$tail2")
           last=$(tail -n 1 <<< "$tail2")
           signature_re="^Reviewed with: \`/cr-request\` ${VERSION//./\\.} skill · In [0-9]+ min [0-9]+ sec\$"
-          # Accepted trade-off (AGENTS.md): the footer regexes have no CI test; check edits on sample bodies.
+          # CI FooterTest executes this footer grammar against valid and invalid sample bodies.
           next_re="^Next step: (\`/[a-z0-9-]+( [^\`[:space:]]+)*\`( -> \`/[a-z0-9-]+\`( [a-z0-9-]+)?)?( · [^[:space:]].*)?|none( · [^[:space:]].*)?)\$"
           if [[ "$prev" =~ $signature_re ]] && [[ "$last" =~ $next_re ]]; then
             signature="$prev"

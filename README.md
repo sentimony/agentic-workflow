@@ -3,13 +3,13 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the `aw`
 plugin.
 
-Version: `v0.0.11`
+Version: `v0.0.12`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [aw](plugins/aw) | 0.0.11 | specify, plan-craft, implement, verify, cr-request, cr-received, cross-cr, finalize, session-learnings |
+| [aw](plugins/aw) | 0.0.12 | specify, plan-craft, implement, verify, cr-request, cr-received, cross-cr, finalize, session-learnings |
 
 ## Skills
 

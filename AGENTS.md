@@ -5,15 +5,18 @@
 - `plugins/aw/.claude-plugin/plugin.json` - Claude Code manifest; lists skills.
 - `plugins/aw/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
 - `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
-- `.github/workflows/ci.yml` - validation; `claude-review.yml` - auto review: gate, review
-  (read-only agent with the cr-request skill of the newest `vX.Y.Z` tag writes a compact body
-  with one `<details>` block and inline comments on diff lines), publish (validates them, cuts the
-  reason from the `Next step` line, posts one PR review as yngwald, sets the `Claude review`
-  status).
-  An automatic trigger (green CI, opened, reopened, ready) reviews a
-  head when the PR has no yngwald review yet, or when the latest one has Critical or Important
-  findings, reviewed another head, and is one of fewer than 3; a request for yngwald or a
-  dispatch always reviews.
+- `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
+  `claude-review.yml` separates the gate, read-only reviewer, trusted publish, and merged
+  summary. The reviewer uses `cr-request` from the newest `vX.Y.Z` tag unless
+  `REVIEW_SKILLS_REF` pins a full SHA. The embedded schema and transport remain compatible
+  with older released skills; changing a pin does not bypass the compatibility check.
+  The default model is `claude-sonnet-5-5` with `--effort medium`;
+  `CLAUDE_REVIEW_MODEL` overrides the model without a fallback.
+  Automatic triggers review a head with no yngwald review, or a new head after a review
+  with Critical or Important findings while the total yngwald review count is below 5.
+  One `auto-review-rounds-N` label, with integer N >= 1, overrides that threshold;
+  malformed or multiple threshold labels fail before inference. Explicit yngwald requests
+  and dispatch bypass the count while retaining the other guards.
 
 ## Rules
 
@@ -54,10 +57,28 @@
   choice: an accepted trade-off, not a defect for review. The chain form
   (``Next step: `/verify <plan>` -> `/finalize` squash``) and the findings form
   (`` Next step: `/cr-received PR #<n>` ``) carry no reason and stay whole.
-  The footer regexes, the one-row Summary table parser, and the gate's parser of three
-  Summary layouts (verdicts first, counts first, and the vertical one of older reviews) have
-  no CI test, because the workflow is self-contained; an edit to them is checked by hand on
-  sample bodies. This is an accepted trade-off, not a defect for review.
+  CI executes the workflow's actual shell/Python blocks through
+  `scripts/test_claude_review.py`, including footer grammar, Summary parsing, gate labels,
+  ledger publication, partial-action recovery, and merged-summary fixtures. Run
+  `python3 -m unittest discover -s scripts -p 'test_claude_review.py'` after changes;
+  running the test file directly collects only its early classes. CI also runs
+  `python3 -m unittest discover -s plugins/aw/skills/cr-received/scripts -p 'test_*.py'`
+  and `python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'`.
+- The reviewer writes `review-actions.json` without a write PAT. Trusted publish validates
+  its schema, identities, current PR head, and yngwald token ownership, then persists a
+  `claude-review-ledger:v1` envelope in the review body with PUT/GET readback before actions.
+  Review artifacts are temporary transport; the ledger is the durable source. Publishing
+  reviews/replies and resolving threads needs Pull requests RW; accepted defer issues need
+  Issues RW on the selected repository and organization approval. Do not infer write access
+  from a successful metadata GET or widen token rights automatically.
+  Deferred work counts as complete only after issue, reply, and resolve readback; retries
+  recover recorded progress instead of duplicating writes. The host's bounded REJECT helper
+  reuses an identical disposition marker and stops on a changed marker for an owner ruling.
+- The merged-only summary reads GitHub history without checkout or inference, validates
+  yngwald ledgers and source markers, and updates one own summary comment. REJECT counts
+  rejected findings; DECLINED defer does not. Later structured evidence determines each
+  finding's bucket; missing legacy evidence or duration stays unknown. Closed unmerged PRs
+  and PRs without yngwald reviews produce no summary. Its concurrency is separate from review.
 - `finalize` has no gate for work with neither a plan nor a spec: such work has no record
   host to hold a `Verify` line, and the option choice is the user's own confirmation. This
   is an accepted trade-off, not a defect for review.

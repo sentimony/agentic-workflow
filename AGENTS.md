@@ -6,8 +6,9 @@
 - `plugins/aw/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
 - `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
-  `claude-review.yml` separates the gate, read-only reviewer, trusted publish, and merged
-  summary. The reviewer uses `cr-request` from the newest `vX.Y.Z` tag unless
+  `claude-review.yml` separates the gate, read-only reviewer, trusted publish, API-only
+  thread resolver, completion, and merged summary. The reviewer uses `cr-request` from
+  the newest `vX.Y.Z` tag unless
   `REVIEW_SKILLS_REF` pins a full SHA. The embedded schema and transport remain compatible
   with older released skills; changing a pin does not bypass the compatibility check.
   The default model is `claude-sonnet-5-5` with `--effort medium`;
@@ -64,16 +65,30 @@
   running the test file directly collects only its early classes. CI also runs
   `python3 -m unittest discover -s plugins/aw/skills/cr-received/scripts -p 'test_*.py'`
   and `python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'`.
-- The reviewer writes `review-actions.json` without a write PAT. Trusted publish validates
-  its schema, identities, current PR head, and yngwald token ownership, then persists a
-  `claude-review-ledger:v1` envelope in the review body with PUT/GET readback before actions.
-  Review artifacts are temporary transport; the ledger is the durable source. Publishing
-  reviews/replies and resolving threads needs Pull requests RW; accepted defer issues need
-  Issues RW on the selected repository and organization approval. Do not infer write access
-  from a successful metadata GET or widen token rights automatically.
-  Deferred work counts as complete only after issue, reply, and resolve readback; retries
-  recover recorded progress instead of duplicating writes. The host's bounded REJECT helper
-  reuses an identical disposition marker and stops on a changed marker for an owner ruling.
+- The reviewer writes `review-actions.json` without a write PAT. Trusted publish
+  validates its schema, identities, current PR head, and yngwald token ownership, then
+  persists a `claude-review-ledger:v1` envelope in the review body with PUT/GET readback
+  before actions. Review artifacts are temporary transport; the ledger is the durable
+  source. Publishing reviews/replies needs Pull requests RW; accepted defer issues need
+  Issues RW on the selected repository and organization approval. The yngwald PAT and
+  its rights stay unchanged; yngwald authors reviews, issues, replies, ledgers, and
+  merged summaries. Only the API-only `resolve_threads` job gets `contents: write` and
+  `pull-requests: write` on GITHUB_TOKEN, which expires with the job; it resolves as
+  `github-actions[bot]`. This is an accepted trade-off, not a defect for review: a
+  long-lived Contents-write PAT would risk pushes to main. The job still has
+  content-write power during its lifetime, so it has no PAT, checkout, PR code,
+  artifacts, or model-output parser. It obtains thread IDs from GitHub metadata after
+  checking the current PR/head/review and origin/root; accepted defer also requires
+  fresh open-issue and root-bound reply metadata. Publish and completion keep
+  `pull-requests: read`, `statuses: write` on GITHUB_TOKEN. Completion independently
+  reads canonical, issue, reply, and thread evidence from the API before recording
+  success. Resolve readback accepts earlier actors too, without a
+  `resolvedBy == yngwald` requirement; source review, issue, and reply authors stay
+  yngwald. Do not infer write access from a successful metadata GET or widen token
+  rights automatically. Deferred work counts as complete only after issue, reply, and
+  resolve readback; retries recover recorded progress instead of duplicating writes. The
+  host's bounded REJECT helper reuses an identical disposition marker and stops on a
+  changed marker for an owner ruling.
 - The merged-only summary reads GitHub history without checkout or inference, validates
   yngwald ledgers and source markers, and updates one own summary comment. REJECT counts
   rejected findings; DECLINED defer does not. Later structured evidence determines each

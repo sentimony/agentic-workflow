@@ -9,8 +9,11 @@ Used by the `pr` option and by [After every push](#after-every-push).
   before writing it:
 
   ```sh
-  git log --oneline <base>..HEAD
+  git log --oneline origin/<base>..HEAD
   ```
+
+  The range is the PR's own, against the remote base: the local base may be ahead of it,
+  as on the work-on-base path, where `<base>..HEAD` misses the work.
 
 - On a squash merge the title becomes the commit subject on the base, so write it as
   that subject.
@@ -30,7 +33,7 @@ Stacked on #<n>
 
 ## What changed
 
-- <one line per behavior or file group, covering every commit in <base>..HEAD>
+- <one line per behavior or file group, covering every commit in origin/<base>..HEAD>
 
 ## Scope and trade-offs
 
@@ -78,7 +81,7 @@ Filling rules:
 When the branch already has an open PR, a push changes what the PR contains. After
 each push:
 
-1. Re-read `git log --oneline <base>..HEAD`.
+1. Re-read `git log --oneline origin/<base>..HEAD`.
 2. Rebuild the title and every section from the current branch and record host.
 3. Update both on the forge:
 

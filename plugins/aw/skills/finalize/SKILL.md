@@ -202,7 +202,8 @@ For the chosen option:
 
 1. Re-read the state from step 1.
 2. For `merge`, `squash`, and `pr`, make the `Record <topic>` commit of step 3, item 6.
-   Then run the action.
+   Then run the action. On the work-on-base path (step 4) the record commit comes after
+   the new branch exists and the work is committed, so the local base stays as it is.
 3. Confirm the result from Git or the forge, not from the command's exit code: the PR
    URL exists, the base contains the commits, the branch is gone where it should be.
 

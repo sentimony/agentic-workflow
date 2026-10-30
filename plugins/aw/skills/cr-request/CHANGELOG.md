@@ -29,12 +29,13 @@
   with `implement - <plan path>` or `plan-craft - <spec path>`, not `verify`.
 - `Uncommitted state` leaves the record host out and hashes each untracked file with the
   same two commands `cr-received` uses.
-- CI `Next step` line (request 20261030-0141): a clean review without a full
-  `Verify: PASS` on the tree ends with
+- CI `Next step` line (request 20261030-0141): a clean review always ends with
   ``Next step: `/verify <plan path>` -> `/finalize` squash``, or
   ``Next step: `/verify` -> `/finalize` squash`` when neither the PR description nor the
   diff names a plan, instead of a bare `/verify` with a reason; a review with findings
-  ends with `` Next step: `/cr-received PR #<n>` `` and no reason.
+  ends with `` Next step: `/cr-received PR #<n>` `` and no reason. CI cannot match a
+  `Verify` line (the host is outside the repository, or `HEAD^{tree}` includes it), so
+  the `/finalize` row of the CI table is gone.
   The "CI footer grammar" regular expression accepts arguments inside the skill span, a
   ` -> ` tail, and a line without a reason, and has samples for the new forms. The local
   `Next step: <skill> - <reason>` grammar is unchanged.
@@ -48,9 +49,7 @@
   turn, and a clean review of a spec that is not approved ends with
   `Next step: none - <spec path> is a draft, awaiting approval` instead of `plan-craft`.
   A plan review that `plan-craft` started returns to it on `REVIEWER UNAVAILABLE` too, as
-  `plan-craft` goes on to `implement` then. A clean CI review always gives the chain line:
-  it cannot match a `Verify` line (the host is outside the repository, or `HEAD^{tree}`
-  includes it), and the `/finalize` row of the CI table is gone.
+  `plan-craft` goes on to `implement` then.
 
 ## [0.0.9] - 2026-10-28
 

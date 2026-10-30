@@ -24,7 +24,8 @@
 - Before `pr` and `squash`, the remote base must hold the branch's fork point; otherwise
   the report gives the count of foreign commits and advises pushing the base or targeting
   the stacked PR's branch, with `Stacked on #<n>` in the PR body (request 20261029-0012).
-  Work on the base branch itself skips this check.
+  Work on the base branch itself skips this check, and so does the branch the work moved
+  onto, when the conversation says so or the user confirms it after the commit list.
 - A worktree this session created that `git worktree remove` refuses is removed with
   `--force` only after a confirmation that names its paths (request 20261029-1347).
 - Work on the base branch: `merge` is hidden, and `pr` creates a branch from `HEAD`,

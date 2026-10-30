@@ -77,8 +77,10 @@ not, the PR diff would carry commits of another unmerged branch: integrate nothi
 how many (`git rev-list --count origin/<base>..$(git merge-base HEAD <base>)`), and advise
 pushing the base first, or targeting the branch of the stacked PR instead, with the line
 `Stacked on #<n>` in the PR body ([pr-body.md](references/pr-body.md)). Work on the base
-branch itself (step 4) skips this check: its commits ahead of `origin/<base>` are the work,
-and pushing the base would publish them unreviewed.
+branch itself (step 4) skips this check, and so does the branch step 4 moved that work onto,
+when this conversation says so or the user confirms it after the list
+`git log --oneline origin/<base>..$(git merge-base HEAD <base>)`: those commits are the
+work, and pushing the base would publish them unreviewed.
 
 ## 3. Gate on the verdict
 
@@ -246,7 +248,7 @@ question whether to commit it. The last line follows the table below.
 | full `PASS` judged on the working tree (`working`) | `Next step: none - commit the work for a verdict on a commit, or choose pr --draft` |
 | full `PASS`, but no `Review` (or `Ruling: no review`) for `merge` or `squash` | `Next step: cr-request - no code review on this tree` |
 | full `PASS`, but `Re-review: needed` with no later review on this tree | `Next step: cr-request - re-review still needed on this tree` |
-| the remote base lacks the fork point | `Next step: none - push the base or target the stacked PR's branch` |
+| the remote base lacks the fork point | `Next step: none - push the base, target the stacked PR's branch, or confirm the commits are this branch's work` |
 | unfinished Git operation or a decision is pending | `Next step: none - <what the user must do>` |
 
 ## Prohibitions

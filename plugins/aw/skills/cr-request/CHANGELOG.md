@@ -48,8 +48,9 @@
   turn, and a clean review of a spec that is not approved ends with
   `Next step: none - <spec path> is a draft, awaiting approval` instead of `plan-craft`.
   A plan review that `plan-craft` started returns to it on `REVIEWER UNAVAILABLE` too, as
-  `plan-craft` goes on to `implement` then. The CI prompt gives the chain line only when
-  no full `Verify: PASS` on the tree is in the plan's record.
+  `plan-craft` goes on to `implement` then. A clean CI review always gives the chain line:
+  it cannot match a `Verify` line (the host is outside the repository, or `HEAD^{tree}`
+  includes it), and the `/finalize` row of the CI table is gone.
 
 ## [0.0.9] - 2026-10-28
 

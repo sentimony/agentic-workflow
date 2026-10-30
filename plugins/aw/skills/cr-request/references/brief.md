@@ -108,8 +108,8 @@ signature ``Reviewed with: `/cr-request` <version> skill``, backticks included, 
 `<version>` is the skill's `metadata.version`, followed by the `Next step` line as
 the last line, with each skill as inline code with a leading slash, its arguments
 inside the code span, and ` · ` before a reason. Findings give
-`` Next step: `/cr-received PR #<n>` `` with no reason; a clean review without a full
-`Verify: PASS` on the tree gives ``Next step: `/verify <plan path>` -> `/finalize` squash``,
+`` Next step: `/cr-received PR #<n>` `` with no reason; a clean review (CI cannot match a
+`Verify` line) gives ``Next step: `/verify <plan path>` -> `/finalize` squash``,
 or ``Next step: `/verify` -> `/finalize` squash`` with no plan found; any other line is
 ``Next step: `/<skill>` · <reason>``, with `none` as plain text
 (`Next step: none · <reason>`). The skill writes the signature without a duration;

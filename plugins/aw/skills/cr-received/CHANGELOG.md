@@ -28,7 +28,8 @@
   `cr-request`) are unchanged. `Previous verification` is `stale` whenever `Changed paths`
   is not `none`, and only a `Commits` line that says `allowed` or `forbidden` answers the
   commit-policy question.
-- The argument may be `PR #<n>`, the form the CI review's `Next step` line passes: the
+- The argument may be several review paths (the `cross-cr` findings line lists one per
+  reviewer), or `PR #<n>`, the form the CI review's `Next step` line passes: the
   latest review on that pull request, the CI auto-review by default, read through a tool
   the user already configured.
 

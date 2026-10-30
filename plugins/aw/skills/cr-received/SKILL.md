@@ -1,7 +1,7 @@
 ---
 name: cr-received
 description: You MUST use this when findings from a code review, pull request comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix - a cr-request result, a spec or plan review, or a reviewer's message - in any programming language. Verifies each finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, records the decisions in the plan's execution record or the spec's verification record, commits each round's fixes locally, and routes back to verify. Replaces devflow review-resolution.
-argument-hint: "[<review-path> | PR #<n>] [--auto]"
+argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
   version: "0.0.6"
 license: MIT
@@ -16,14 +16,15 @@ backed by evidence, then fixes only what the evidence supports.
 repeat? -> intake -> anchor -> records -> verify -> decide -> fix -> prove -> re-review? -> journal -> commit -> report
 ```
 
-The optional argument is a path to a saved review (a file the user or CI wrote), or
-`PR #<n>` (the form the CI review's `Next step` line passes): the latest review on that
-pull request, the CI auto-review by default, read through a tool the user already
-configured; else take it from the conversation, the plan's `Review` and `Finding` lines,
-or the source the user names (a PR URL through the same tool). Any source of findings
-works, with or without `cr-request`. From the chain it also takes the spec and the plan
-with its `## Execution record` (without a plan, the spec's `## Verification record`),
-whose lines are signals, not proof.
+The optional argument is one or more paths to saved reviews (files the user, CI, or
+`cross-cr` wrote; `cross-cr` lists one per reviewer, separated by `, `), or `PR #<n>`
+(the form the CI review's `Next step` line passes): the latest review on that pull
+request, the CI auto-review by default, read through a tool the user already configured;
+else take it from the conversation, the plan's `Review` and `Finding` lines, or the
+source the user names (a PR URL through the same tool). Any source of findings works,
+with or without `cr-request`. From the chain it also takes the spec and the plan with its
+`## Execution record` (without a plan, the spec's `## Verification record`), whose lines
+are signals, not proof.
 
 With `--auto` in the arguments, a `Next step` that names a local skill (`verify`,
 `plan-craft`) is not handed back: start that skill in the same turn and pass `--auto` on.

@@ -404,7 +404,7 @@ jobs:
             reason; pick the line by the result:
             - Findings, or a previous yngwald finding left not addressed, with no reason:
               `` Next step: `/cr-received PR #${{ needs.gate.outputs.number }}` ``
-            - No findings, and no full `Verify: PASS` on this tree in the plan's record in diff.patch:
+            - No findings (a `Verify` line names a fingerprint without the record host, never this Tree):
               ``Next step: `/verify <plan path>` -> `/finalize` squash``, where the plan path is the plan
               the PR description names, else a file under `docs/plans/` in diff.patch; with no plan found,
               ``Next step: `/verify` -> `/finalize` squash``. `squash` recommends the merge method.

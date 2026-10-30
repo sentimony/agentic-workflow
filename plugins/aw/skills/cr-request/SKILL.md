@@ -238,25 +238,28 @@ span, and ` · ` goes before a reason:
 | Result | CI `Next step` line |
 | --- | --- |
 | Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | `` Next step: `/cr-received PR #<n>` `` |
-| Clean, and a full `Verify: PASS` exists on this tree | ``Next step: `/finalize` · reviewed and verified on this tree`` |
-| Clean, no full `Verify: PASS` on this tree | ``Next step: `/verify <plan path>` -> `/finalize` squash`` |
+| Clean | ``Next step: `/verify <plan path>` -> `/finalize` squash`` |
 | `REVIEWER UNAVAILABLE` | `Next step: none · choose another reviewer or retry` |
 
-The findings line names the pull request and carries no reason. The plan path comes from
-the PR description or a `docs/plans/` file in the diff; with none found the line is
-``Next step: `/verify` -> `/finalize` squash``. `squash` recommends the merge method; it
-is not an argument. Any other line keeps ``Next step: `/<skill>` · <reason>``, and `none`
-stays plain text (`Next step: none · <reason>`). The skill writes the signature without
-a duration; the workflow may append the review duration to it afterwards as
-` · In <m> min <s> sec`, with `In 0 min 42 sec` under a minute. Only these two CI lines
-use ` · ` and ` -> `; every other `Next step` line keeps the local
-`Next step: <skill> - <reason>` form that `--auto` and the chain read. The exact grammar
-of both lines, as regular expressions a workflow validator uses, and the accepted and
-rejected samples are in [brief.md](references/brief.md) "CI footer grammar"; the grammar
-is part of the contract. The CI body itself is the compact result of
+A clean CI review always gives the chain line: it reads no `Verify` line it can match,
+since the record host is outside the repository or, inside it, `Verify` lines name a
+fingerprint without the host that the CI `Tree` (`HEAD^{tree}`) never equals; `verify`
+then finds a `PASS` that exists. The findings line names the pull request and carries no
+reason. The plan path comes from the PR description or a `docs/plans/` file in the diff;
+with none found the line is ``Next step: `/verify` -> `/finalize` squash``. `squash`
+recommends the merge method; it is not an argument. Any other line keeps
+``Next step: `/<skill>` · <reason>``, and `none` stays plain text
+(`Next step: none · <reason>`). The skill writes the signature without a duration; the
+workflow may append the review duration to it afterwards as ` · In <m> min <s> sec`,
+with `In 0 min 42 sec` under a minute. Only these two CI lines use ` · ` and ` -> `;
+every other `Next step` line keeps the local `Next step: <skill> - <reason>` form that
+`--auto` and the chain read. The exact grammar of both lines, as regular expressions a
+workflow validator uses, and the accepted and rejected samples are in
+[brief.md](references/brief.md) "CI footer grammar"; the grammar is part of the
+contract. The CI body itself is the compact result of
 [compact.md](references/compact.md): a one-row verdict and count table, a `Readiness`
-line, one collapsed `<details>` block with the findings, target, axis verdicts, and gaps,
-then the two closing lines.
+line, one collapsed `<details>` block with the findings, target, axis verdicts, and
+gaps, then the two closing lines.
 
 ## When not to use
 

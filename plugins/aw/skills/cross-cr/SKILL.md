@@ -370,7 +370,9 @@ to its record (the plan's `## Execution record` or the spec's `## Verification r
 lines `cr-request` step 7 writes, one `Review` line per reviewer, one `Finding` line per
 finding, and the `Round review <n>` line of the round, with `reviewer <agent> <model>` and
 mode `document` for `plan`, `code` for `implementation`, and `re-review` for a follow-up
-round. Never rewrite existing lines. Like `cr-request`, this skill never creates a spec's
+round. Append the `Ruling: review R<n> origin <automatic|user-started|external> -
+<source and authorization>` from `cr-request` once per review. Never rewrite existing
+lines. Like `cr-request`, this skill never creates a spec's
 `## Verification record`: before `implement` or `verify` adds it, the lines stay in the
 result.
 
@@ -387,12 +389,17 @@ The last line of the result is the next step:
 
 With several reviewers, the findings line lists every `review.md` path, separated by `, `.
 
+Under `--auto`, the host may perform already authorized defer issue and thread reply
+actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
+asking again. This grants no reviewer write token or general outward permission; all
+other outward actions and merge, release, and publication retain their approval gates.
+
 With `--auto` in the arguments, a `Next step` that names a local skill (`cr-received`,
 `verify`, `implement` after a clean `plan` round, the next `cross-cr` round of step 8)
 is not handed back: start that skill in the same turn and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
 `BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
 nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never
@@ -444,9 +451,12 @@ Automatic rounds:
 
 Each round report shows the round cost and the cumulative cost of the target.
 
-The round counter is the record host's `Round review <n>` lines, which step 7 writes as
-`cr-request` does; with no host it lives in the conversation. It is separate from the
-fix-attempt counters of `cr-received`. Write the dispositions file from the `cr-received`
+Local `Round review <n>` lines order reviews; count distinct automatic origin Rulings
+against the budget, separately from local IDs, external review counts, and fix attempts.
+Reconstruct unknown old provenance from evidence or escalate instead of guessing. With
+no host keep these details in the conversation. The last allowed automatic round is
+decision-only: escalate Critical or unsafe findings; fixes require explicit permission,
+stale verification, and still require re-review even after the budget is exhausted. Write the dispositions file from the `cr-received`
 record: every previous finding ID with accepted and fixed, rejected with reason, deferred,
 or escalated, open.
 

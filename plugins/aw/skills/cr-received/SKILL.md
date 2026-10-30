@@ -3,7 +3,7 @@ name: cr-received
 description: You MUST use this when findings from a code review, pull request comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix - a cr-request result, a spec or plan review, or a reviewer's message - in any programming language. Verifies each finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, records the decisions in the plan's execution record or the spec's verification record, commits each round's fixes locally, and routes back to verify. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.6"
+  version: "0.0.7"
 license: MIT
 ---
 
@@ -26,11 +26,16 @@ with or without `cr-request`. From the chain it also takes the spec and the plan
 `## Execution record` (without a plan, the spec's `## Verification record`), whose lines
 are signals, not proof.
 
+Under `--auto`, the host may perform already authorized defer issue and thread reply
+actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
+asking again. This grants no reviewer write token or general outward permission; all
+other outward actions and merge, release, and publication retain their approval gates.
+
 With `--auto` in the arguments, a `Next step` that names a local skill (`verify`,
 `plan-craft`) is not handed back: start that skill in the same turn and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
 `BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
 nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never
@@ -68,6 +73,18 @@ agreeing on a defect raise confidence, and a reviewer that crashed is a coverage
 Triage order: items that misread the contract first (the brief needs fixing), then
 actionable defects, then trade-offs that need a ruling, then noise.
 
+Import the canonical review ledger from the review body, without depending on an
+expired artifact. Map each external
+`(repository, PR, origin_review_id, original_id)` and reviewed SHA to a local round
+and finding ID. Preserve old IDs; on collision append a `Ruling` with source key,
+SHA, and local mapping. Append missing `Review` and `Finding` lines before
+`Received`, and never duplicate them on retry. Record origin as
+`Ruling: review R<n> origin <automatic|user-started|external> - <source and authorization>`
+once per review, using evidence; reconstruct unknown provenance or escalate, never
+guess. With no plan or spec record, report all these lines without creating a
+journal. An unfavorable review with zero findings is an evidence gap: escalate
+rather than pass or invent fixes.
+
 ## 2. Anchor to the reviewed state
 
 Findings are true or false about a specific revision. Compare the reviewed target with the
@@ -83,7 +100,7 @@ records.md, which leaves the record host out, is unchanged, else it has moved on
 - moved on: a finding whose code changed since the review is checked against the
   current code, and becomes `OUTDATED` when the cited problem no longer exists;
 - identity unknown: reconstruct it from the review; when that fails, material findings
-  stay `NEEDS RULING` until a fresh review.
+  stay `NEEDS RULING` until a fresh review, and the review cannot satisfy the gate.
 
 Name unrelated local edits and leave them outside the fix boundary. Never stash, reset,
 or commit to make inspection easier.
@@ -152,6 +169,12 @@ the comment, and only when another review of the same target is expected
 (`Re-review: needed`, an automatic round, or a CI review on every head); its `AGENTS.md`
 sentence waits for the user's yes. A document review gets none. Editing a comment makes
 `Previous verification: stale`.
+
+An explicit approved spec decision or prior owner ruling is an owner ruling: record
+the durable comment and scoped `AGENTS.md` sentence for a REJECT it governs. Search
+all current copies, including unreleased changelogs, and report the evidence. A
+settled compromise is not escalated again unless new effects or scope change the
+decision.
 
 ## 6. Fix in dependency order
 
@@ -224,8 +247,12 @@ The same cause twice escalates to the user, in user-started rounds too. Two auto
 with findings and none accepted stop the loop.
 ```
 
-The counter is the journal line `Round review <n>`, shared with `cr-request` and written
-once per review `R<n>`. When the rule stops the loop, stop patching and escalate with what
+Local `R<n>` identifies reviews; the automatic budget counts authorized automatic
+rounds separately from local IDs and external review counts. The last allowed
+automatic round is decision-only: Minor or Important findings may be deferred with
+owner and tracking; Critical or unsafe deferral escalates. Fixes require explicit
+permission; they stale verification and still require the appropriate re-review,
+even when the budget is exhausted. When the rule stops the loop, escalate with what
 kept failing and a proposal to simplify.
 
 ## 9. Journal
@@ -235,9 +262,11 @@ of its `## Execution record` (inside its ```` ```text ```` block, before the clo
 when it has one) per [return.md](references/return.md); without a plan, at the end of the
 spec's `## Verification record` when it has one; else only report them.
 
-Then commit the round as `Address R<n> findings: <IDs>`, where `<IDs>` are the records
-fixed in it, together with the record lines just appended. A round with no fix path
-has no commit; its record lines go with the next checkpoint commit.
+Then commit the round as `Address R<n> findings: <IDs>`, where `<IDs>` are the
+records fixed in it, together with the record lines just appended. For a shared fix
+pass carrying R4 and R5, keep separate Received and Round lines per review, add one
+fix-pass Ruling, and commit as `Address R4-R5 findings: <IDs>`. A round with no fix
+path has no commit; its record lines go with the next checkpoint commit.
 
 Checkpoint commit: commit locally, never push, with only this session's own paths (files it
 created or changed for this spec, plan, task, or round). Other uncommitted changes, and
@@ -284,7 +313,7 @@ The last line of the result, right after the block, is `Next step: <skill> - <re
   the work goes once the user rules;
 - the Round rule stopped the loop -> `Next step: none - round limit reached, awaiting user`.
 
-Replies to the reviewer (facts and evidence, posted only when the user asks) follow
+Replies to the reviewer (including the narrow authorized automatic actions) follow
 [return.md](references/return.md).
 
 ## When not to use
@@ -314,8 +343,8 @@ by the ruled line and, for an owner's decision or after the user's yes, a senten
 `AGENTS.md` of that scope. To show that a test fails without its fix it adds a temporary
 detached worktree at the pre-fix revision and removes it after the run. It commits each
 round's own paths locally (step 9) and never pushes or merges.
-Network access is limited to reading or, when the user asks, replying to a review thread
-through a tool the user already configured.
+Network access is limited to reading and authorized review actions through a configured
+tool, including the narrow automatic exception in [return.md](references/return.md).
 
 ## References
 

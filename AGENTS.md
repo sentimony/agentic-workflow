@@ -75,6 +75,8 @@
   whose result ends the turn. With `--auto` each skill starts its local next step in the
   same turn and passes the flag on; it still stops on the user's decisions, the Round rule,
   an `Outward` action, and before the `finalize` choice, so nothing is pushed without it.
+  Already authorized defer issue/reply actions and the bounded REJECT reply in
+  `cr-received` may proceed under `--auto`; other outward gates remain in force.
   Each skill with a checkpoint (spec approval, plan, task, review round, record) commits its
   own paths locally there as part of the chain. `cross-cr` stays outside the chain: it runs
   only on request, next to or in place of the cr-request step, and hands findings to

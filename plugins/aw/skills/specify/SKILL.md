@@ -3,7 +3,7 @@ name: specify
 description: You MUST use this when work has to be designed before any code is written - a new feature, a product, UX, or architecture change, unclear success criteria, or a choice between materially different approaches - including a spec revision after a document review. Turns the request into an evidence-backed spec with checkable acceptance criteria behind an explicit approval, then starts plan-craft. Replaces devflow scope-triage. Not for a fully specified mechanical change or a fix whose expected behavior is known.
 argument-hint: "[<request>] [--auto]"
 metadata:
-  version: "0.0.5"
+  version: "0.0.6"
 license: MIT
 ---
 
@@ -20,12 +20,17 @@ route -> contract -> evidence -> route check -> rounds -> approaches -> spec -> 
 The optional argument is the request. Without it, take the request from the
 conversation.
 
+Under `--auto`, the host may perform already authorized defer issue and thread reply
+actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
+asking again. This grants no reviewer write token or general outward permission; all
+other outward actions and merge, release, and publication retain their approval gates.
+
 With `--auto` in the arguments, a `Next step` that names a local skill (`plan-craft`
 after approval, `implement` for the `direct` route) is not handed back: start that skill
 in the same turn and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
 `BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
 nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never

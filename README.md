@@ -15,14 +15,14 @@ Version: `v0.0.11`
 
 | Skill | Version | Command | Description |
 | --- | --- | --- | --- |
-| [specify](plugins/aw/skills/specify/SKILL.md) | 0.0.5 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
-| [plan-craft](plugins/aw/skills/plan-craft/SKILL.md) | 0.0.5 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
-| [implement](plugins/aw/skills/implement/SKILL.md) | 0.0.5 | `/implement` | Execute a plan inline or through subagents, task by task, test first, recording base, task state, and rulings in the execution record. |
-| [verify](plugins/aw/skills/verify/SKILL.md) | 0.0.5 | `/verify` | Check every completion claim with fresh evidence bound to the exact tree fingerprint and return PASS, FAIL, INCOMPLETE, or BLOCKED. |
+| [specify](plugins/aw/skills/specify/SKILL.md) | 0.0.6 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
+| [plan-craft](plugins/aw/skills/plan-craft/SKILL.md) | 0.0.6 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
+| [implement](plugins/aw/skills/implement/SKILL.md) | 0.0.6 | `/implement` | Execute a plan inline or through subagents, task by task, test first, recording base, task state, and rulings in the execution record. |
+| [verify](plugins/aw/skills/verify/SKILL.md) | 0.0.6 | `/verify` | Check every completion claim with fresh evidence bound to the exact tree fingerprint and return PASS, FAIL, INCOMPLETE, or BLOCKED. |
 | [cr-request](plugins/aw/skills/cr-request/SKILL.md) | 0.0.11 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; show compact verdicts with a persistent full report and structured action identities. |
-| [cr-received](plugins/aw/skills/cr-received/SKILL.md) | 0.0.6 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
+| [cr-received](plugins/aw/skills/cr-received/SKILL.md) | 0.0.7 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
 | [cross-cr](plugins/aw/skills/cross-cr/SKILL.md) | 0.0.3 | `/cross-cr` | Hand a plan or a finished change to other agent CLIs (by default the opposite CLI, more by name) for a read-only review in the cr-request contract, then pass the findings to cr-received. |
-| [finalize](plugins/aw/skills/finalize/SKILL.md) | 0.0.5 | `/finalize` | Integrate verified work safely: merge, pull request, squash, keep, discard, or pause, with cleanup behind explicit confirmation. |
+| [finalize](plugins/aw/skills/finalize/SKILL.md) | 0.0.6 | `/finalize` | Integrate verified work safely: merge, pull request, squash, keep, discard, or pause, with cleanup behind explicit confirmation. |
 | [session-learnings](plugins/aw/skills/session-learnings/SKILL.md) | 0.0.5 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 
 ## Workflow
@@ -44,6 +44,9 @@ escalation, the round limit, an outward action) and before the `finalize` choice
 is pushed, merged, or published without it; after a successful `merge`, `squash`, `pr`,
 `keep`, or `discard`, `finalize` starts `session-learnings`. Each skill commits its own
 paths locally at its checkpoint and never pushes.
+
+Already authorized defer issue/reply actions and the bounded REJECT reply in
+`cr-received` may proceed under `--auto`; other outward gates remain in force.
 
 `cross-cr` is outside the chain: it runs only on request, next to or in place of the
 `cr-request` step, and hands its findings to `cr-received`.

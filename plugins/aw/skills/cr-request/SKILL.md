@@ -189,10 +189,15 @@ format:
 Review R<n>: <Summary line> tree <tree SHA> reviewer <model> mode <code|document|re-review>
 Finding R<n>-F<k>: <severity> <location> - <title>
 Round review <n>: <cause>
+Ruling: review R<n> origin <automatic|user-started|external> - <source and authorization>
 ```
 
 One `Finding` line per finding; `n` equals the review number `R<n>`, and a `Round` line
-the journal already has is skipped. Never rewrite existing lines. After the reviewer
+the journal already has is skipped. Record origin once per review using the Ruling above;
+count only distinct automatic origins against the automatic budget. Local numbering and
+external review counts are not that budget. On older records with unknown provenance,
+reconstruct it from evidence or escalate instead of guessing or resetting the count.
+Never rewrite existing lines. After the reviewer
 finishes, the trusted host saves the complete local result and target identity to
 `<session-root>/.cross-review/local/<run-id>/review.md` and `identity.json`, using
 [review-actions.md](references/review-actions.md). Directories are `0700`, files are
@@ -214,7 +219,9 @@ with findings and none accepted stop the loop.
 ```
 
 A round is automatic when another skill or `--auto` starts it, and user-started when the
-user calls this skill for it. When the rule stops the loop, do not dispatch: end with
+user calls this skill for it. The last allowed automatic round is decision-only: escalate
+Critical or unsafe findings; fixes need explicit permission and stale verification, and
+the required re-review still needs authorization after the budget is exhausted. When the rule stops the loop, do not dispatch: end with
 `Next step: none - round limit reached, awaiting user`. A user-started round past the
 limit is dispatched once; its `Ruling` line goes into the record before its `Review` line,
 and the result says the round ran past the limit.
@@ -229,13 +236,18 @@ The last line of the result is the next step:
 | Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |
 
+Under `--auto`, the host may perform already authorized defer issue and thread reply
+actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
+asking again. This grants no reviewer write token or general outward permission; all
+other outward actions and merge, release, and publication retain their approval gates.
+
 ```text
 With `--auto` in the arguments, a `Next step` that names a local skill (`cr-received`,
 `verify`, and after a clean document review `implement` or `plan-craft`) is not handed
 back: start that skill in the same turn and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
 `BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
 nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never

@@ -3,7 +3,7 @@ name: plan-craft
 description: You MUST use this when a spec the user approved, an accepted design, or requirements already agreed in the conversation have to be turned into an ordered, multi-step implementation plan before any code is written - including a spec from specify, work with no spec yet, and a plan revision after a document review. Replaces devflow plan-crafting. Covers whether a plan is needed, task order, acceptance-criteria coverage, and the execution choice. Not for open design (specify) or executing a plan (implement).
 argument-hint: "[<spec-path>] [<plan-path>] [--auto]"
 metadata:
-  version: "0.0.5"
+  version: "0.0.6"
 license: MIT
 ---
 
@@ -21,12 +21,17 @@ The optional arguments are the path to a spec, the path to a plan to revise, or 
 (`specify` passes both after a re-approval), and `--auto`. Without paths, step 1 finds
 the input.
 
+Under `--auto`, the host may perform already authorized defer issue and thread reply
+actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
+asking again. This grants no reviewer write token or general outward permission; all
+other outward actions and merge, release, and publication retain their approval gates.
+
 With `--auto` in the arguments, a `Next step` that names a local skill (`implement`, and
 `cr-request` for the plan review) is not handed back: start that skill in the same turn
 and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
 `BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
 nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never

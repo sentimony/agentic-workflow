@@ -116,8 +116,9 @@ Read the record of the host, the plan or the spec:
 
 - every round counts, document reviews included: a new round does not close an old finding;
 - each `Finding` of any round with severity `Critical` or `Important` is a blocker until
-  a `Received` line gives its ID a disposition; `REJECT`, `OUTDATED`, and `DEFER`
-  close it, and `ACCEPT` and `PARTIAL` mark it fixed, with its claim (tag `R<n>-F<k>`)
+  a `Received` line gives its ID a disposition; `REJECT` and `OUTDATED` close it, and
+  `DEFER` closes it only with issue, reply, and resolve API evidence; pending or failed
+  writes block. `ACCEPT` and `PARTIAL` mark it fixed, with its claim (tag `R<n>-F<k>`)
   checked in this run over the current tree as the proof;
 - any `ESCALATE` in any `Received` line is a blocker until a
   `Ruling: R<n>-F<k> escalation decided - <owner's decision> - <cost if wrong>` line for
@@ -125,7 +126,9 @@ Read the record of the host, the plan or the spec:
 - when the `cr-received` return block is in the conversation, every item of its
   `Blocking:` field other than `none` is a blocker too.
 
-Blockers come from every round. The choice of the next step
+Blockers come from every round. A review with an unknown tree cannot satisfy the
+current-tree gate. An unfavorable review with zero findings is an evidence gap requiring
+escalation, not a PASS. The choice of the next step
 (SKILL.md step 10) is different: there only a `Review` line with `mode code`, or
 `mode re-review` after a code review, counts as a review of the implementation, so a
 record with only spec or plan reviews leads to `cr-request`, not `finalize`. When the

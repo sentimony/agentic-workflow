@@ -2,6 +2,8 @@
 
 ## [0.0.11] - 2026-10-30
 
+- Align the automatic outward exception with authorized defer actions and the bounded REJECT reply.
+
 - Share a compact local/CI result: verdicts, severity counts, readiness, and next step;
   local calls link the full host-owned review archive, while CI retains one Details
   block and the unchanged two-line footer grammar.

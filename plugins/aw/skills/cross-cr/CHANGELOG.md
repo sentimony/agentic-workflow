@@ -2,6 +2,8 @@
 
 ## [0.0.3] - 2026-10-30
 
+- Align the automatic outward exception with authorized defer actions and the bounded REJECT reply.
+
 - Archive checked full reviews and host-provided target identities in the session
   repository before compact handoff, with separate paths per reviewer and a shared
   helper for local `cr-request`. Private permissions, Git exclusion, and collision

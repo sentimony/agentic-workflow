@@ -3,7 +3,7 @@ name: implement
 description: You MUST use this when an existing implementation plan is to be executed, either directly in the current session or through subagents, including resuming an interrupted execution from the plan's execution record, or when one or two edits with an obvious approach need doing without a plan. Covers task-by-task execution with evidence, drift handling and blockers, and a resumable execution record. Replaces devflow inline-plan-dev and subagent-plan-dev. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize).
 argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents] [--auto]"
 metadata:
-  version: "0.0.5"
+  version: "0.0.6"
 license: MIT
 ---
 
@@ -19,11 +19,16 @@ plan -> mode -> isolation -> clean start -> task loop -> drift and blockers -> r
 Arguments are optional: a path to the plan or to a spec, `--inline` or `--subagents`
 to choose the mode, and `--auto`.
 
+Under `--auto`, the host may perform already authorized defer issue and thread reply
+actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
+asking again. This grants no reviewer write token or general outward permission; all
+other outward actions and merge, release, and publication retain their approval gates.
+
 With `--auto` in the arguments, a `Next step` that names a local skill (`verify`,
 `plan-craft`) is not handed back: start that skill in the same turn and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
 `BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
 nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never

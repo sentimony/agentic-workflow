@@ -3,7 +3,7 @@ name: finalize
 description: You MUST use this when verified work awaits a decision on how it leaves the branch - merging it, pushing it, opening a pull request (PR), keeping the branch, discarding the branch, or cleaning up a worktree or workspace - in any repository. Not for work that is not verified yet (verify), open review findings (cr-received), a plain commit with no integration decision, or release work with its own checklist. Replaces devflow branch-finish.
 argument-hint: "[merge|pr|squash|keep|discard|pause] [--draft] [--auto]"
 metadata:
-  version: "0.0.5"
+  version: "0.0.6"
 license: MIT
 ---
 
@@ -22,11 +22,16 @@ The optional argument names the option: `merge`, `pr` (with `--draft` for a draf
 instruction the user already gave in the conversation counts as the choice; do not ask
 again.
 
+Under `--auto`, the host may perform already authorized defer issue and thread reply
+actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
+asking again. This grants no reviewer write token or general outward permission; all
+other outward actions and merge, release, and publication retain their approval gates.
+
 With `--auto` in the arguments, a `Next step` that names a local skill (`verify`,
 `cr-request`) is not handed back: start that skill in the same turn and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
 `BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
 nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never

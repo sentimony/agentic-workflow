@@ -51,6 +51,16 @@ difference moves the affected findings to a recheck against current code. Every
 disposition is bound to the current `Tree`: after any edit, earlier decisions on other
 records stand only once rechecked against the new fingerprint.
 
+## External identity and automatic budget
+
+Map `(repository, PR, origin_review_id, original_id)` and reviewed SHA to a local
+`R<n>-F<k>` in an append-only `Ruling`; preserve prior IDs even when source rounds
+collide. Import missing `Review` and `Finding` lines before `Received`, once per source.
+A `Ruling: review R<n> origin <automatic|user-started|external> - <source and
+authorization>` identifies how the review began. Count distinct automatic origins, not
+local round numbers or external review counts. Reconstruct missing provenance from
+evidence; if unknown, escalate rather than assume a fresh budget.
+
 ## Finding record
 
     ID: <R<n>-F<k>, R<n>-<reviewer>-F<k>, the reviewer's own, or F1, F2, ...>

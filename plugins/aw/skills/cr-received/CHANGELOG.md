@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.7] - 2026-10-30
+
+- Align review intake, gate evidence, and the narrow authorized automatic review replies.
+
 ## [0.0.6] - 2026-10-29
 
 - `--auto` in the arguments starts the next local step (`verify`, `plan-craft`) in the

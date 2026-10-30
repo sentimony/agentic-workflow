@@ -1,13 +1,12 @@
 name: Claude review
 
-# Posts a cr-request PR review as yngwald on each open, non-draft, same-repo PR whose head has a
-# green CI run: automatically on the first head and on new heads after a review with Critical or
-# Important findings (at most 3 reviews), and on every request for yngwald or dispatch. The agent
-# reviews with a read-only GITHUB_TOKEN and writes the body and the inline comments to files; the
-# publish job validates them, and only its `post` step gets the yngwald PAT. That holds for the main
-# copy of this file: pull_request runs use the PR branch's copy, so anyone who can push a branch can
-# reach the PAT. The checks cover the body's structure and token-like strings, not its prose; the
-# `Claude review` status is advisory, not a required check.
+# Posts a cr-request PR review as yngwald on each open, non-draft, same-repo PR with green CI.
+# Automatic repeats need a new head and prior Critical/Important findings, up to the effective
+# limit (5 by default); a request for yngwald or dispatch bypasses that count. The read-only agent
+# writes review transport files. Only trusted publish steps receive the yngwald PAT to post the
+# validated review and recover ledger actions. Pull_request runs use the PR branch's workflow,
+# so anyone who can push a branch can reach the PAT. Checks validate structure and token-like
+# strings, not prose; the `Claude review` status is advisory, not a required check.
 on:
   workflow_run:
     workflows: [CI]
@@ -114,6 +113,13 @@ jobs:
           jq -e '.labels | map(.name) | index("skip-auto-review") | not' <<< "$pr" > /dev/null \
             || skip_final "PR #$number has the skip-auto-review label"
           [ -z "$RUN_SHA" ] || [ "$RUN_SHA" = "$head_sha" ] || skip "PR #$number moved on from $RUN_SHA"
+          # Reject ambiguous or malformed configuration before any model invocation, including requests.
+          limits=$(jq -c '[.labels[].name | select(startswith("auto-review-rounds"))]' <<< "$pr")
+          if ! jq -e 'length <= 1 and all(.[]; test("^auto-review-rounds-0*[1-9][0-9]*$"))' <<< "$limits" > /dev/null; then
+            echo "::error::Invalid auto-review-rounds-N labels: use at most one positive integer limit"
+            exit 1
+          fi
+          limit=$(jq -r 'if length == 0 then "5" else .[0] | ltrimstr("auto-review-rounds-") end' <<< "$limits")
           requested=$(jq --arg r "$REVIEWER" '[.requested_reviewers[].login] | index($r) != null' <<< "$pr")
 
           # Runs are listed newest first; the per-workflow endpoint answers 404 until ci.yml has run.
@@ -133,19 +139,18 @@ jobs:
 
           # A request for yngwald (pending, or this event) and a dispatch always review. An automatic
           # trigger reviews the first head, and a new head after a review with Critical or Important
-          # findings while the PR has fewer than 3 reviews from yngwald.
+          # findings while the total number of reviews from yngwald is below the effective limit.
           if [ "$requested" != true ] && [ "$EVENT_ACTION" != review_requested ] \
             && [ "$EVENT_NAME" != workflow_dispatch ]; then
             # One JSON object per review, slurped below: --paginate with --jq applies the filter per page.
-            marked=$(gh api --paginate "repos/$REPO/pulls/$number/reviews" \
-              --jq '.[] | select(.user.login == env.REVIEWER) | .body |= ((. // "") | gsub("\r"; ""))
-                | select(.body | startswith("<!-- claude-review sha="))
+            reviews=$(gh api --paginate "repos/$REPO/pulls/$number/reviews" \
+              --jq '.[] | select(.user.login == env.REVIEWER) | .body |= ((. // "") | gsub("\r"; "")) | tojson')
+            total=$(jq -s length <<< "$reviews")
+            marked=$(jq -rc 'select(.body | startswith("<!-- claude-review sha="))
                 | .sha = (.body | split("\n")[0] | ltrimstr("<!-- claude-review sha=") | rtrimstr(" -->"))
                 | select(.sha | test("^[0-9a-f]{40}$"))
-                | {submitted_at, sha, body}
-                | tojson')
-            total=$(jq -s length <<< "$marked")
-            if [ "$total" -gt 0 ]; then
+                | {submitted_at, sha, body}' <<< "$reviews")
+            if [ -n "$marked" ]; then
               last_sha=$(jq -rs 'sort_by(.submitted_at) | last | .sha' <<< "$marked")
               # The lines above the first ### heading and the Summary section, outside <details> blocks,
               # as publish reads them: the table sits above any heading now and under ### Summary before.
@@ -167,8 +172,9 @@ jobs:
                 END { print s + 0 }' <<< "$last_summary")
               [ "$last_sha" != "$head_sha" ] || skip_final "PR #$number already has a review of $head_sha"
               [ "$blocking" -gt 0 ] || skip_final "the latest review of PR #$number has no Critical or Important findings"
-              [ "$total" -lt 3 ] || skip_final "PR #$number has $total reviews from $REVIEWER; request $REVIEWER for another"
             fi
+            jq -en --argjson total "$total" --arg limit "$limit" '$total < ($limit | tonumber)' > /dev/null \
+              || skip_final "PR #$number has $total reviews from $REVIEWER; limit $limit; change auto-review-rounds-N or request $REVIEWER"
           fi
 
           post_status pending "Claude review in progress"
@@ -503,7 +509,7 @@ jobs:
           # built-in read-only commands included: any allowed command can echo an expanded variable. .git/
           # is denied for Read, Grep, and Glob: .git/config holds the action's token in the origin URL.
           claude_args: >-
-            --model ${{ vars.CLAUDE_REVIEW_MODEL || 'claude-opus-5-5' }}
+            --model ${{ vars.CLAUDE_REVIEW_MODEL || 'claude-sonnet-5-5' }} --effort medium
             --max-turns 60
             --allowedTools "Skill,Agent,Task,Grep,Glob,Read(./**),Read(~/.claude/skills/**),Edit(./.auto-review/review.md),Write(./.auto-review/review.md),Edit(./.auto-review/comments.json),Write(./.auto-review/comments.json),Edit(./.auto-review/review-actions.json),Write(./.auto-review/review-actions.json)"
             --disallowedTools "Bash,Read(./.git/**)"

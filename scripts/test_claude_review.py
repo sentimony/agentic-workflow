@@ -361,3 +361,110 @@ class SummaryParserTest(unittest.TestCase):
                 p=subprocess.run(['bash','-c',fragment],env={**os.environ,'last_summary':table},capture_output=True,text=True)
                 self.assertEqual(p.returncode,0,p.stderr)
                 self.assertEqual(int(p.stdout),expected)
+
+class GateTest(unittest.TestCase):
+    def run_gate(self, reviews=(), labels=(), action='', event='pull_request', requested=False, ci='success'):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            pr={'head':{'sha':'a'*40,'repo':{'full_name':'owner/repo'}}, 'base':{'sha':'b'*40},
+                'state':'open','draft':False,'user':{'type':'User','login':'author'},
+                'labels':[{'name':x} for x in labels], 'requested_reviewers':[{'login':'yngwald'}] if requested else []}
+            (root/'data.json').write_text(json.dumps({'pr':pr,'reviews':reviews,'ci':ci}))
+            fake=root/'gh'
+            fake.write_text('''#!/usr/bin/env python3
+import json, os, subprocess, sys
+args=sys.argv[1:]
+d=json.load(open(os.environ['DATA']))
+endpoint=next((x for x in args if x.startswith('repos/')), '')
+if '/statuses/' in endpoint: sys.exit(0)
+if '/commits/' in endpoint and '/status?' in endpoint: print('false'); sys.exit(0)
+if '/actions/runs?' in endpoint: print(d['ci']); sys.exit(0)
+if endpoint.endswith('/reviews'):
+    source=json.dumps(d['reviews'])
+    result=subprocess.run(['jq','-r',args[args.index('--jq')+1]],input=source,text=True,capture_output=True)
+    sys.stdout.write(result.stdout); sys.stderr.write(result.stderr); sys.exit(result.returncode)
+if endpoint.endswith('/pulls/42'): print(json.dumps(d['pr'])); sys.exit(0)
+sys.exit(2)
+''')
+            fake.chmod(0o755)
+            env={**os.environ,'PATH':str(root)+os.pathsep+os.environ['PATH'],'DATA':str(root/'data.json'),
+                 'REPO':'owner/repo','REVIEWER':'yngwald','RUN_SHA':'','RUN_HEAD_REPO':'',
+                 'EVENT_PR':'42','EVENT_NAME':event,'EVENT_ACTION':action,'CONTEXT':'Claude review',
+                 'RUN_URL':'url','GITHUB_OUTPUT':str(root/'output'),'GITHUB_STEP_SUMMARY':str(root/'summary')}
+            result=subprocess.run(['bash','-eo','pipefail','-c',step('Review gate decision')],env=env,capture_output=True,text=True)
+            output=(root/'output').read_text() if (root/'output').exists() else ''
+            return result,output
+
+    @staticmethod
+    def reviews(manual, auto, *, clean=False, samehead=False):
+        reviews=[{'user':{'login':'yngwald'},'body':'manual','submitted_at':f'2026-01-01T00:00:{i:02}Z'} for i in range(manual)]
+        for i in range(auto):
+            sha=('a' if samehead and i==auto-1 else 'c')*40
+            count=0 if clean and i==auto-1 else 1
+            body=f'<!-- claude-review sha={sha} -->\n| Critical | Important | Minor |\n| --- | --- | --- |\n| {count} | 0 | 0 |'
+            reviews.append({'user':{'login':'yngwald'},'body':body,'submitted_at':f'2026-01-02T00:00:{i:02}Z'})
+        return reviews
+
+    def test_limits_and_manual_counts(self):
+        for manual,auto,limit,allow in [(0,4,5,True),(0,5,5,False),(1,3,5,True),(2,3,5,False),(0,1,1,False),(0,9,10,True),(0,10,10,False)]:
+            with self.subTest(manual=manual,auto=auto,limit=limit):
+                labels=[] if limit==5 else [f'auto-review-rounds-{limit}']
+                result,output=self.run_gate(self.reviews(manual,auto),labels)
+                self.assertEqual(result.returncode,0,result.stderr)
+                self.assertIn(f'review={str(allow).lower()}',output)
+                if not allow:
+                    self.assertRegex(result.stdout, rf'\b{manual+auto} reviews from yngwald\b')
+                    self.assertRegex(result.stdout, rf'\blimit {limit}\b')
+                    self.assertTrue('auto-review-rounds-' in result.stdout or 'request yngwald' in result.stdout)
+
+    def test_manual_only_and_latest_usable_summary(self):
+        # Manual reviews count even with no marked summary; another author does not count.
+        others={'user':{'login':'someone'},'body':'manual','submitted_at':'2026-02-01T00:00:00Z'}
+        result,output=self.run_gate(self.reviews(5,0)+[others])
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('review=false',output)
+        self.assertIn('5 reviews from yngwald; limit 5',result.stdout)
+        reviews=self.reviews(0,1,clean=True)+self.reviews(1,0)
+        reviews[-1]['submitted_at']='2026-03-01T00:00:00Z'
+        result,output=self.run_gate(reviews)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('review=false',output)
+        self.assertIn('no Critical or Important findings',result.stdout)
+
+    def test_invalid_labels_fail_closed_even_on_request(self):
+        for labels in [['auto-review-rounds-0'],['auto-review-rounds--1'],['auto-review-rounds-x'],['auto-review-rounds-1','auto-review-rounds-10']]:
+            with self.subTest(labels=labels):
+                result,output=self.run_gate(labels=labels,action='review_requested')
+                self.assertNotEqual(result.returncode,0)
+                self.assertIn('error',result.stdout.lower())
+                self.assertNotIn('review=true',output)
+
+    def test_existing_guards_and_bypasses(self):
+        for kwargs,allow in [({'labels':['skip-auto-review'],'action':'review_requested'},False),
+                             ({'reviews':self.reviews(0,1,clean=True),'labels':['auto-review-rounds-10']},False),
+                             ({'reviews':self.reviews(0,1,samehead=True)},False),
+                             ({'reviews':self.reviews(2,3),'action':'review_requested'},True),
+                             ({'reviews':self.reviews(2,3),'event':'workflow_dispatch'},True),
+                             ({'reviews':self.reviews(2,3),'requested':True},True),
+                             ({'action':'review_requested','ci':'failure'},False)]:
+            with self.subTest(kwargs=kwargs):
+                result,output=self.run_gate(**kwargs)
+                self.assertEqual(result.returncode,0,result.stderr)
+                self.assertIn(f'review={str(allow).lower()}',output)
+
+    def test_workflow_settings(self):
+        ruby=os.environ.get('RUBY','ruby')
+        workflow=json.loads(subprocess.check_output([ruby,'-e',"require 'yaml'; require 'json'; puts JSON.generate(YAML.load_file(ARGV[0]))",str(WORKFLOW)],text=True))
+        review=workflow['jobs']['review']
+        agent=next(s for s in review['steps'] if s.get('id')=='claude')
+        self.assertIn("vars.CLAUDE_REVIEW_MODEL || 'claude-sonnet-5-5'",agent['with']['claude_args'])
+        self.assertIn('--effort medium',agent['with']['claude_args'])
+        self.assertEqual(workflow['permissions'],{})
+        self.assertEqual(review['permissions'],{'contents':'read','pull-requests':'read'})
+        self.assertTrue(workflow['concurrency']['cancel-in-progress'])
+        self.assertTrue(review['concurrency']['cancel-in-progress'])
+        triggers=workflow.get('on',workflow.get('true',{}))
+        self.assertNotIn('labeled',triggers['pull_request']['types'])
+        install=step('Install cr-request skill')
+        self.assertIn('REVIEW_SKILLS_REF',install)
+        self.assertIn('v[0-9]',install)

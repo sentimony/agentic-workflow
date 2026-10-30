@@ -85,3 +85,13 @@ Any agent through [skills](https://github.com/vercel-labs/skills):
 ```bash
 npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify cr-request cr-received cross-cr finalize session-learnings -a codex claude-code -y
 ```
+
+## Review operations
+
+Automatic yngwald reviews use Sonnet 5.5 medium and a default limit of five reviews.
+One `auto-review-rounds-N` label overrides the limit for that PR. Inspect its review
+jobs with:
+
+```bash
+gh pr checks <number> --repo sentimony/agentic-workflow
+```

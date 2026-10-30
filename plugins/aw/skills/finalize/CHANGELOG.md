@@ -17,7 +17,9 @@
   turn and returns to the chosen option once that chain's `Next step` is `finalize`; the
   option choice confirms its integration and push, while branch and worktree deletion keep
   their own confirmation. After a successful `merge`, `squash`, `pr`, `keep`, or `discard`,
-  `--auto` starts `session-learnings` in the same turn (user decision 2026-10-30).
+  `--auto` starts `session-learnings` (recording mode, without `--auto`) in the same turn
+  once no cleanup confirmation or record-commit question is pending; otherwise it follows
+  the user's answer (user decision 2026-10-30).
 - Squash: a PR that changes `.github/workflows/` is merged by the pinned `gh pr merge`,
   then the REST call; the `workflow` scope is explained only when a refusal names it
   (request 20261027-1356). The pinned head is the full object ID, 40 hex for SHA-1 and

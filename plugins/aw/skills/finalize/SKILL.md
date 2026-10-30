@@ -23,8 +23,7 @@ instruction the user already gave in the conversation counts as the choice; do n
 again.
 
 With `--auto` in the arguments, a `Next step` that names a local skill (`verify`,
-`cr-request`, and `session-learnings` after a successful `merge`, `squash`, `pr`, `keep`,
-or `discard`) is not handed back: start that skill in the same turn and pass `--auto` on.
+`cr-request`) is not handed back: start that skill in the same turn and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
 a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
@@ -39,6 +38,11 @@ and comes back to the option already chosen: the chain started from here returns
 `finalize` when its `Next step` is `finalize`, instead of ending the turn there; any other
 result stops. Choosing the option confirms its integration and its push; deleting a
 branch or a workspace and the `--force` in step 6 still need their own confirmation.
+
+After a successful `merge`, `squash`, `pr`, `keep`, or `discard` under `--auto`, start
+`session-learnings` in its recording mode in the same turn (it takes no `--auto`), once
+no confirmation of step 6 and no question about uncommitted record lines is pending; with
+one pending, the turn ends on it, and `session-learnings` follows the user's answer.
 
 ## 1. Read the state
 
@@ -204,8 +208,9 @@ For the chosen option:
 1. Re-read the state from step 1.
 2. For `merge`, `squash`, and `pr`, make the `Record <topic>` commit of step 3, item 6.
    Then run the action. On the work-on-base path (step 4) the record commit comes after
-   the new branch exists, the work is committed, and `verify` has run, right before the
-   push, so the local base stays as it is and the pushed host holds the new `Verify` line.
+   the new branch exists, the work is committed, and `verify` has run (`pr --draft` runs
+   none), right before the push, so the local base stays as it is and the pushed host
+   holds any new `Verify` line.
 3. Confirm the result from Git or the forge, not from the command's exit code: the PR
    URL exists, the base contains the commits, the branch is gone where it should be.
 

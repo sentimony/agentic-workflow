@@ -14,7 +14,10 @@
   The default model is `claude-sonnet-5-5` with `--effort medium`;
   `CLAUDE_REVIEW_MODEL` overrides the model without a fallback.
   Automatic triggers review a head with no yngwald review, or a new head after a review
-  with Critical or Important findings while the total yngwald review count is below 5.
+  with new or unresolved prior Critical or Important findings while the total yngwald
+  review count is below 5.
+  CI eligibility uses a successful push or workflow_dispatch run on the full head SHA;
+  the `validate` job includes review fixtures and parity checks.
   One `auto-review-rounds-N` label, with integer N >= 1, overrides that threshold;
   malformed or multiple threshold labels fail before inference. Explicit yngwald requests
   and dispatch bypass the count while retaining the other guards.
@@ -62,7 +65,7 @@
   `scripts/test_claude_review.py`, including footer grammar, Summary parsing, gate labels,
   ledger publication, partial-action recovery, and merged-summary fixtures. Run
   `python3 -m unittest discover -s scripts -p 'test_claude_review.py'` after changes;
-  running the test file directly collects only its early classes. CI also runs
+  direct execution and unittest discovery both collect all test classes. CI also runs
   `python3 -m unittest discover -s plugins/aw/skills/cr-received/scripts -p 'test_*.py'`
   and `python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'`.
 - The reviewer writes `review-actions.json` without a write PAT. Trusted publish
@@ -89,6 +92,15 @@
   resolve readback; retries recover recorded progress instead of duplicating writes. The
   host's bounded REJECT helper reuses an identical disposition marker and stops on a
   changed marker for an owner ruling.
+- REJECT and fully confirmed accepted deferrals stop blocking automatic rounds. Accepted
+  deferrals are bound to the snapshot prepared before inference; a proposal changed after that
+  snapshot stops the action. The publish finalizer ends only its own pending status after a
+  failure and leaves a newer run's status alone.
+  The common package is checked by `scripts/check_review_parity.py` with the explicit adapter
+  in `scripts/review-parity.json`. Run `python3 scripts/check_review_parity.py --self-test` and
+  `python3 -m unittest discover -s scripts -p 'test_review_parity.py'` after changes. Keep common
+  logic, tests, and fixtures aligned across all four copies; only the listed project adapters
+  may differ.
 - The merged-only summary reads GitHub history without checkout or inference, validates
   yngwald ledgers and source markers, and updates one own summary comment. REJECT counts
   rejected findings; DECLINED defer does not. Later structured evidence determines each

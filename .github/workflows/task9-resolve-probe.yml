@@ -1,0 +1,58 @@
+name: Task 9 fixed-thread resolve probe
+
+on:
+  push:
+    branches: [261030-task9-fixture]
+    paths: [.github/workflows/task9-resolve-probe.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.repository == 'sentimony/agentic-workflow' && github.ref == 'refs/heads/261030-task9-fixture'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Probe only the authorized fixture thread
+        env:
+          GH_TOKEN: ${{ secrets.YNGWALD_PR_TOKEN }}
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+
+          def api(endpoint, payload=None):
+              args=['gh','api',endpoint]
+              if payload is not None: args+=['--method','POST','--input','-']
+              result=subprocess.run(args,input=json.dumps(payload) if payload is not None else None,
+                                    text=True,capture_output=True)
+              try: data=json.loads(result.stdout)
+              except ValueError: data={}
+              return result,data
+
+          def checked(endpoint,payload=None):
+              result,data=api(endpoint,payload)
+              assert result.returncode==0 and not data.get('errors'),'fixture metadata read failed'
+              return data
+
+          assert checked('user')['login']=='yngwald'
+          pr=checked('repos/sentimony/agentic-workflow/pulls/21')
+          assert pr['state']=='open' and pr['head']['sha']==os.environ['EXPECTED_HEAD']
+          assert pr['head']['repo']['full_name']=='sentimony/agentic-workflow'
+          ident='PRRT_kwDOVOO2Ys6x50mg'
+          query='query($id:ID!){node(id:$id){... on PullRequestReviewThread{id isResolved viewerCanResolve pullRequest{number repository{nameWithOwner}}}}}'
+          node=checked('graphql',{'query':query,'variables':{'id':ident}})['data']['node']
+          assert node['id']==ident and node['pullRequest']['number']==21
+          assert node['pullRequest']['repository']['nameWithOwner']=='sentimony/agentic-workflow'
+          print(json.dumps({'actor':'yngwald','thread':ident,'before_resolved':node['isResolved'],
+                            'viewer_can_resolve':node['viewerCanResolve']}))
+          if not node['isResolved']:
+              mutation='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{id isResolved}}}'
+              result,data=api('graphql',{'query':mutation,'variables':{'id':ident}})
+              kinds=[e.get('type') for e in data.get('errors',[]) if isinstance(e,dict)]
+              kinds=[k for k in kinds if isinstance(k,str) and re.fullmatch('[A-Z_]{1,64}',k)]
+              resolved=((data.get('data') or {}).get('resolveReviewThread') or {}).get('thread') or {}
+              print(json.dumps({'mutation_exit':result.returncode,'error_types':kinds,
+                                'resolved':resolved.get('isResolved')}))
+          PY

@@ -2,6 +2,8 @@
 
 ## [0.0.5] - 2026-10-29
 
+- Under `--auto`, `finalize` starts this skill in the same turn after a successful
+  `merge`, `squash`, `pr`, `keep`, or `discard`.
 - The notes root is the main checkout of the session's repository: the Git repository of
   the directory the session started in, which a subagent inherits from its parent. A note
   about another repository goes into this root with `Target` naming it, never into a notes

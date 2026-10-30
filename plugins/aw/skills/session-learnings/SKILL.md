@@ -19,8 +19,9 @@ triage: read notes -> draft -> measure -> approve -> re-read -> apply -> prune -
 ```
 
 It is the last link of the chain: it runs after `finalize`, often once the work is
-already squashed into the base branch, or on its own at any point the user asks. It reads
-the session; it needs no artifact from an earlier skill. Recording asks no questions and
+already squashed into the base branch, or on its own at any point the user asks; under
+`--auto`, `finalize` starts it in the same turn after a successful action. It reads the
+session; it needs no artifact from an earlier skill. Recording asks no questions and
 edits only gitignored notes plus a one-time setup. The argument `triage` (or the user
 asking to sort the accumulated learnings) runs the triage mode instead.
 

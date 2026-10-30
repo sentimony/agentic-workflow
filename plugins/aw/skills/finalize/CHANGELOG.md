@@ -16,7 +16,8 @@
 - `--auto`: a gate failure that `verify` or `cr-request` heals runs that step in the same
   turn and returns to the chosen option once that chain's `Next step` is `finalize`; the
   option choice confirms its integration and push, while branch and worktree deletion keep
-  their own confirmation.
+  their own confirmation. After a successful `merge`, `squash`, `pr`, `keep`, or `discard`,
+  `--auto` starts `session-learnings` in the same turn (user decision 2026-10-30).
 - Squash: a PR that changes `.github/workflows/` is merged by the pinned `gh pr merge`,
   then the REST call; the `workflow` scope is explained only when a refusal names it
   (request 20261027-1356). The pinned head is the full object ID, 40 hex for SHA-1 and
@@ -27,7 +28,8 @@
   Work on the base branch itself skips this check, and so does the branch the work moved
   onto, when the conversation says so or the user confirms it after the commit list.
   `pr-body.md` reads the PR's commits as `origin/<base>..HEAD`, and on the work-on-base
-  path the `Record <topic>` commit comes after the new branch and the work commit.
+  path the `Record <topic>` commit comes after the new branch, the work commit, and the
+  `verify` run, right before the push.
 - A worktree this session created that `git worktree remove` refuses is removed with
   `--force` only after a confirmation that names its paths (request 20261029-1347).
 - Work on the base branch: `merge` is hidden, and `pr` creates a branch from `HEAD`,

@@ -87,6 +87,7 @@ A later round of the same plan runs with `--followup <previous-run-dir> --dispos
 rehashes the previous round's plan and spec paths, reading their `Status:` lines again,
 so the brief needs no edit for new hashes or a changed status. Pass a new `--brief` only
 when a fact the host wrote has changed, written from the current files. The dispositions file
-lists every previous finding ID with the host's disposition from `cr-received`; the
+lists every previous finding ID with the host's disposition from `cr-received` (accepted
+and fixed, rejected with reason, deferred, or escalated, open); the
 runner appends it and the previous `review.md` and asks for a status of each previous
 finding: `ADDRESSED` or `NOT ADDRESSED`, a partial fix being `NOT ADDRESSED`.

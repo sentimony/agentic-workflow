@@ -23,7 +23,8 @@ instruction the user already gave in the conversation counts as the choice; do n
 again.
 
 With `--auto` in the arguments, a `Next step` that names a local skill (`verify`,
-`cr-request`) is not handed back: start that skill in the same turn and pass `--auto` on.
+`cr-request`, and `session-learnings` after a successful `merge`, `squash`, `pr`, `keep`,
+or `discard`) is not handed back: start that skill in the same turn and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
 a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
@@ -203,7 +204,8 @@ For the chosen option:
 1. Re-read the state from step 1.
 2. For `merge`, `squash`, and `pr`, make the `Record <topic>` commit of step 3, item 6.
    Then run the action. On the work-on-base path (step 4) the record commit comes after
-   the new branch exists and the work is committed, so the local base stays as it is.
+   the new branch exists, the work is committed, and `verify` has run, right before the
+   push, so the local base stays as it is and the pushed host holds the new `Verify` line.
 3. Confirm the result from Git or the forge, not from the command's exit code: the PR
    URL exists, the base contains the commits, the branch is gone where it should be.
 

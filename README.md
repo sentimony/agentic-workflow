@@ -41,8 +41,9 @@ on the final tree.
 With `--auto` in the arguments, a skill starts its local next step in the same turn and
 passes the flag on. It still stops on decisions that belong to the user (spec approval, an
 escalation, the round limit, an outward action) and before the `finalize` choice, so nothing
-is pushed, merged, or published without it. Each skill commits its own paths locally at its
-checkpoint and never pushes.
+is pushed, merged, or published without it; after the chosen action `finalize` starts
+`session-learnings`. Each skill commits its own paths locally at its checkpoint and never
+pushes.
 
 `cross-cr` is outside the chain: it runs only on request, next to or in place of the
 `cr-request` step, and hands its findings to `cr-received`.

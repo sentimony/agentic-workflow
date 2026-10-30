@@ -111,10 +111,13 @@ that contains this `SKILL.md`). Both modes need its `references/brief.md` and
 and stop.
 
 Before round 1, commit this session's own uncommitted spec, plan, or code as
-`Checkpoint before cross-cr R1: <topic>`. Own paths are the spec, the plan, and the paths
-of the tasks and rounds in its record, the files this session created or changed; list
-every other uncommitted path in the report and leave it uncommitted. Without a commit,
-the boundary stays on the working tree (step 3).
+`Checkpoint before cross-cr R1: <topic>`. Own paths are the spec, the plan, and the
+paths of the tasks and rounds in its record, the files this session created or changed;
+list every other uncommitted path in the report and leave it uncommitted. Without a
+commit, the boundary stays on the working tree (step 3). With one, and no explicit or
+plan-start base, record `HEAD` from before it and review against that SHA
+(`--target working-tree <SHA>`) in this and later rounds, so the committed change stays
+in the diff.
 
 Checkpoint commit: commit locally, never push, with only this session's own paths (files it
 created or changed for this spec, plan, task, or round). Other uncommitted changes, and
@@ -184,7 +187,9 @@ standard exclusions, and the fingerprint and appends them to the brief:
   fixes uncommitted, and for a later round with uncommitted fixes;
 - `--target range BASE..HEAD` - committed changes only;
 - `--target working-tree` - uncommitted changes against `HEAD`, the usual boundary of a
-  change made from conversation requests;
+  change made from conversation requests while nothing of it is committed (after the
+  checkpoint commit of step 1, `--target working-tree <SHA>` with the `HEAD` from before
+  it);
 - `--target tree HEAD` - the whole tree.
 
 `--exclude <path>` (repeatable, a file or a directory, relative to the repository root or

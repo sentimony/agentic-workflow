@@ -96,7 +96,8 @@ Pass a new `--brief` only when a fact the host wrote has changed, such as the ho
 evidence after a fix; write it from the current files, never from the previous
 `brief.md`. The
 dispositions file lists every finding of the previous round with its ID and the host's
-disposition from `cr-received` (accepted and fixed, rejected with reason, deferred).
+disposition from `cr-received` (accepted and fixed, rejected with reason, deferred, or
+escalated, open).
 The runner appends the previous `review.md` and that file to the brief and asks the
 reviewer for a status of each previous finding: `ADDRESSED` or `NOT ADDRESSED`, a
 partial fix being `NOT ADDRESSED`.

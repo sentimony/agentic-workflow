@@ -95,6 +95,9 @@
   In `RunnerTestCase` tests do not remove a file in the temporary directory with
   `self.addCleanup(...)`: `tearDown` deletes the directory first and the cleanup fails with
   `FileNotFoundError`.
+- A `cross-cr` CLI reviewer and a same-host `cr-request` subagent can read local review
+  archives despite their exclusion from snapshots and briefs: an accepted trade-off, not
+  a defect for review, because stronger isolation is a separate future design outside this work.
 - A change to the cr-request output contract (closing lines, footer order, separators) goes
   into `SKILL.md`, `references/brief.md` (the `Result contract` paragraph and
   `### CI footer grammar`), the `claude-review.yml` prompt and `next_re`, and the top

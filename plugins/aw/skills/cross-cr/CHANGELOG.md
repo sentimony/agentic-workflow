@@ -10,7 +10,8 @@
   checks protect the archive; failures stop automatic handoff as `INCOMPLETE`.
 - Exclude `.cross-review/` archives from generated review material and reject archive
   attachments. Temporary sessions remain available for legacy resume and follow-up.
-  Reviewers may still read repository-local archives outside supplied context.
+  Cross-cr CLI reviewers and same-host cr-request subagents may still read
+  repository-local archives outside supplied context.
 
 ## [0.0.2] - 2026-10-29
 

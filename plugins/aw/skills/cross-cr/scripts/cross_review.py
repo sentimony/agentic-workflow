@@ -493,8 +493,8 @@ def is_standard_exclusion(path: str) -> bool:
     parts = path.lower().split("/")
     lower = parts[-1]
     # A .local directory (local overrides) excludes everything under it.
-    # Archives can still be read by same-host reviewers outside this supplied context;
-    # this exclusion minimizes data, without promising filesystem read isolation.
+    # A cross-cr CLI reviewer or same-host cr-request subagent can still read archives;
+    # exclusion minimizes supplied data without promising filesystem read isolation.
     return (".cross-review" in parts or lower == ".env" or lower.startswith(".env.")
             or any(".local" in part for part in parts)
             or lower in _SECRET_NAMES or lower.endswith(_SECRET_SUFFIXES)

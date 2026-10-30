@@ -32,8 +32,11 @@ record), runs standalone as well, and ends with a `Next step` line; there is no
 orchestrator skill.
 
 ```text
-specify -> plan-craft -> implement -> verify -> cr-request -> cr-received -> verify -> finalize -> session-learnings
+specify -> plan-craft -> implement -> [verify -> cr-request -> cr-received]* -> verify -> finalize -> session-learnings
 ```
+
+The bracketed loop repeats once per review round. `finalize` always follows a fresh `verify`
+on the final tree.
 
 With `--auto` in the arguments, a skill starts its local next step in the same turn and
 passes the flag on. It still stops on decisions that belong to the user (spec approval, an

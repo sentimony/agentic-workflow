@@ -27,7 +27,8 @@ with or without `cr-request`. From the chain it also takes the spec and the plan
 are signals, not proof.
 
 Under `--auto`, the host may perform already authorized defer issue and thread reply
-actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
+actions, and the bounded REJECT reply through `scripts/reply_disposition.py` as described
+in [return.md](references/return.md), without
 asking again. This grants no reviewer write token or general outward permission; all
 other outward actions and merge, release, and publication retain their approval gates.
 

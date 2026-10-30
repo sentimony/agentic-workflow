@@ -114,6 +114,26 @@ missing actions. Critical findings cannot use this mechanism. `DECLINED` decline
 defer and leaves the finding unresolved.
 
 The host may also reply REJECT only in the current PR/head's yngwald finding thread.
+Use the host CLI from the skill package (run `--help` for its full interface):
+
+```sh
+python3 <cr-received>/scripts/reply_disposition.py --repository owner/repo --pr 42 \
+  --head <full-current-sha> --origin-review-id 101 --original-id R1-F1 \
+  --path src/a.py --root-comment-id 11 --disposition REJECT --reason-file <reason-file>
+```
+
+Run from the verified code repository working directory, or set `GH_REPO` to its
+verified `owner/repo`; `gh repo view` uses that configuration even when the plan lives
+in a different repository. The reason file is UTF-8 and contains the human-readable
+evidence. The configured `gh` repository must match `--repository`; the current API actor and any reused marker's
+API actor need repository write, maintain, or admin permission. The root must match the
+original review, finding ID, path, and canonical ledger. The helper serializes its own
+writers per finding on this host, but cannot make GitHub writes globally transactional.
+It returns JSON: `posted`, `use_existing`, `marker_conflict` with both states and
+`needs_ruling`, or `needs_ruling` for a failed guard or uncertain write. Do not treat a
+conflict as a synchronized new disposition. The helper is the only executable recipe
+for this reply; it posts no issue, edit, or resolve action.
+
 Include human-readable evidence and the schema-valid `cr-received-disposition:v1`
 marker defined in `cr-request/references/review-actions.md`: repository, PR, origin
 review ID, original finding ID, reviewed SHA, disposition, reason, and remaining

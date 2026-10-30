@@ -210,6 +210,9 @@ host disposition. Free-form thread text, a proposed defer, and `DECLINED` do not
 `REJECT`. `DEFER` proposes deferral; only a later reviewer `ACCEPTED` plus completed
 issue/reply/resolve progress completes it.
 
+The host executes this reply only through `cr-received/scripts/reply_disposition.py`;
+its CLI and failure handling are in `cr-received/references/return.md`.
+
 Under `--auto`, the host may post a `REJECT` reply only to the current PR/head's yngwald
 finding thread. Before POST, recheck head, original finding author, origin key, and all
 existing disposition markers for that key. An identical marker reuses the existing

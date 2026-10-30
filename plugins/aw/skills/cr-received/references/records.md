@@ -53,6 +53,9 @@ records stand only once rechecked against the new fingerprint.
 
 ## External identity and automatic budget
 
+For a bounded host REJECT reply, use the helper and conflict handling in
+[return.md](return.md); a conflict leaves the new disposition unsynchronized.
+
 Map `(repository, PR, origin_review_id, original_id)` and reviewed SHA to a local
 `R<n>-F<k>` in an append-only `Ruling`; preserve prior IDs even when source rounds
 collide. Import missing `Review` and `Finding` lines before `Received`, once per source.

@@ -35,6 +35,25 @@ class TransportTest(unittest.TestCase):
         self.assertEqual(workflow['jobs']['publish']['env']['ACTIONS_FILE'],'review-out/review-actions.json')
         self.assertFalse(any(str(s.get('uses','')).startswith('actions/checkout@') for s in workflow['jobs']['publish']['steps']))
 
+class ResolverBoundaryTest(unittest.TestCase):
+    def test_isolated_job_permissions_and_transport(self):
+        ruby=os.environ.get('RUBY','ruby')
+        script="require 'yaml'; require 'json'; puts JSON.generate(YAML.load_file(ARGV[0]))"
+        jobs=json.loads(subprocess.check_output([ruby,'-e',script,str(WORKFLOW)],text=True))['jobs']
+        self.assertEqual([name for name,j in jobs.items() if j.get('permissions',{}).get('contents')=='write'], ['resolve_threads'])
+        resolver=jobs['resolve_threads']
+        self.assertEqual(resolver['permissions'],{'contents':'write','pull-requests':'write'})
+        self.assertEqual(jobs['publish']['permissions'],{'pull-requests':'read','statuses':'write'})
+        self.assertEqual(jobs['complete']['permissions'],jobs['publish']['permissions'])
+        encoded=json.dumps(resolver)
+        for forbidden in ('secrets.', 'actions/checkout', 'download-artifact', 'review-actions.json', 'claude-review-ledger', 'YNGWALD'):
+            self.assertNotIn(forbidden, encoded)
+        self.assertIn('resolveReviewThread',encoded)
+        self.assertNotIn('resolveReviewThread',step('Publish review actions'))
+        self.assertIn('resolve_threads',jobs['complete']['needs'])
+        self.assertEqual(step('Publish review actions'),step('Complete review actions'))
+
+
 class PrepareThreadsTest(unittest.TestCase):
     def test_both_connection_levels_are_paginated(self):
         run = step('Prepare review threads')
@@ -164,9 +183,32 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual([x['method'] for x in trace].count('PUT'),1)
         self.assertFalse(any('/issues' in x['endpoint'] or '/comments' in x['endpoint'] for x in trace))
 
+def pipeline_script():
+    """Run the actual jobs with distinct fake credentials and output boundaries."""
+    import shlex
+    prepare=shlex.quote(step('Publish review actions'))
+    resolve=shlex.quote(step('Resolve verified thread metadata'))
+    complete=shlex.quote(step('Complete review actions'))
+    return f'''
+set +e
+: > "$GITHUB_OUTPUT"
+export GH_TOKEN=fixture-publisher PHASE=PREPARE STAGE=prepare
+bash -eo pipefail -c {prepare}
+prepare_rc=$?
+export REQUESTS=$(python3 -c 'import os,pathlib; p=pathlib.Path(os.environ["GITHUB_OUTPUT"]); rows=[x.split("=",1)[1] for x in p.read_text().splitlines() if x.startswith("requests=")]; print(rows[-1] if rows else "[]")')
+export GH_TOKEN=fixture-resolver STAGE=resolve
+bash -eo pipefail -c {resolve}
+resolve_rc=$?
+export GH_TOKEN=fixture-publisher PHASE=COMPLETE STAGE=complete
+bash -eo pipefail -c {complete}
+complete_rc=$?
+[ "$prepare_rc" = 0 ] && [ "$resolve_rc" = 0 ] && [ "$complete_rc" = 0 ]
+'''
+
+
 class DeferTest(unittest.TestCase):
     def test_success_and_recovery_after_reply_failure(self):
-        run=step('Publish review actions')
+        run=pipeline_script()
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
             os.symlink(ROOT/'scripts/fixtures/claude-review/gh_defer',root/'gh')
@@ -331,6 +373,206 @@ class DeferTest(unittest.TestCase):
             envelope=json.loads(state['body'].split('<!-- claude-review-ledger:v1 ',1)[1].split(' -->',1)[0])
             self.assertEqual(envelope['action_progress'][1]['resolve']['state'],'PENDING')
             self.assertIsNone(envelope['action_progress'][1]['resolve']['thread_id'])
+
+class ResolverRunTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name)
+        os.symlink(ROOT/'scripts/fixtures/claude-review/gh_defer',self.root/'gh')
+        sha='a'*40
+        self.finding={'origin_review_id':101,'original_id':'R1-F1','path':'a.py','severity':'Important'}
+        f=self.finding
+        ledger={'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':'b'*40,
+                'review_source_id':101,'findings':[f],'previous_findings':[],'envelope_version':1,
+                'published_review_id':101,'run_id':200,'duration_seconds':20,'action_progress':[],'disposition_events':[]}
+        proposal={'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':sha,
+                  **{k:f[k] for k in ('origin_review_id','original_id','path')},
+                  'disposition':'DEFER','reason':'Can wait','owner':'alice'}
+        def comment(i,author,body,review):
+            return {'databaseId':i,'author':{'login':author},'authorAssociation':'MEMBER','body':body,
+                    'createdAt':'2026-10-30T00:00:00Z','updatedAt':'2026-10-30T00:00:00Z','pullRequestReview':review}
+        self.initial={'origin':{'id':101,'user':{'login':'yngwald'},'commit_id':'b'*40,
+                              'body':'<!-- claude-review-ledger:v1 '+json.dumps(ledger)+' -->'},
+                      'thread':{'id':'api-thread-id','path':'a.py','isResolved':False,'comments':[
+                          comment(1001,'yngwald','**Important** R1-F1 - issue',{'databaseId':101}),
+                          comment(1002,'alice','<!-- cr-received-disposition:v1 '+json.dumps(proposal)+' -->',None)]}}
+        self.actions={'schema_version':1,'repository':'owner/repo','pr_number':42,'head_sha':sha,
+                      'review_source_id':None,'findings':[],'previous_findings':[
+                          {**f,'status':'NOT_ADDRESSED','defer_decision':'ACCEPTED','reason':'Can wait','owner':'alice'}]}
+        self.env={**os.environ,'PATH':str(self.root)+os.pathsep+os.environ['PATH'],
+                  'FIXTURE_DIR':str(self.root),'REPO':'owner/repo','NUMBER':'42','HEAD_SHA':sha,
+                  'REVIEW_ID':'202','GITHUB_RUN_ID':'303','GITHUB_OUTPUT':str(self.root/'output'),
+                  'REVIEWER':'yngwald','ACTIONS_FILE':str(self.root/'actions.json'),'POST_FILE':str(self.root/'post.md')}
+        self.reset()
+
+    def reset(self, addressed=False):
+        (self.root/'state.json').write_text(json.dumps(self.initial))
+        actions=json.loads(json.dumps(self.actions))
+        if addressed: actions['previous_findings'][0].update(status='ADDRESSED',defer_decision='NONE',owner=None)
+        (self.root/'actions.json').write_text(json.dumps(actions))
+        (self.root/'post.md').write_text('<!-- claude-review sha='+('a'*40)+' -->\n'
+            '| Intent | System | Craft | Critical | Important | Minor |\n'
+            '| --- | --- | --- | --- | --- | --- |\n| PASS | PASS | PASS | 0 | 0 | 0 |\n'
+            '**Readiness:** ready with fixes\n\nReviewed with: `/cr-request` 0.0.11 skill · In 0 min 2 sec\n'
+            'Next step: `/cr-received PR #42`\n')
+        (self.root/'output').write_text(''); (self.root/'trace.jsonl').write_text('')
+
+    def run_step(self,name,**extra):
+        return subprocess.run(['bash','-eo','pipefail','-c',step(name)],env={**self.env,**extra},capture_output=True,text=True)
+
+    def prepare(self,addressed=False):
+        self.reset(addressed)
+        result=self.run_step('Publish review actions',GH_TOKEN='fixture-publisher',PHASE='PREPARE',STAGE='prepare')
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.request=json.loads(next(x.split('=',1)[1] for x in (self.root/'output').read_text().splitlines() if x.startswith('requests=')))
+        state=self.state()
+        self.assertFalse(state['thread']['isResolved'])
+        self.assertNotIn('deferred_complete=true',(self.root/'output').read_text())
+        self.assertIn('"state":"PENDING"',state['body'])
+
+    def state(self): return json.loads((self.root/'state.json').read_text())
+    def resolve(self,**extra):
+        return self.run_step('Resolve verified thread metadata',GH_TOKEN='fixture-resolver',STAGE='resolve',REQUESTS=json.dumps(self.request),**extra)
+    def complete(self,**extra):
+        return self.run_step('Complete review actions',GH_TOKEN='fixture-publisher',PHASE='COMPLETE',STAGE='complete',**extra)
+    def mutations(self):
+        return [x for x in map(json.loads,(self.root/'trace.jsonl').read_text().splitlines()) if x.get('mutation')]
+
+    def test_success_api_identity_bot_actor_and_idempotent_completion(self):
+        self.prepare()
+        # An untrusted artifact cannot supply the mutation ID.
+        actions=json.loads((self.root/'actions.json').read_text()); actions['thread_id']='forged-artifact-id'
+        (self.root/'actions.json').write_text(json.dumps(actions))
+        result=self.resolve(); self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(self.state()['thread']['resolvedBy']['login'],'github-actions[bot]')
+        self.assertNotIn('deferred_complete=true',(self.root/'output').read_text())
+        result=self.complete(); self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('deferred_complete=true',(self.root/'output').read_text())
+        self.assertEqual([x['id'] for x in self.mutations()],['api-thread-id'])
+        self.assertTrue(all(x['token']=='fixture-resolver' for x in self.mutations()))
+        result=self.resolve(); self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(len(self.mutations()),1)
+
+    def test_addressed_and_already_resolved_any_actor(self):
+        for actor in (None,'yngwald','github-actions[bot]','other-human'):
+            with self.subTest(actor=actor):
+                self.prepare(addressed=True)
+                if actor:
+                    state=self.state(); state['thread'].update(isResolved=True,resolvedBy={'login':actor})
+                    (self.root/'state.json').write_text(json.dumps(state))
+                result=self.resolve(); self.assertEqual(result.returncode,0,result.stderr)
+                result=self.complete(); self.assertEqual(result.returncode,0,result.stderr)
+                self.assertEqual(len(self.mutations()),0 if actor else 1)
+                self.assertNotIn('WRITE_FAILED',self.state()['body'])
+
+    def test_resolver_reads_all_thread_pages(self):
+        self.prepare()
+        state=self.state(); state['paginated']=True
+        (self.root/'state.json').write_text(json.dumps(state))
+        result=self.resolve(); self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual([x['id'] for x in self.mutations()],['api-thread-id'])
+
+    def test_gap_issue_closed_or_reply_unreadable_has_zero_mutations(self):
+        for knob in ('CLOSE_ISSUE_AFTER_PREPARE','FAIL_REPLY_READ','CHANGE_HEAD_DURING_ISSUE'):
+            with self.subTest(knob=knob):
+                self.prepare()
+                result=self.resolve(**{knob:'1'})
+                self.assertNotEqual(result.returncode,0,result.stderr)
+                self.assertFalse(self.state()['thread']['isResolved'])
+                self.assertEqual(self.mutations(),[])
+                result=self.complete()
+                self.assertNotEqual(result.returncode,0,result.stderr)
+                self.assertTrue(any(x in self.state()['body'] for x in ('WRITE_FAILED','PENDING')))
+                self.assertNotIn('deferred_complete=true',(self.root/'output').read_text())
+
+    def test_denial_and_completion_readback_failure_remain_pending(self):
+        for knob in ('FAIL_RESOLVE','FAIL_RESOLVE_READBACK'):
+            with self.subTest(knob=knob):
+                self.prepare()
+                result=self.resolve(**{knob:'1'})
+                if knob=='FAIL_RESOLVE': self.assertNotEqual(result.returncode,0)
+                result=self.complete(**{knob:'1'})
+                self.assertNotEqual(result.returncode,0)
+                self.assertTrue(any(x in self.state()['body'] for x in ('WRITE_FAILED','PENDING')))
+                self.assertNotIn('deferred_complete=true',(self.root/'output').read_text())
+
+    def test_canonical_completion_readback_failure_never_claims_success(self):
+        self.prepare()
+        result=self.resolve(); self.assertEqual(result.returncode,0,result.stderr)
+        result=self.complete(FAIL_FINAL_READBACK='1')
+        self.assertNotEqual(result.returncode,0)
+        self.assertNotIn('deferred_complete=true',(self.root/'output').read_text())
+        result=self.complete(); self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('deferred_complete=true',(self.root/'output').read_text())
+        self.assertEqual(len(self.mutations()),1)
+
+    def test_untrusted_handoff_and_changed_metadata_never_mutate(self):
+        cases=('repository','pr_number','head_sha','origin_review_id','root_id','thread_id',
+               'root_author','origin_author','wrong_path','ambiguous','stale_head','wrong_pr_link','wrong_reply_root')
+        for case in cases:
+            with self.subTest(case=case):
+                self.prepare()
+                if case in self.request[0]:
+                    self.request[0][case]=999 if type(self.request[0][case]) is int else 'wrong'
+                elif case=='thread_id': self.request[0]['thread_id']='forged'
+                else:
+                    state=self.state()
+                    if case=='root_author': state['thread']['comments'][0]['author']['login']='intruder'
+                    elif case=='origin_author': state['origin']['user']['login']='intruder'
+                    elif case=='wrong_path': state['thread']['path']='wrong.py'
+                    elif case=='ambiguous': state['ambiguous']=True
+                    elif case=='stale_head': state['head']='c'*40
+                    elif case=='wrong_pr_link': state['wrong_pr_link']=True
+                    elif case=='wrong_reply_root': state['wrong_reply_root']=True
+                    (self.root/'state.json').write_text(json.dumps(state))
+                result=self.resolve()
+                self.assertNotEqual(result.returncode,0,result.stderr)
+                self.assertEqual(self.mutations(),[])
+
+    def test_actual_status_waits_for_completion_and_readback(self):
+        self.prepare()
+        extra={'GH_TOKEN':'fixture-status','POST_OUTCOME':'success','LEDGER_OUTCOME':'skipped',
+               'DEFERRED_COMPLETE':'','SIGNATURE':'Reviewed with: `/cr-request`','SUMMARY':'pending actions',
+               'STATE':'failure','VALIDATED_AT':'2026-10-30T00:00:00Z','JOB_STATUS':'success',
+               'CONTEXT':'Claude review','RUN_URL':'https://github.com/owner/repo/actions/runs/303',
+               'MARKER':'<!-- claude-review sha='+('a'*40)+' -->'}
+        result=self.run_step('Report review status',**extra)
+        self.assertNotEqual(result.returncode,0,result.stderr)
+        self.assertEqual(self.state()['status']['state'],'failure')
+        result=self.resolve(); self.assertEqual(result.returncode,0,result.stderr)
+        # Resolver success alone cannot turn the final status green.
+        result=self.run_step('Report review status',**extra)
+        self.assertNotEqual(result.returncode,0)
+        self.assertEqual(self.state()['status']['state'],'failure')
+        result=self.complete(); self.assertEqual(result.returncode,0,result.stderr)
+        extra.update(LEDGER_OUTCOME='success',DEFERRED_COMPLETE='true')
+        result=self.run_step('Report review status',**extra)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(self.state()['status']['state'],'success')
+        # A newer run's pending status is left untouched by the old completion.
+        result=self.run_step('Report review status',**{**extra,'STATUS_OWNER':'newer-run'})
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('Status owned by another run',result.stdout)
+        self.assertEqual(self.state()['status']['state'],'success')
+        # Cancelled completion never uses a preexisting resolved thread as a substitute.
+        extra.update(LEDGER_OUTCOME='cancelled',DEFERRED_COMPLETE='')
+        result=self.run_step('Report review status',**extra)
+        self.assertNotEqual(result.returncode,0)
+        self.assertEqual(self.state()['status']['state'],'failure')
+
+    def test_low_tokens_cannot_resolve_and_resolver_cannot_publish(self):
+        self.prepare()
+        mutation={'query':'mutation($id:ID!) { resolveReviewThread(input:{threadId:$id}) { thread { id } } }','variables':{'id':'api-thread-id'}}
+        for role,endpoint,method,payload in (
+            ('fixture-publisher','graphql','POST',mutation),
+            ('fixture-resolver','repos/owner/repo/issues','POST',{'body':'forbidden'}),
+            ('fixture-resolver','repos/owner/repo/pulls/42/comments/1001/replies','POST',{'body':'forbidden'}),
+            ('fixture-resolver','repos/owner/repo/pulls/42/reviews/202','PUT',{'body':'forbidden'})):
+            result=subprocess.run(['gh','api',endpoint,'--method',method,'--input','-'],
+                input=json.dumps(payload),env={**self.env,'GH_TOKEN':role},text=True,capture_output=True)
+            self.assertNotEqual(result.returncode,0)
+        self.assertFalse(self.state()['thread']['isResolved'])
+
 
 class FooterTest(unittest.TestCase):
     def test_footer_grammar_from_workflow(self):

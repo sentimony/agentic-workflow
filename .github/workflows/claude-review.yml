@@ -988,6 +988,16 @@ jobs:
 
   publish:
     name: Publish Claude review
+    outputs:
+      requests: ${{ steps.ledger.outputs.requests }}
+      review_id: ${{ steps.post.outputs.review_id }}
+      ready_to_post: ${{ steps.validate.outputs.ready_to_post }}
+      signature: ${{ steps.validate.outputs.signature }}
+      summary: ${{ steps.validate.outputs.summary }}
+      state: ${{ steps.validate.outputs.state }}
+      validated_at: ${{ steps.validate.outputs.validated_at }}
+      post_outcome: ${{ steps.post.outcome }}
+      ledger_outcome: ${{ steps.ledger.outcome }}
     needs: [gate, review]
     if: always() && needs.gate.outputs.review == 'true'
     runs-on: ubuntu-latest
@@ -1249,6 +1259,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.YNGWALD_PR_TOKEN }}
           REVIEW_ID: ${{ steps.post.outputs.review_id }}
+          PHASE: PREPARE
         run: |
           python3 - <<'PYCODE'
           import json, os, re, subprocess, sys
@@ -1365,6 +1376,8 @@ jobs:
               return True
 
 
+          phase=os.environ.get('PHASE','PREPARE')
+          requests=[]
           repo=os.environ['REPO']; number=int(os.environ['NUMBER']); sha=os.environ['HEAD_SHA']
           review_id=int(os.environ['REVIEW_ID']); run_id=int(os.environ['GITHUB_RUN_ID'])
           prefix=f'repos/{repo}'; reviewer=os.environ['REVIEWER']
@@ -1474,6 +1487,19 @@ jobs:
 
           try:
               path=Path(os.environ['ACTIONS_FILE'])
+              if phase=='COMPLETE':
+                  guard()
+                  posted=gh(endpoint)
+                  found=ledger_re.findall(posted.get('body',''))
+                  require(len(found)==1,'canonical ledger unavailable')
+                  canonical=loads(found[0])
+                  require(valid_envelope(canonical) and canonical['repository']==repo
+                      and canonical['pr_number']==number and canonical['head_sha']==sha
+                      and canonical['published_review_id']==review_id and canonical['run_id']==run_id,
+                      'canonical ledger identity mismatch')
+                  path.parent.mkdir(parents=True,exist_ok=True)
+                  path.write_text(encoded(canonical),encoding='utf-8')
+                  Path(os.environ['POST_FILE']).write_text(ledger_re.sub('',posted['body']),encoding='utf-8')
               if not path.is_file():
                   print('::warning::Legacy review has no structured ledger; actions remain pending')
                   sys.exit(0)
@@ -1541,6 +1567,7 @@ jobs:
                               issue=existing[0]
                               require((issue.get('user') or {}).get('login')==reviewer and positive(issue.get('number')), 'untrusted deferred issue')
                           else:
+                              require(phase=='PREPARE','prepared issue unavailable')
                               guard()
                               # Escape marker data separately; user text remains data in a JSON API payload.
                               body=('Deferred finding '+f['original_id']+' ('+f['severity']+')\n\n'
@@ -1567,6 +1594,7 @@ jobs:
                               reply=replies[0]
                               require((reply.get('author') or {}).get('login')==reviewer and positive(reply.get('databaseId')),'untrusted deferred reply')
                           else:
+                              require(phase=='PREPARE','prepared reply unavailable')
                               guard()
                               reply=gh(f'{prefix}/pulls/{number}/comments/{root["databaseId"]}/replies','POST',
                                        {'body':'Deferred to '+issue['html_url']+'\n\n'+marker})
@@ -1581,11 +1609,17 @@ jobs:
                           require(gh(f'{prefix}/issues/{issue["number"]}').get('state')=='open','deferred issue is closed')
                       thread,_=matching_thread(f,threads())
                       require(thread['id']==initial['id'],'source thread changed')
-                      if not thread['isResolved']:
-                          guard()
-                          mutation='mutation($id:ID!) { resolveReviewThread(input:{threadId:$id}) { thread { id isResolved } } }'
-                          result=query(mutation,id=thread['id'])['resolveReviewThread']['thread']
-                          require(result.get('id')==thread['id'] and result.get('isResolved') is True,'resolve response failed')
+                      if phase=='PREPARE':
+                          requests.append({'kind':'ACCEPTED_DEFER' if accepted else 'ADDRESSED',
+                              'repository':repo,'pr_number':number,'head_sha':sha,'review_id':review_id,
+                              'origin_review_id':f['origin_review_id'],'root_id':root['databaseId'],'path':f['path'],
+                              'issue_id':progress['issue']['number'],'reply_id':progress['reply']['comment_id']})
+                          require(len(requests)<=100,'too many resolve requests')
+                          handoff=encoded(requests)
+                          require(len(handoff.encode())<=60000,'resolve handoff too large')
+                          with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf-8') as out:
+                              out.write('requests='+handoff+'\n')
+                          continue
                       thread,_=matching_thread(f,threads())
                       require(thread['id']==initial['id'] and thread['isResolved'] is True,'resolve readback failed')
                       progress['resolve'].update(state='SUCCEEDED',thread_id=thread['id'])
@@ -1597,9 +1631,559 @@ jobs:
                       except (Stop, ValueError, KeyError, TypeError, OSError): pass
                       raise Stop(progress['error'])
               require(all(thread is not None for _,thread,_ in mapped), 'source thread missing or ambiguous; action pending')
-              if mapped and not d['findings'] and all(
-                  f['status']=='ADDRESSED' or (f['defer_decision']=='ACCEPTED'
-                  and all(p[name]['state']=='SUCCEEDED' for name in ('issue','reply','resolve')))
+              if phase=='COMPLETE' and mapped and not d['findings'] and all(
+                  p['resolve']['state']=='SUCCEEDED' and (f['status']=='ADDRESSED' or (f['defer_decision']=='ACCEPTED'
+                  and all(p[name]['state']=='SUCCEEDED' for name in ('issue','reply','resolve'))))
+                  for (f,_,_),p in zip(mapped,d['action_progress'])):
+                  post=Path(os.environ['POST_FILE'])
+                  body=post.read_text(encoding='utf-8')
+                  # Keep any independent readiness gap and any unassessed axis intact.
+                  assessed = re.search(r'^\| *Intent *\| *System *\| *Craft *\| *Critical *\| *Important *\| *Minor *\|\s*\n[^\n]*\n\| *(PASS|FINDINGS|UNASSESSED) *\| *(PASS|FINDINGS|UNASSESSED) *\| *(PASS|FINDINGS|UNASSESSED) *\|', body, re.M)
+                  if assessed and 'UNASSESSED' not in assessed.groups() and re.search(r'^\*\*Readiness:\*\* (?:ready with fixes|ready)$', body, re.M):
+                      body,n=re.subn(r'^\*\*Readiness:\*\* (?:ready with fixes|ready)$', '**Readiness:** ready', body, flags=re.M)
+                      require(n==1, 'readiness line unavailable')
+                      body,n=re.subn(r'^Next step: .*$', 'Next step: `/verify` -> `/finalize` squash', body, flags=re.M)
+                      require(n==1, 'next step unavailable')
+                      post.write_text(body,encoding='utf-8')
+                      persist(d)
+                      with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf-8') as out:
+                          out.write('deferred_complete=true\n')
+          except (Stop, ValueError, KeyError, TypeError, OSError) as error:
+              print('::error::review actions pending: '+str(error),file=sys.stderr)
+              sys.exit(1)
+          PYCODE
+
+  # Owner-accepted trade-off: a long-lived Contents-write PAT risks pushes to main;
+  # this isolated job token expires with the job, while retaining content-write power here.
+  resolve_threads:
+    name: Resolve verified review threads
+    needs: [gate, publish]
+    if: always() && needs.publish.outputs.requests != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      NUMBER: ${{ needs.gate.outputs.number }}
+      HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
+      REVIEW_ID: ${{ needs.publish.outputs.review_id }}
+      REQUESTS: ${{ needs.publish.outputs.requests }}
+    steps:
+      - name: Resolve verified thread metadata
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, re, subprocess, sys
+
+          def require(ok, message):
+              if not ok: raise ValueError(message)
+          def api(endpoint, payload=None):
+              args=['gh','api',endpoint,'--method','POST' if payload is not None else 'GET']
+              result=subprocess.run(args+(['--input','-'] if payload is not None else []),
+                  input=json.dumps(payload) if payload is not None else None,
+                  text=True,capture_output=True,check=True)
+              return json.loads(result.stdout)
+          def query(q, **variables):
+              result=api('graphql',{'query':q,'variables':variables})
+              require(not result.get('errors') and isinstance(result.get('data'),dict),'GraphQL metadata unavailable')
+              return result['data']
+          repo=os.environ['REPO']; number=int(os.environ['NUMBER']); sha=os.environ['HEAD_SHA']
+          review_id=int(os.environ['REVIEW_ID']); prefix='repos/'+repo
+          reviewer='yngwald'
+          def positive(v): return type(v) is int and v>0
+          def guard():
+              pr=api(f'{prefix}/pulls/{number}')
+              require(pr.get('number')==number and pr.get('head',{}).get('sha')==sha,'PR head changed')
+              current=api(f'{prefix}/pulls/{number}/reviews/{review_id}')
+              require(current.get('id')==review_id and current.get('user',{}).get('login')==reviewer
+                  and current.get('commit_id')==sha,'current review mismatch')
+          def candidates(request):
+              # Read only API metadata. No model body, markdown, artifact, or supplied thread ID.
+              fields='databaseId author { login } pullRequestReview { databaseId }'
+              tq='query($owner:String!,$repo:String!,$number:Int!,$cursor:String) { repository(owner:$owner,name:$repo) { pullRequest(number:$number) { reviewThreads(first:100,after:$cursor) { nodes { id path isResolved comments(first:100) { nodes { '+fields+' } pageInfo { hasNextPage endCursor } } } pageInfo { hasNextPage endCursor } } } } }'
+              cq='query($id:ID!,$cursor:String) { node(id:$id) { ... on PullRequestReviewThread { comments(first:100,after:$cursor) { nodes { '+fields+' } pageInfo { hasNextPage endCursor } } } } }'
+              def advance(page, seen):
+                  info=page['pageInfo']
+                  if not info['hasNextPage']: return None
+                  cursor=info['endCursor']
+                  require(isinstance(cursor,str) and cursor and cursor not in seen,'invalid metadata pagination')
+                  seen.add(cursor); return cursor
+              owner,name=repo.split('/'); cursor=None; seen=set(); matches=[]
+              while True:
+                  page=query(tq,owner=owner,repo=name,number=number,cursor=cursor)['repository']['pullRequest']['reviewThreads']
+                  for thread in page['nodes']:
+                      comments=thread['comments']; rows=list(comments['nodes']); cseen=set()
+                      while (cc:=advance(comments,cseen)) is not None:
+                          comments=query(cq,id=thread['id'],cursor=cc)['node']['comments']; rows.extend(comments['nodes'])
+                      if not rows or rows[0].get('databaseId')!=request['root_id']: continue
+                      root=rows[0]
+                      require(thread.get('path')==request['path'] and root.get('author',{}).get('login')==reviewer
+                          and (root.get('pullRequestReview') or {}).get('databaseId')==request['origin_review_id'], 'source root mismatch')
+                      matches.append(thread)
+                  cursor=advance(page,seen)
+                  if cursor is None: break
+              require(len(matches)==1,'missing or ambiguous source root')
+              return matches[0]
+          def source(request):
+              old=api(f'{prefix}/pulls/{number}/reviews/{request["origin_review_id"]}')
+              require(old.get('id')==request['origin_review_id'] and old.get('user',{}).get('login')==reviewer,'origin review mismatch')
+              root=api(f'{prefix}/pulls/comments/{request["root_id"]}')
+              require(root.get('id')==request['root_id'] and root.get('user',{}).get('login')==reviewer
+                  and root.get('pull_request_review_id')==request['origin_review_id'] and root.get('path')==request['path']
+                  and root.get('pull_request_url')==f'https://api.github.com/repos/{repo}/pulls/{number}'
+                  and root.get('original_commit_id')==old.get('commit_id')
+                  and isinstance(old.get('commit_id'),str) and re.fullmatch('[0-9a-f]{40}',old['commit_id']), 'source comment metadata mismatch')
+          def deferred(request):
+              if request['kind']!='ACCEPTED_DEFER': return
+              issue=api(f'{prefix}/issues/{request["issue_id"]}')
+              require(issue.get('number')==request['issue_id'] and issue.get('state')=='open'
+                  and 'pull_request' not in issue and issue.get('user',{}).get('login')==reviewer
+                  and issue.get('html_url')==f'https://github.com/{repo}/issues/{request["issue_id"]}', 'prepared issue unavailable or closed')
+              reply=api(f'{prefix}/pulls/comments/{request["reply_id"]}')
+              require(reply.get('id')==request['reply_id'] and reply.get('user',{}).get('login')==reviewer
+                  and reply.get('in_reply_to_id')==request['root_id']
+                  and reply.get('pull_request_url')==f'https://api.github.com/repos/{repo}/pulls/{number}', 'prepared reply unavailable')
+          try:
+              raw=os.environ['REQUESTS']
+              require(len(raw.encode())<=60000,'handoff too large')
+              requests=json.loads(raw)
+              require(isinstance(requests,list) and len(requests)<=100,'invalid handoff')
+              fields={'kind','repository','pr_number','head_sha','review_id','origin_review_id','root_id','path','issue_id','reply_id'}
+              roots=set()
+              # Validate the entire batch before any mutation.
+              for request in requests:
+                  require(isinstance(request,dict) and set(request)==fields,'invalid request fields')
+                  require(request['repository']==repo and type(request['pr_number']) is int and request['pr_number']==number
+                      and request['head_sha']==sha and type(request['review_id']) is int and request['review_id']==review_id
+                      and positive(request['origin_review_id']) and positive(request['root_id'])
+                      and isinstance(request['path'],str) and request['path']
+                      and request['kind'] in ('ADDRESSED','ACCEPTED_DEFER'), 'request identity mismatch')
+                  require(request['root_id'] not in roots,'duplicate source root'); roots.add(request['root_id'])
+                  require((positive(request['issue_id']) and positive(request['reply_id'])) if request['kind']=='ACCEPTED_DEFER'
+                      else request['issue_id'] is None and request['reply_id'] is None,'invalid prepared evidence IDs')
+              failed=False
+              for request in requests:
+                  try:
+                      guard(); source(request); thread=candidates(request)
+                      # Reread open issue and root-bound reply immediately before any mutation.
+                      source(request); deferred(request); guard()
+                      if not thread['isResolved']:
+                          q='mutation($id:ID!) { resolveReviewThread(input:{threadId:$id}) { thread { id isResolved } } }'
+                          result=query(q,id=thread['id'])['resolveReviewThread']['thread']
+                          require(result.get('id')==thread['id'] and result.get('isResolved') is True,'resolve response failed')
+                      actual=candidates(request)
+                      require(actual['id']==thread['id'] and actual['isResolved'] is True,'resolve readback failed')
+                  except (ValueError,KeyError,TypeError,subprocess.SubprocessError):
+                      failed=True
+                      print('::error::Verified thread resolve remains pending',file=sys.stderr)
+              require(not failed,'one or more resolves failed')
+          except (ValueError,KeyError,TypeError,subprocess.SubprocessError):
+              sys.exit(1)
+          PYCODE
+
+  complete:
+    name: Complete Claude review actions
+    needs: [gate, publish, resolve_threads]
+    if: always() && needs.gate.outputs.review == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+      statuses: write
+    env:
+      REPO: ${{ github.repository }}
+      REVIEWER: yngwald
+      NUMBER: ${{ needs.gate.outputs.number }}
+      HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
+      MARKER: '<!-- claude-review sha=${{ needs.gate.outputs.head_sha }} -->'
+      CONTEXT: Claude review
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      ACTIONS_FILE: completion-actions.json
+      POST_FILE: completion-post.md
+    steps:
+      - name: Complete review actions
+        id: ledger
+        if: always() && needs.publish.outputs.review_id != ''
+        env:
+          GH_TOKEN: ${{ secrets.YNGWALD_PR_TOKEN }}
+          REVIEW_ID: ${{ needs.publish.outputs.review_id }}
+          PHASE: COMPLETE
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, re, subprocess, sys
+          from datetime import datetime
+          from pathlib import Path
+
+          class Stop(Exception): pass
+
+          def unique(pairs):
+              out = {}
+              for key, value in pairs:
+                  if key in out: raise Stop('duplicate JSON key')
+                  out[key] = value
+              return out
+
+          def loads(s): return json.loads(s, object_pairs_hook=unique)
+          def encoded(v):
+              return json.dumps(v, ensure_ascii=True, separators=(',', ':')).replace('<', r'\u003c').replace('>', r'\u003e')
+          def gh(endpoint, method='GET', payload=None):
+              args = ['gh', 'api', endpoint, '--method', method]
+              p = subprocess.run(args + (['--input', '-'] if payload is not None else []),
+                                 input=json.dumps(payload) if payload is not None else None,
+                                 text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+              if p.returncode: raise Stop('GitHub API request failed')
+              try: return loads(p.stdout)
+              except (ValueError, TypeError): raise Stop('invalid GitHub API response')
+          def pages(endpoint):
+              output=[]; page=1
+              while True:
+                  rows=gh(endpoint + ('&' if '?' in endpoint else '?') + f'per_page=100&page={page}')
+                  if not isinstance(rows,list): raise Stop('invalid paginated response')
+                  output.extend(rows)
+                  if len(rows)<100: return output
+                  page+=1
+
+          def positive(v): return type(v) is int and v>0
+          def text(v): return isinstance(v,str) and bool(v.strip())
+          def require(condition, error):
+              if not condition: raise Stop(error)
+
+          def valid_path(path):
+              return (isinstance(path, str) and bool(path) and '\\' not in path and not path.startswith('/')
+                      and all(x not in ('', '.', '..', '.git', '.cross-review') for x in path.split('/')))
+
+          def is_positive(value):
+              return type(value) is int and value > 0
+
+
+          def nonempty(value):
+              return isinstance(value, str) and bool(value.strip())
+
+
+          def finding_identity(item):
+              return (is_positive(item.get('origin_review_id'))
+                      and isinstance(item.get('original_id'), str)
+                      and re.fullmatch(r'R[1-9][0-9]*-(?:[A-Za-z0-9_-]+-)?F[1-9][0-9]*', item['original_id'])
+                      and valid_path(item.get('path')))
+
+
+          def valid_envelope(v):
+              fields = {'schema_version', 'repository', 'pr_number', 'head_sha', 'review_source_id',
+                        'findings', 'previous_findings', 'envelope_version', 'published_review_id',
+                        'run_id', 'duration_seconds', 'action_progress', 'disposition_events'}
+              if not isinstance(v, dict) or set(v) != fields: return False
+              if (type(v['schema_version']) is not int or v['schema_version'] != 1
+                  or type(v['envelope_version']) is not int or v['envelope_version'] != 1
+                  or not isinstance(v['repository'], str) or not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', v['repository'])
+                  or not is_positive(v['pr_number']) or not isinstance(v['head_sha'], str)
+                  or not re.fullmatch(r'[0-9a-f]{40}', v['head_sha'])
+                  or not is_positive(v['published_review_id']) or not is_positive(v['review_source_id'])
+                  or v['published_review_id'] != v['review_source_id'] or not is_positive(v['run_id'])
+                  or not (v['duration_seconds'] is None or type(v['duration_seconds']) is int and v['duration_seconds'] >= 0)
+                  or any(not isinstance(v[k], list) for k in ('findings', 'previous_findings', 'action_progress', 'disposition_events'))): return False
+              base = {'origin_review_id', 'original_id', 'path', 'severity'}
+              previous = base | {'status', 'defer_decision', 'reason', 'owner'}
+              seen = {}
+              for current, item in [(True, x) for x in v['findings']] + [(False, x) for x in v['previous_findings']]:
+                  if not isinstance(item, dict): return False
+                  if set(item) != (base if current else previous) or not finding_identity(item) or item['severity'] not in ('Critical', 'Important', 'Minor'): return False
+                  if current and item['origin_review_id'] != v['published_review_id']: return False
+                  if not current:
+                      status, defer, owner = item['status'], item['defer_decision'], item['owner']
+                      if (status not in ('ADDRESSED', 'NOT_ADDRESSED') or defer not in ('NONE', 'PROPOSED', 'ACCEPTED', 'DECLINED')
+                          or not nonempty(item['reason']) or not (owner is None or nonempty(owner))
+                          or defer in ('PROPOSED', 'ACCEPTED') and owner is None
+                          or defer == 'ACCEPTED' and (status != 'NOT_ADDRESSED' or item['severity'] == 'Critical')
+                          or status == 'ADDRESSED' and defer != 'NONE'): return False
+                  key = (item['origin_review_id'], item['original_id'])
+                  if key in seen: return False
+                  seen[key] = item['path']
+              def known(item):
+                  return finding_identity(item) and seen.get((item['origin_review_id'], item['original_id'])) == item['path']
+              states = ('NOT_REQUESTED', 'PENDING', 'SUCCEEDED', 'WRITE_FAILED')
+              for item in v['action_progress']:
+                  if (not isinstance(item, dict) or set(item) != {'origin_review_id', 'original_id', 'path', 'issue', 'reply', 'resolve', 'error'}
+                      or not known(item) or not (item['error'] is None or nonempty(item['error']))): return False
+                  for name, keys, ident in (('issue', {'state', 'number', 'url'}, 'number'), ('reply', {'state', 'comment_id'}, 'comment_id'), ('resolve', {'state', 'thread_id'}, 'thread_id')):
+                      action = item[name]
+                      if not isinstance(action, dict) or set(action) != keys or action['state'] not in states: return False
+                      value = action[ident]
+                      if not (value is None or (nonempty(value) if name == 'resolve' else is_positive(value))): return False
+                      if action['state'] == 'SUCCEEDED' and value is None: return False
+                      if name == 'issue' and (not (action['url'] is None or nonempty(action['url'])) or action['state'] == 'SUCCEEDED' and action['url'] is None): return False
+              for item in v['disposition_events']:
+                  if (not isinstance(item, dict) or set(item) != {'origin_review_id', 'original_id', 'path', 'disposition', 'reason', 'source_comment_id', 'source_author', 'source_updated_at'}
+                      or not known(item) or item['disposition'] not in ('ACCEPT', 'REJECT', 'PARTIAL', 'DEFER', 'ESCALATE', 'OUTDATED')
+                      or not nonempty(item['reason']) or not is_positive(item['source_comment_id'])
+                      or not nonempty(item['source_author']) or not isinstance(item['source_updated_at'], str)
+                      or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z', item['source_updated_at'])): return False
+                  try:
+                      from datetime import datetime
+                      datetime.fromisoformat(item['source_updated_at'].replace('Z', '+00:00'))
+                  except ValueError: return False
+              return True
+
+
+          phase=os.environ.get('PHASE','PREPARE')
+          requests=[]
+          repo=os.environ['REPO']; number=int(os.environ['NUMBER']); sha=os.environ['HEAD_SHA']
+          review_id=int(os.environ['REVIEW_ID']); run_id=int(os.environ['GITHUB_RUN_ID'])
+          prefix=f'repos/{repo}'; reviewer=os.environ['REVIEWER']
+          endpoint=f'{prefix}/pulls/{number}/reviews/{review_id}'
+          ledger_re=re.compile(r'<!--\s*claude-review-ledger:v1\s+(\{.*?\})\s*-->',re.S)
+          disposition_re=re.compile(r'<!--\s*cr-received-disposition:v1\s+(\{.*?\})\s*-->',re.S)
+
+          # Every mutation is preceded by an authenticated identity and current-head check.
+          def guard():
+              require(gh('user').get('login')==reviewer,'reviewer token owner mismatch')
+              pr=gh(f'{prefix}/pulls/{number}')
+              require(pr.get('number')==number and pr.get('head',{}).get('sha')==sha, 'PR head changed')
+              current=gh(endpoint)
+              require(current.get('id')==review_id and (current.get('user') or {}).get('login')==reviewer
+                  and current.get('commit_id')==sha, 'published review identity changed')
+
+          def review_source(f):
+              old=gh(f'{prefix}/pulls/{number}/reviews/{f["origin_review_id"]}')
+              require(old.get('id')==f['origin_review_id'] and old.get('user',{}).get('login')==reviewer, 'origin author mismatch')
+              found=ledger_re.findall(old.get('body',''))
+              require(len(found)==1,'origin ledger unavailable')
+              data=loads(found[0])
+              require(valid_envelope(data) and type(data.get('schema_version')) is int and data['schema_version']==1
+                  and type(data.get('envelope_version')) is int and data['envelope_version']==1
+                  and data.get('repository')==repo and type(data.get('pr_number')) is int and data['pr_number']==number
+                  and data.get('published_review_id')==f['origin_review_id'] and data.get('review_source_id')==f['origin_review_id']
+                  and data.get('head_sha')==old.get('commit_id') and isinstance(data.get('findings'),list),'origin ledger mismatch')
+              matches=[x for x in data['findings'] if isinstance(x,dict) and all(x.get(k)==f[k] for k in ('origin_review_id','original_id','path','severity'))]
+              require(len(matches)==1,'origin finding mismatch')
+
+          def query(q, **variables):
+              result=gh('graphql','POST',{'query':q,'variables':variables})
+              require(not result.get('errors') and isinstance(result.get('data'),dict),'GraphQL response failed')
+              return result['data']
+
+          def threads():
+              fields='databaseId author { login } authorAssociation body createdAt updatedAt pullRequestReview { databaseId }'
+              tq='query($owner:String!, $repo:String!, $number:Int!, $cursor:String) { repository(owner:$owner,name:$repo) { pullRequest(number:$number) { reviewThreads(first:100,after:$cursor) { nodes { id path isResolved comments(first:100) { nodes { '+fields+' } pageInfo { hasNextPage endCursor } } } pageInfo { hasNextPage endCursor } } } } }'
+              cq='query($id:ID!, $cursor:String) { node(id:$id) { ... on PullRequestReviewThread { comments(first:100,after:$cursor) { nodes { '+fields+' } pageInfo { hasNextPage endCursor } } } } }'
+              owner,name=repo.split('/',1); cursor=None; seen=set(); result=[]
+              def advance(page, seen):
+                  info=page['pageInfo']
+                  if not info['hasNextPage']: return None
+                  c=info['endCursor']; require(text(c) and c not in seen,'invalid pagination'); seen.add(c); return c
+              while True:
+                  page=query(tq,owner=owner,repo=name,number=number,cursor=cursor)['repository']['pullRequest']['reviewThreads']
+                  for thread in page['nodes']:
+                      cs=thread['comments']; rows=list(cs['nodes']); cseen=set()
+                      while (cc:=advance(cs,cseen)) is not None:
+                          cs=query(cq,id=thread['id'],cursor=cc)['node']['comments']; rows.extend(cs['nodes'])
+                      thread['comments']=rows; result.append(thread)
+                  cursor=advance(page,seen)
+                  if cursor is None: return result
+
+          def matching_thread(f, all_threads):
+              result=[]
+              # Only the inline heading identifies the finding; IDs cited in prose are context.
+              pattern=r'^\*\*'+re.escape(f['severity'])+r'\*\* '+re.escape(f['original_id'])+r'(?:\s|$)'
+              for t in all_threads:
+                  cs=t.get('comments',[])
+                  if t.get('path') != f['path'] or not cs: continue
+                  root=cs[0]
+                  if (root.get('author') or {}).get('login')==reviewer and (root.get('pullRequestReview') or {}).get('databaseId')==f['origin_review_id'] and re.search(pattern,root.get('body','')):
+                      result.append((t,root))
+              require(len(result)==1, 'source thread is missing or ambiguous')
+              return result[0]
+
+          def markers(thread, f):
+              events=[]
+              fields={'schema_version','repository','pr_number','head_sha','origin_review_id','original_id','path','disposition','reason','owner'}
+              for c in thread['comments'][1:]:
+                  body=c.get('body','')
+                  if 'cr-received-disposition:v1' not in body: continue
+                  raw=disposition_re.findall(body)
+                  require(len(raw)==1,'malformed disposition marker')
+                  v=loads(raw[0])
+                  require(isinstance(v,dict) and set(v)==fields and type(v['schema_version']) is int and v['schema_version']==1
+                      and v['repository']==repo and type(v['pr_number']) is int and v['pr_number']==number
+                      and type(v['origin_review_id']) is int and v['origin_review_id']==f['origin_review_id']
+                      and v['original_id']==f['original_id'] and v['path']==f['path']
+                      and isinstance(v['head_sha'],str) and re.fullmatch('[0-9a-f]{40}',v['head_sha'])
+                      and v['disposition'] in ('ACCEPT','REJECT','PARTIAL','DEFER','ESCALATE','OUTDATED')
+                      and text(v['reason']) and (v['owner'] is None or text(v['owner']))
+                      and (v['disposition']!='DEFER' or text(v['owner'])),'invalid disposition marker')
+                  author=(c.get('author') or {}).get('login')
+                  require(text(author) and re.fullmatch('[A-Za-z0-9-]+',author),'invalid disposition author')
+                  permission=gh(f'{prefix}/collaborators/{author}/permission').get('permission')
+                  require(permission in ('admin','maintain','write') and c.get('authorAssociation') in ('OWNER','MEMBER','COLLABORATOR'), 'untrusted disposition author')
+                  require(positive(c.get('databaseId')) and text(c.get('updatedAt')),'invalid disposition metadata')
+                  datetime.fromisoformat(c['updatedAt'].replace('Z','+00:00'))
+                  events.append((v,c))
+              require(len(events)<=1,'marker_conflict')
+              return events
+
+          def persist(envelope):
+              marker='<!-- claude-review-ledger:v1 '+encoded(envelope)+' -->'
+              # Keep the marker before the existing footer, outside the single details block.
+              lines=Path(os.environ['POST_FILE']).read_text(encoding='utf-8').splitlines()
+              idx=next((i for i in range(len(lines)-1,-1,-1) if lines[i].startswith('Reviewed with: `/cr-request` ')),None)
+              require(idx is not None,'review footer unavailable')
+              body='\n'.join(lines[:idx]+[marker]+lines[idx:])+'\n'
+              require(len(body.encode())<=65536,'ledger exceeds review body limit')
+              guard(); gh(endpoint,'PUT',{'body':body})
+              posted=gh(endpoint)
+              require(posted.get('id')==review_id and posted.get('user',{}).get('login')==reviewer
+                  and posted.get('commit_id')==sha and posted.get('body')==body,'ledger readback failed')
+
+          try:
+              path=Path(os.environ['ACTIONS_FILE'])
+              if phase=='COMPLETE':
+                  guard()
+                  posted=gh(endpoint)
+                  found=ledger_re.findall(posted.get('body',''))
+                  require(len(found)==1,'canonical ledger unavailable')
+                  canonical=loads(found[0])
+                  require(valid_envelope(canonical) and canonical['repository']==repo
+                      and canonical['pr_number']==number and canonical['head_sha']==sha
+                      and canonical['published_review_id']==review_id and canonical['run_id']==run_id,
+                      'canonical ledger identity mismatch')
+                  path.parent.mkdir(parents=True,exist_ok=True)
+                  path.write_text(encoded(canonical),encoding='utf-8')
+                  Path(os.environ['POST_FILE']).write_text(ledger_re.sub('',posted['body']),encoding='utf-8')
+              if not path.is_file():
+                  print('::warning::Legacy review has no structured ledger; actions remain pending')
+                  sys.exit(0)
+              d=loads(path.read_text(encoding='utf-8'))
+              # Shape/identity already checked by the preceding validation step; no code from the PR is executed here.
+              guard()
+              all_threads=threads() if d['previous_findings'] else []
+              mapped=[]; events=[]; used_roots=set()
+              for f in d['previous_findings']:
+                  review_source(f)
+                  try:
+                      thread,root=matching_thread(f,all_threads)
+                  except Stop as error:
+                      if str(error) != 'source thread is missing or ambiguous': raise
+                      mapped.append((f,None,None))
+                      continue
+                  require(root['databaseId'] not in used_roots, 'source root maps to multiple findings')
+                  used_roots.add(root['databaseId'])
+                  source_events=markers(thread,f)
+                  if f['defer_decision'] in ('PROPOSED','ACCEPTED','DECLINED'):
+                      require(len(source_events)==1 and source_events[0][0]['disposition']=='DEFER'
+                          and source_events[0][0]['head_sha']==sha
+                          and (f['owner'] is None or source_events[0][0]['owner']==f['owner']),
+                          'defer decision lacks confirmed current proposal')
+                  for v,c in source_events:
+                      if v['head_sha']!=sha: continue
+                      events.append({'origin_review_id':f['origin_review_id'],'original_id':f['original_id'],'path':f['path'],
+                          'disposition':v['disposition'],'reason':v['reason'],'source_comment_id':c['databaseId'],
+                          'source_author':c['author']['login'],'source_updated_at':c['updatedAt']})
+                  mapped.append((f,thread,root))
+              d['review_source_id']=review_id
+              for f in d['findings']: f['origin_review_id']=review_id
+              signature=Path(os.environ['POST_FILE']).read_text(encoding='utf-8')
+              m=re.search(r'^Reviewed with: `/cr-request` .* skill · In ([0-9]+) min ([0-9]+) sec$',signature,re.M)
+              duration=int(m[1])*60+int(m[2]) if m else None
+              d.update(envelope_version=1,published_review_id=review_id,run_id=run_id,duration_seconds=duration,
+                       action_progress=[],disposition_events=events)
+              for f,thread,root in mapped:
+                  accepted=f['defer_decision']=='ACCEPTED'
+                  resolve=accepted or f['status']=='ADDRESSED'
+                  d['action_progress'].append({
+                      'origin_review_id':f['origin_review_id'],'original_id':f['original_id'],'path':f['path'],
+                      'issue':{'state':'PENDING' if accepted else 'NOT_REQUESTED','number':None,'url':None},
+                      'reply':{'state':'PENDING' if accepted else 'NOT_REQUESTED','comment_id':None},
+                      'resolve':{'state':'PENDING' if resolve else 'NOT_REQUESTED','thread_id':thread['id'] if resolve and thread else None},
+                      'error':'Source thread missing or ambiguous; action pending' if thread is None else None})
+              # The first PUT and readback are a capability check on this exact review.
+              persist(d)
+              for (f,initial,root), progress in zip(mapped,d['action_progress']):
+                  accepted=f['defer_decision']=='ACCEPTED'
+                  if initial is None or (not accepted and f['status']!='ADDRESSED'): continue
+                  key={k:f[k] for k in ('origin_review_id','original_id','path')}
+                  marker_data={'repository':repo,'pr_number':number,**key}
+                  marker='<!-- claude-review-deferred:v1 '+encoded(marker_data)+' -->'
+                  operation='resolve'
+                  try:
+                      if accepted:
+                          operation='issue'
+                          existing=[x for x in pages(f'{prefix}/issues?state=all') if 'pull_request' not in x and marker in (x.get('body') or '')]
+                          require(len(existing)<=1,'ambiguous deferred issues')
+                          if initial['isResolved']:
+                              completed_replies=[c for c in initial['comments'][1:] if marker in c.get('body','') and (c.get('author') or {}).get('login')==reviewer]
+                              require(len(existing)==1 and len(completed_replies)==1, 'resolved thread has no completed defer evidence')
+                          if existing:
+                              issue=existing[0]
+                              require((issue.get('user') or {}).get('login')==reviewer and positive(issue.get('number')), 'untrusted deferred issue')
+                          else:
+                              require(phase=='PREPARE','prepared issue unavailable')
+                              guard()
+                              # Escape marker data separately; user text remains data in a JSON API payload.
+                              body=('Deferred finding '+f['original_id']+' ('+f['severity']+')\n\n'
+                                    +'Source: https://github.com/'+repo+'/pull/'+str(number)+'#discussion_r'+str(root['databaseId'])+'\n\n'
+                                    +'Owner: '+f['owner'].replace('<','&lt;').replace('>','&gt;')+'\n\nReason: '+f['reason'].replace('<','&lt;').replace('>','&gt;')+'\n\n'+marker)
+                              issue=gh(f'{prefix}/issues','POST',{'title':'Deferred review finding '+f['original_id'],'body':body})
+                          require(positive(issue.get('number')),'issue response missing number')
+                          issue=gh(f'{prefix}/issues/{issue["number"]}')
+                          require(issue.get('state')=='open' and (issue.get('user') or {}).get('login')==reviewer and (issue.get('body') or '').count(marker)==1
+                              and positive(issue.get('number')) and issue.get('html_url')==f'https://github.com/{repo}/issues/{issue["number"]}'
+                          and f['original_id'] in issue.get('body','') and f['severity'] in issue.get('body','')
+                          and ('#discussion_r'+str(root['databaseId'])) in issue.get('body','')
+                          and f['owner'].replace('<','&lt;').replace('>','&gt;') in issue.get('body','')
+                          and f['reason'].replace('<','&lt;').replace('>','&gt;') in issue.get('body',''), 'issue readback failed')
+                          progress['issue'].update(state='SUCCEEDED',number=issue['number'],url=issue['html_url'])
+                          persist(d)
+                          operation='reply'
+                          require(gh(f'{prefix}/issues/{issue["number"]}').get('state')=='open','deferred issue is closed')
+                          thread,_=matching_thread(f,threads())
+                          require(thread['id']==initial['id'],'source thread changed')
+                          replies=[c for c in thread['comments'][1:] if marker in c.get('body','')]
+                          require(len(replies)<=1,'ambiguous deferred replies')
+                          if replies:
+                              reply=replies[0]
+                              require((reply.get('author') or {}).get('login')==reviewer and positive(reply.get('databaseId')),'untrusted deferred reply')
+                          else:
+                              require(phase=='PREPARE','prepared reply unavailable')
+                              guard()
+                              reply=gh(f'{prefix}/pulls/{number}/comments/{root["databaseId"]}/replies','POST',
+                                       {'body':'Deferred to '+issue['html_url']+'\n\n'+marker})
+                              require(positive(reply.get('id')),'reply response missing ID')
+                          thread,_=matching_thread(f,threads())
+                          replies=[c for c in thread['comments'][1:] if marker in c.get('body','') and issue['html_url'] in c.get('body','') and (c.get('author') or {}).get('login')==reviewer]
+                          require(len(replies)==1 and positive(replies[0].get('databaseId')) and replies[0].get('body','').count(marker)==1,'reply readback failed')
+                          progress['reply'].update(state='SUCCEEDED',comment_id=replies[0]['databaseId'])
+                          persist(d)
+                      operation='resolve'
+                      if accepted:
+                          require(gh(f'{prefix}/issues/{issue["number"]}').get('state')=='open','deferred issue is closed')
+                      thread,_=matching_thread(f,threads())
+                      require(thread['id']==initial['id'],'source thread changed')
+                      if phase=='PREPARE':
+                          requests.append({'kind':'ACCEPTED_DEFER' if accepted else 'ADDRESSED',
+                              'repository':repo,'pr_number':number,'head_sha':sha,'review_id':review_id,
+                              'origin_review_id':f['origin_review_id'],'root_id':root['databaseId'],'path':f['path'],
+                              'issue_id':progress['issue']['number'],'reply_id':progress['reply']['comment_id']})
+                          require(len(requests)<=100,'too many resolve requests')
+                          handoff=encoded(requests)
+                          require(len(handoff.encode())<=60000,'resolve handoff too large')
+                          with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf-8') as out:
+                              out.write('requests='+handoff+'\n')
+                          continue
+                      thread,_=matching_thread(f,threads())
+                      require(thread['id']==initial['id'] and thread['isResolved'] is True,'resolve readback failed')
+                      progress['resolve'].update(state='SUCCEEDED',thread_id=thread['id'])
+                      persist(d)
+                  except (Stop, ValueError, KeyError, TypeError, OSError) as error:
+                      progress[operation]['state']='WRITE_FAILED'
+                      progress['error']=operation+' failed: '+str(error)
+                      try: persist(d)
+                      except (Stop, ValueError, KeyError, TypeError, OSError): pass
+                      raise Stop(progress['error'])
+              require(all(thread is not None for _,thread,_ in mapped), 'source thread missing or ambiguous; action pending')
+              if phase=='COMPLETE' and mapped and not d['findings'] and all(
+                  p['resolve']['state']=='SUCCEEDED' and (f['status']=='ADDRESSED' or (f['defer_decision']=='ACCEPTED'
+                  and all(p[name]['state']=='SUCCEEDED' for name in ('issue','reply','resolve'))))
                   for (f,_,_),p in zip(mapped,d['action_progress'])):
                   post=Path(os.environ['POST_FILE'])
                   body=post.read_text(encoding='utf-8')
@@ -1620,17 +2204,17 @@ jobs:
           PYCODE
 
       - name: Report review status
-        if: always() && steps.validate.outputs.ready_to_post == 'true'
+        if: always() && needs.publish.outputs.ready_to_post == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          POST_OUTCOME: ${{ steps.post.outcome }}
+          POST_OUTCOME: ${{ needs.publish.outputs.post_outcome }}
           LEDGER_OUTCOME: ${{ steps.ledger.outcome }}
           DEFERRED_COMPLETE: ${{ steps.ledger.outputs.deferred_complete }}
-          REVIEW_ID: ${{ steps.post.outputs.review_id }}
-          SIGNATURE: ${{ steps.validate.outputs.signature }}
-          SUMMARY: ${{ steps.validate.outputs.summary }}
-          STATE: ${{ steps.validate.outputs.state }}
-          VALIDATED_AT: ${{ steps.validate.outputs.validated_at }}
+          REVIEW_ID: ${{ needs.publish.outputs.review_id }}
+          SIGNATURE: ${{ needs.publish.outputs.signature }}
+          SUMMARY: ${{ needs.publish.outputs.summary }}
+          STATE: ${{ needs.publish.outputs.state }}
+          VALIDATED_AT: ${{ needs.publish.outputs.validated_at }}
           JOB_STATUS: ${{ job.status }}
         run: |
           post_status() {
@@ -1662,7 +2246,7 @@ jobs:
             post_status failure "Posting the review failed"
             exit 1
           fi
-          if [ "$LEDGER_OUTCOME" = failure ]; then
+          if [ "$LEDGER_OUTCOME" != success ]; then
             post_status failure "Review actions remain pending"
             exit 1
           fi

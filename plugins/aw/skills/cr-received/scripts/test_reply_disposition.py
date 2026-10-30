@@ -27,7 +27,7 @@ elif '/collaborators/' in endpoint: result = {'permission': 'write'} if 'forged'
 elif endpoint.endswith('/pulls/42'):
     count = state.get('head_reads', 0) + 1; state['head_reads'] = count; (p/'state.json').write_text(json.dumps(state))
     result = {'number': state.get('pr',42), 'head': {'sha': ('b'*40 if state.get('head_changes') and count > 1 else state.get('head', 'a'*40))}}
-elif endpoint.endswith('/pulls/comments/11'): result = {'id': state.get('root_id',11), 'pull_request_review_id': state.get('root_review_id',101), 'pull_request_url': state.get('root_url','https://api.github.com/repos/owner/repo/pulls/42'), 'path':state.get('root_path','src/a.py'), 'body':state.get('root_body','R1-F1: finding'), 'user': {'login': state.get('author','yngwald')}}
+elif endpoint.endswith('/pulls/comments/11'): result = {'id': state.get('root_id',11), 'pull_request_review_id': state.get('root_review_id',101), 'pull_request_url': state.get('root_url','https://api.github.com/repos/owner/repo/pulls/42'), 'path':state.get('root_path','src/a.py'), 'body':state.get('root_body','**Minor** R1-F1\\nFinding evidence.'), 'user': {'login': state.get('author','yngwald')}}
 elif endpoint.endswith('/pulls/42/reviews/101'): result = {'id':101,'user':{'login':'yngwald'},'commit_id':'a'*40,'body':state['ledger']}
 elif '/pulls/42/comments?' in endpoint:
     page = int(endpoint.rsplit('page=', 1)[1]); result = state['replies'] if page == 2 else ([{'id': i+1000,'body':'ordinary','user':{'login':'other'}} for i in range(100)] if state.get('paginate') and page == 1 else [])
@@ -102,6 +102,15 @@ class ReplyTests(unittest.TestCase):
                 (self.p/'trace.jsonl').unlink(missing_ok=True)
                 ledger = json.loads(json.dumps(self.ledger)); mutate(ledger)
                 self.state['ledger'] = '<!-- claude-review-ledger:v1 '+json.dumps(ledger)+' -->'
+                out, writes = self.run_helper(); self.assertNotEqual(out.returncode, 0, out.stdout); self.assertEqual(writes, [])
+    def test_heading_identity_and_severity(self):
+        for body in ('**Minor** R1-F2\nProse mentions R1-F1.',
+                     '**Important** R1-F1\nEvidence.',
+                     'Introduction\n**Minor** R1-F1\nEvidence.',
+                     '**Minor** R1-F1\n**Minor** R1-F2\nEvidence.',
+                     '**Minor** R1-F1extra\nEvidence.'):
+            with self.subTest(body=body):
+                (self.p/'trace.jsonl').unlink(missing_ok=True); self.state['root_body'] = body
                 out, writes = self.run_helper(); self.assertNotEqual(out.returncode, 0, out.stdout); self.assertEqual(writes, [])
     def test_invalid_root_fields(self):
         for field, value in [('root_id', True), ('root_review_id', True), ('root_url', 'https://api.github.com/repos/owner/repo/pulls/43'), ('root_path', '../src/a.py'), ('root_body', 'R2-F1: finding')]:

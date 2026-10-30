@@ -179,8 +179,12 @@ def main():
             if (not is_positive(root.get('id')) or root.get('id') != a.root_comment_id or root.get('user', {}).get('login') != 'yngwald'
                 or not is_positive(root.get('pull_request_review_id')) or root.get('pull_request_review_id') != a.origin_review_id or root.get('path') != a.path
                 or root.get('pull_request_url') != f'https://api.github.com/{prefix}/pulls/{a.pr}'
-                or root.get('in_reply_to_id') is not None
-                or not re.search(r'(?<![A-Za-z0-9_-])'+re.escape(a.original_id)+r'(?![A-Za-z0-9_-])', root.get('body', ''))): raise Stop('root_mismatch')
+                or root.get('in_reply_to_id') is not None): raise Stop('root_mismatch')
+            body = root.get('body')
+            heading_pattern = r'^\*\*(Critical|Important|Minor)\*\* (R[1-9][0-9]*-(?:[A-Za-z0-9_-]+-)?F[1-9][0-9]*)(?=\s|$)'
+            if not isinstance(body, str): raise Stop('root_mismatch')
+            heading = re.match(heading_pattern, body)
+            if not heading or heading.group(2) != a.original_id or len(re.findall(heading_pattern, body, re.M)) != 1: raise Stop('root_mismatch')
             review = gh(f'{prefix}/pulls/{a.pr}/reviews/{a.origin_review_id}')
             markers = LEDGER.findall(review.get('body', ''))
             if len(markers) != 1: raise Stop('finding_mapping_invalid')
@@ -191,7 +195,7 @@ def main():
                 or ledger.get('published_review_id') != a.origin_review_id or ledger.get('review_source_id') != a.origin_review_id
                 or ledger.get('head_sha') != review.get('commit_id')): raise Stop('finding_mapping_invalid')
             matches = [x for x in ledger.get('findings', []) if isinstance(x, dict) and x.get('origin_review_id') == a.origin_review_id and x.get('original_id') == a.original_id and x.get('path') == a.path]
-            if len(matches) != 1: raise Stop('finding_mapping_invalid')
+            if len(matches) != 1 or heading.group(1) != matches[0]['severity']: raise Stop('finding_mapping_invalid')
             def existing():
                 found = []
                 page = 1

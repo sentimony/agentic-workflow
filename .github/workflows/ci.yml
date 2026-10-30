@@ -17,6 +17,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Test review helpers
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_claude_review.py'
+          python3 -m unittest discover -s plugins/aw/skills/cr-received/scripts -p 'test_*.py'
+          python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'
+
       - name: Validate SKILL.md frontmatter
         run: |
           python3 - <<'PY'

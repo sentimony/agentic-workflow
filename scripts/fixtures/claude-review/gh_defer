@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""Stateful, offline GitHub API fixture for defer publishing."""
+import json, os, pathlib, sys
+root=pathlib.Path(os.environ['FIXTURE_DIR'])
+a=sys.argv[1:]
+if len(a)<2 or a[0]!='api': sys.exit(2)
+ep=a[1]; method=a[a.index('--method')+1] if '--method' in a else 'GET'
+with (root/'trace.jsonl').open('a') as out: out.write(json.dumps({'endpoint':ep,'method':method})+'\n')
+state=json.loads((root/'state.json').read_text())
+payload=json.load(sys.stdin) if '--input' in a else None
+review={'id':202,'user':{'login':'yngwald'},'commit_id':'a'*40,'body':state.get('body','initial')}
+result=None
+if ep=='user': result={'login':'yngwald'}
+elif ep=='repos/owner/repo/pulls/42': result={'number':42,'head':{'sha':'a'*40}}
+elif ep=='repos/owner/repo/pulls/42/reviews/202':
+    if method=='GET': result=review
+    elif method=='PUT':
+        state['put_count']=state.get('put_count',0)+1
+        if str(state['put_count'])==os.environ.get('FAIL_PUT_NUMBER'):
+            (root/'state.json').write_text(json.dumps(state))
+            sys.exit(1)
+        state['body']=payload['body']; result=review
+elif ep=='repos/owner/repo/pulls/42/reviews/101': result=state['origin']
+elif ep=='repos/owner/repo/collaborators/alice/permission': result={'permission':'read' if os.environ.get('FAIL_PERMISSION') else 'write'}
+elif ep.startswith('repos/owner/repo/issues?'): result=[state['issue']] if state.get('issue') else []
+elif ep=='repos/owner/repo/issues' and method=='POST':
+    result={'number':57,'html_url':'https://github.com/owner/repo/issues/57','body':payload['body'],'user':{'login':'yngwald'}}
+    state['issue']=result
+elif ep=='repos/owner/repo/issues/57': result=state['issue']
+elif ep=='repos/owner/repo/pulls/42/comments/1001/replies' and method=='POST':
+    if os.environ.get('FAIL_REPLY'): sys.exit(1)
+    result={'id':1003}
+    state['thread']['comments'].append({'databaseId':1003,'author':{'login':'yngwald'},'authorAssociation':'MEMBER','body':payload['body'],'createdAt':'2026-10-30T00:00:00Z','updatedAt':'2026-10-30T00:00:00Z','pullRequestReview':None})
+elif ep=='graphql':
+    q=payload['query']
+    if q.startswith('mutation'):
+        state['thread']['isResolved']=True
+        result={'data':{'resolveReviewThread':{'thread':{'id':'thread1','isResolved':True}}}}
+    elif 'reviewThreads' in q:
+        thread=dict(state['thread']); thread['comments']={'nodes':thread['comments'],'pageInfo':{'hasNextPage':False,'endCursor':None}}
+        result={'data':{'repository':{'pullRequest':{'reviewThreads':{'nodes':[thread],'pageInfo':{'hasNextPage':False,'endCursor':None}}}}}}
+if result is None: sys.exit(2)
+(root/'state.json').write_text(json.dumps(state))
+print(json.dumps(result))

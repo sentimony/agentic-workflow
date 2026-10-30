@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.6] - 2026-10-30
+
+- Align review intake, gate evidence, and the narrow authorized automatic review replies.
+- Require the issue/reply/resolve defer evidence for GitHub source threads; local and
+  document reviews retain owner and issue, plan-task, or follow-up tracking.
+
 ## [0.0.5] - 2026-10-29
 
 - The verdict belongs to the committed tree: the fingerprint is `HEAD^{tree}` without the

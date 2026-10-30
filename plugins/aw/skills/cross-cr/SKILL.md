@@ -2,7 +2,7 @@
 name: cross-cr
 description: You MUST use this when an implementation plan or a finished implementation needs an independent review by other agent CLIs - by default the opposite CLI (Codex for work done in Claude Code, Claude Code for work done in Codex), plus any reviewer the user names, Antigravity (Gemini) included - whether the user asks for a cross-review, a cross-cr, or a second opinion from the other agent. Replaces devflow cross-review. Same-host review belongs to cr-request and deciding on findings to cr-received; spec review and per-task review are outside this skill.
 metadata:
-  version: "0.0.2"
+  version: "0.0.3"
 license: MIT
 compatibility: Requires Python 3.9 or newer and the reviewer agent CLI (codex, claude, or agy) installed and logged in; reads the brief, target, and fingerprint references of the installed cr-request skill.
 argument-hint: "[--auto] [<claude|codex|gemini> [model] [low|medium|high|xhigh|max]]..."
@@ -130,6 +130,10 @@ policy that forbids commits means no commit, and the report says so.
 Capture the target identity: repository root, branch or worktree, `HEAD`, and working-tree
 state. For `plan`, name the plan and spec paths; pass them to the runner as `--plan` and
 `--spec` and it hashes them. For `implementation`, establish the boundary in step 3.
+Before changing to the target directory, capture the session repository's absolute root
+as `session_root`. Pass that host-owned value explicitly when archiving; a target in
+another repository never changes it. Use the shared resolver and archive contract in
+cr-request's `references/review-actions.md`.
 
 Before a round on a target whose previous round passed with no findings, check whether
 anything changed since: base, `HEAD`, the working tree, the plan, and the spec. A runner
@@ -145,7 +149,8 @@ Apply `secret-hygiene` before writing any part of the brief, because the brief a
 reviewer's reads leave this machine for another vendor's API.
 
 - Name selected and excluded paths; never print file contents or values while selecting.
-- Exclude `.env`, `.env.*`, credential files, private keys, and unrelated untracked files.
+- Exclude `.env`, `.env.*`, credential files, private keys, unrelated untracked files,
+  and all `.cross-review/` archives, including `local/` and peer reviewer outputs.
   Keep gitignore rules. With `--target working-tree`, the runner takes every untracked file
   that gitignore keeps, except its standard exclusions (env files, local overrides, key
   and credential names such as `*.pem`, `id_rsa*`, `.npmrc`) and untracked symlinks, and
@@ -297,6 +302,28 @@ names the reviewed target, states coverage, gives every verdict, and lists findi
 IDs, severities, and locations, or states that there are none. A result without verdicts
 and coverage is incomplete; exit code 0 alone proves neither.
 
+After all reviewer processes finish and each usable result passes that check, compare
+the reviewed target and fingerprint with the host's target pin. Treat a mismatch as
+stale and do not hand it off as a review of the current target. The trusted host persists
+the full reports and identities before showing a compact result. Write a
+private JSON identity file with the complete target pin from steps 1 and 4, including
+`Tree` or the requirement document `sha256` hashes, then run:
+
+```text
+python3 <skill-dir>/scripts/cross_review.py archive --session-root <session-root> \
+  --run-id <unique-run-id> --identity-file <host-identity-json> \
+  --run-dir <completed-run-dir> [--run-dir <another-completed-run-dir>]...
+```
+
+The stable paths are `<session-root>/.cross-review/<run-id>/reviewer-<n>/review.md` and
+`identity.json`, in argument order. The host chooses the run ID and supplies identity;
+reviewer text never supplies the archive destination. The helper checks ownership,
+symlinks, private permissions, collisions, and Git exclusion. Any archive failure is
+`INCOMPLETE` (exit 26): name the failed path and operation, retain the temporary output,
+and stop automatic handoff. A link into OS temporary storage alone is incomplete.
+The archive API and shared local `cr-request` helper are in
+[cli-runtime.md](references/cli-runtime.md#host-archive).
+
 With several reviewers, check each result on its own, then hand all findings to
 `cr-received` in one list. Finding IDs carry the reviewer (`R1-codex-F1`,
 `R1-antigravity-F1`); mark findings several reviewers raised about the same location and
@@ -316,7 +343,7 @@ Session: ~$<session_total.cost_usd> over <runs> runs[, incomplete]   (after resu
 Target: ~$<target_total.cost_usd> over <rounds> rounds[, incomplete]   (from round 2)
 Warning: same CLI as the host, not a cross-vendor review   (same_cli group only)
 Stopped: agy answered and did not exit   (exit 25 only)
-Details: <run dir>/review.md
+Details: <session-root>/.cross-review/<run-id>/reviewer-<n>/review.md
 ```
 
 The table and `Readiness` come from the checked `review.md` (its axis verdicts, `Summary`,
@@ -333,6 +360,8 @@ runner's `usage:` line does.
 Findings are not listed in the chat: `cr-received` reads them from the `Details` path,
 validates each, and chooses its disposition. With several reviewers, show one block per
 reviewer, each with its own `Details`, and one shared `Next step` line after the last.
+Keep their verdicts, counts, readiness, model, effort, and cost separate; do not turn
+several results into an unchecked aggregate PASS.
 Keep the run directory, the target fingerprint, and the reviewer session with the review
 record.
 
@@ -341,7 +370,9 @@ to its record (the plan's `## Execution record` or the spec's `## Verification r
 lines `cr-request` step 7 writes, one `Review` line per reviewer, one `Finding` line per
 finding, and the `Round review <n>` line of the round, with `reviewer <agent> <model>` and
 mode `document` for `plan`, `code` for `implementation`, and `re-review` for a follow-up
-round. Never rewrite existing lines. Like `cr-request`, this skill never creates a spec's
+round. Append the `Ruling: review R<n> origin <automatic|user-started|external> -
+<source and authorization>` from `cr-request` once per review. Never rewrite existing
+lines. Like `cr-request`, this skill never creates a spec's
 `## Verification record`: before `implement` or `verify` adds it, the lines stay in the
 result.
 
@@ -349,20 +380,26 @@ The last line of the result is the next step:
 
 | Result | Last line |
 | --- | --- |
-| Findings, or a follow-up leaves a previous finding `NOT ADDRESSED` | `Next step: cr-received - <n> findings to rule on: <run dir>/review.md` |
+| Findings, or a follow-up leaves a previous finding `NOT ADDRESSED` | `Next step: cr-received - <n> findings to rule on: <archived review.md path>` |
 | Clean, and a full `Verify: PASS` exists on this tree | `Next step: finalize - reviewed and verified on this tree` |
 | Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
 | Clean `plan` mode | `Next step: implement - <plan path>` |
 | Unavailable | `Next step: none - choose another reviewer or retry` |
+| Archive incomplete | `Next step: none - persist the full review and identity before handoff` |
 
 With several reviewers, the findings line lists every `review.md` path, separated by `, `.
+
+Under `--auto`, the host may perform already authorized defer issue and thread reply
+actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
+asking again. This grants no reviewer write token or general outward permission; all
+other outward actions and merge, release, and publication retain their approval gates.
 
 With `--auto` in the arguments, a `Next step` that names a local skill (`cr-received`,
 `verify`, `implement` after a clean `plan` round, the next `cross-cr` round of step 8)
 is not handed back: start that skill in the same turn and pass `--auto` on.
 The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
 `ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
 `BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
 nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never
@@ -414,9 +451,12 @@ Automatic rounds:
 
 Each round report shows the round cost and the cumulative cost of the target.
 
-The round counter is the record host's `Round review <n>` lines, which step 7 writes as
-`cr-request` does; with no host it lives in the conversation. It is separate from the
-fix-attempt counters of `cr-received`. Write the dispositions file from the `cr-received`
+Local `Round review <n>` lines order reviews; count distinct automatic origin Rulings
+against the budget, separately from local IDs, external review counts, and fix attempts.
+Reconstruct unknown old provenance from evidence or escalate instead of guessing. With
+no host keep these details in the conversation. The last allowed automatic round is
+decision-only: escalate Critical or unsafe findings; fixes require explicit permission,
+stale verification, and still require re-review even after the budget is exhausted. Write the dispositions file from the `cr-received`
 record: every previous finding ID with accepted and fixed, rejected with reason, deferred,
 or escalated, open.
 
@@ -453,9 +493,16 @@ untracked files in scope and requirement documents outside the repository; stand
 exclusions and `--exclude` paths never enter the brief. The runner starts each selected
 reviewer CLI (by default the opposite agent CLI, plus one per group the user names), and
 each contacts its own vendor API over the network with the brief and whatever files that
-reviewer reads. Run artifacts live only under the system temporary directory in
-`cross-review/`; the runner writes nothing into the target repository. The skill itself
-edits only the record of its record host (the plan, else the spec), when there is one (it
+reviewer reads. `run` and `resume` keep working artifacts under the system temporary
+directory in `cross-review/` and write nothing into the target repository. After the
+reviewers finish, the trusted host's explicit `archive` operation writes full reports
+and identities under the session repository's `.cross-review/<run-id>/`, with 0700
+directories, 0600 files, and an idempotent rule in Git's `info/exclude`. That operation
+rejects symlinks, incompatible ownership, tracked archives, and collisions. The shared
+host helper writes local `cr-request` reports under `.cross-review/local/<run-id>/`.
+Both archives are excluded from generated snapshots, embedded diffs, untracked reads,
+briefs, and attachments. The host also
+edits the record of its record host (the plan, else the spec), when there is one (it
 never creates a spec's record), and makes the local checkpoint commit of step 1 with this
 session's own paths; it never pushes. Before an Antigravity run it reads the `agy` settings
 file without printing its content. `usage.json` holds only numbers and model and skill
@@ -472,6 +519,11 @@ Limits:
   repository. The CLI still writes its own session state, which resume depends on. The
   `CROSS_REVIEW_DEPTH` guard stops accidental recursive delegation; it is no
   operating-system security boundary against malicious code.
+- **Archive reads.** A same-host `cr-request` subagent or external `cross-cr` CLI can
+  still discover and read repository-local archives outside the supplied context.
+  The owner accepts this read risk; context exclusion minimizes exposure. No mandatory
+  deny-read sandbox or new unavailable-reviewer gate is added. Existing read-only,
+  project-trust, and authentication checks still apply.
 - **Claude.** The reviewer ignores all settings files, including those of the reviewed
   repository, and its file tools stay inside the repository.
 - **Codex.** The reviewer runs with the reviewed repository and its related Git paths

@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.0.11] - 2026-10-30
+
+- Align the automatic outward exception with authorized defer actions and the bounded REJECT reply.
+- Separate yngwald review/issue/reply/ledger publication from API-only thread resolve
+  as `github-actions[bot]`. Keep the PAT unchanged, isolate the short-lived write
+  GITHUB_TOKEN from reviewers and model-output parsers, and require independent
+  completion readback while preserving yngwald source-author checks.
+
+- Share a compact local/CI result: verdicts, severity counts, readiness, and next step;
+  local calls link the full host-owned review archive, while CI retains one Details
+  block and the unchanged two-line footer grammar.
+- Define `review-actions` v1: nullable current source IDs in the agent draft,
+  confirmed previous identities, independent addressed/defer states, and a canonical
+  ledger in the publisher's own review body after real review IDs exist. Track action
+  progress and API-backed host disposition events; `REJECT` of a finding stays
+  separate from `DECLINED` defer, with unknown history reported explicitly.
+- Archive completed local reviews under the session repository's
+  `.cross-review/local/<run-id>/`, with private permissions, Git exclusion, a shared
+  root resolver, and `INCOMPLETE` on archive failure. The host writes archives only
+  after the reviewer finishes; snapshots and briefs omit them. The owner accepts
+  possible reads by same-host subagents and CLI reviewers without mandatory deny-read.
+- Permit at most one focused test after a side-effect check; tests that write run in
+  a private isolated copy with an original-status/fixture-hash comparison. Keep
+  credentials, production access, and external writes outside that permission;
+  unsafe or unavailable checks remain review gaps. Include a hermetic fixture recipe.
+- Preserve unfavorable verdicts without findings and surface their evidence gap for
+  a user ruling instead of inventing fixes or a PASS.
+
 ## [0.0.10] - 2026-10-29
 
 - A re-review may report a finding outside the fix diff only when the fix caused it,

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.6] - 2026-10-30
+
+- Align review intake, gate evidence, and the narrow authorized automatic review replies.
+
 ## [0.0.5] - 2026-10-29
 
 - `--auto` in the arguments (`argument-hint` `[--auto]`): the `direct` route starts

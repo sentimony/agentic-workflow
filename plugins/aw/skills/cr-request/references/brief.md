@@ -21,6 +21,8 @@ Fill every field with task-specific content; drop empty fields instead of paddin
     Review unit: <whole change | unit N of M and its concern>
     Evidence already available: <tests, builds, checks, Verify lines - signals from the caller, not proof>
     Previous findings: <re-review only: ID, severity, ruling, evidence>
+    Action transport: <CI draft output path and confirmed previous origin IDs, or none>
+    Safe test copy: <host-prepared private copy outside the target, or unavailable>
 
 ## Reviewer instructions
 
@@ -37,11 +39,15 @@ Fill every field with task-specific content; drop empty fields instead of paddin
 
     Tests: do not rerun the whole suite; the caller's results are signals. Run at
     most one focused test, only to settle a specific doubt, and report the command
-    and its output. Never run a test that writes into the tree (snapshots, caches,
-    generated files), reaches an external service, or needs credentials; list it
-    under Not checkable from the diff with that reason.
+    and its output. Assess side effects before running it. A test that writes snapshots,
+    caches, or generated files runs only in a host-prepared isolated copy outside the
+    original tree, with local artifacts and without credentials, production access, or
+    external writes. If that copy or a safe test is unavailable, list the test under
+    Not checkable from the diff with the reason. Preserve the original status and
+    fixture hashes; never roll back or clean another session's tree.
 
-    Inspect and report. Do not modify files, the index, HEAD, or branches. Read other
+    Inspect and report. Keep original files, the index, HEAD, and branches unchanged;
+    only the safe test copy may receive test artifacts. Read other
     revisions with git show <rev>:<path>, or from the prepared base copies when
     the target was prepared. Do not dispatch other
     reviewers; if the change is too large, review it in passes and say so.
@@ -80,6 +86,7 @@ Fill every field with task-specific content; drop empty fields instead of paddin
     Merge readiness: ready | ready with fixes | not ready - <one line>
 
     Previous findings: <re-review only: ID ADDRESSED | NOT ADDRESSED - evidence>
+    Defer proposals: <previous ID NONE | PROPOSED | ACCEPTED | DECLINED - reason; owner>
 
     Findings:
       <R<n>-F<k>> [Critical|Important|Minor] [confidence: high|medium|low] [plan-mandated] [regression]
@@ -99,6 +106,14 @@ Fill every field with task-specific content; drop empty fields instead of paddin
 
 `Not checkable from the diff` is separate from an `UNASSESSED` axis: an axis can pass
 while a single requirement still needs a runtime or manual check.
+
+The host pairs this complete report with the compact presentation in
+[compact.md](compact.md). For CI action transport, the reviewer also writes the draft
+defined in [review-actions.md](review-actions.md) to the exact caller-provided path.
+`NOT ADDRESSED` in prose maps to `NOT_ADDRESSED` in JSON. Defer decisions stay separate
+from addressed status and from host dispositions such as `REJECT`. The host supplies
+the schema and confirmed origin identities in the brief; a reviewer never invents a
+GitHub review ID or a host disposition.
 
 The skill, not the reviewer, adds the closing lines. It ends the result with
 `Next step: <skill> - <reason>`. When the caller requires a closing line, that line
@@ -164,6 +179,72 @@ validator can use as fixtures (`v` stands for the version):
 
 A change to this grammar is a change to the contract: the review workflow updates its
 validator and raises its pinned skill revision in the same change.
+
+## Safe focused-test recipe
+
+The trusted host prepares a private OS temporary copy outside the target repository,
+including the reviewed dirty and relevant untracked files, while excluding secrets,
+`.git`, and `.cross-review/`. Do not run install hooks, copy credentials, or follow
+symlinks into the original tree. If the test depends on Git, prepare independent Git
+metadata in the copy. Inspect the command and its helpers for network access and
+external writes before execution. Unsafe requirements become a review gap.
+
+Before the test, capture the original's
+`git status --porcelain=v1 --untracked-files=all` and SHA256 of each fixture input.
+Run only in the copy, then repeat those captures on the original. They must be
+identical, with snapshot/cache artifacts present only in the copy. Record the command,
+result, comparison, and copy location. A mismatch is a review gap to investigate;
+preserve the original without reverting files. This proves write isolation for that
+test, without promising to prevent reads of host archives.
+
+Reproducible hermetic example below: it creates a scratch original and a fixture test
+that writes into its cwd. It never executes a project test or accesses a service.
+Use the same before/after comparison around the actual focused test in its prepared
+copy; a test requiring credentials or external writes is skipped as a gap.
+
+```bash
+python3 - <<'PY'
+import hashlib
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+with tempfile.TemporaryDirectory(prefix="aw-review-test-") as tmp:
+    root = Path(tmp)
+    original = root / "original"
+    original.mkdir(mode=0o700)
+    subprocess.run(["git", "init", "--quiet", str(original)], check=True)
+    fixture = original / "fixture.py"
+    fixture.write_text(
+        "from pathlib import Path\n"
+        "Path('snapshot').write_text('local snapshot')\n"
+        "Path('cache').mkdir()\n"
+        "Path('cache/result').write_text('local cache')\n",
+        encoding="utf-8",
+    )
+
+    def capture():
+        status = subprocess.check_output([
+            "git", "-C", str(original), "status", "--porcelain=v1",
+            "--untracked-files=all",
+        ])
+        hashes = {"fixture.py": hashlib.sha256(fixture.read_bytes()).hexdigest()}
+        return status, hashes
+
+    before = capture()
+    isolated = root / "isolated"
+    shutil.copytree(original, isolated, ignore=shutil.ignore_patterns(".git"))
+    subprocess.run([sys.executable, "fixture.py"], cwd=isolated, check=True)
+    assert capture() == before, "original status or fixture hash changed"
+    assert (isolated / "snapshot").is_file()
+    assert (isolated / "cache/result").is_file()
+    assert not (original / "snapshot").exists()
+    assert not (original / "cache").exists()
+    print("PASS: original status/hash unchanged; artifacts only in isolated copy")
+PY
+```
 
 ## Severity
 

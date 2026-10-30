@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.7] - 2026-10-30
+
+- Align review intake and gate evidence, and provide a bounded, idempotent host helper
+  for authorized automatic REJECT replies.
+- Keep accepted defer issues and replies authored by yngwald, with a separate API-only
+  resolver acting as `github-actions[bot]` and independent completion readback before
+  the gate closes; preserve source-author checks and accept earlier resolve actors.
+
 ## [0.0.6] - 2026-10-29
 
 - `--auto` in the arguments starts the next local step (`verify`, `plan-craft`) in the

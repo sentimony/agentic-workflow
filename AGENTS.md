@@ -5,15 +5,19 @@
 - `plugins/aw/.claude-plugin/plugin.json` - Claude Code manifest; lists skills.
 - `plugins/aw/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
 - `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
-- `.github/workflows/ci.yml` - validation; `claude-review.yml` - auto review: gate, review
-  (read-only agent with the cr-request skill of the newest `vX.Y.Z` tag writes a compact body
-  with one `<details>` block and inline comments on diff lines), publish (validates them, cuts the
-  reason from the `Next step` line, posts one PR review as yngwald, sets the `Claude review`
-  status).
-  An automatic trigger (green CI, opened, reopened, ready) reviews a
-  head when the PR has no yngwald review yet, or when the latest one has Critical or Important
-  findings, reviewed another head, and is one of fewer than 3; a request for yngwald or a
-  dispatch always reviews.
+- `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
+  `claude-review.yml` separates the gate, read-only reviewer, trusted publish, API-only
+  thread resolver, completion, and merged summary. The reviewer uses `cr-request` from
+  the newest `vX.Y.Z` tag unless
+  `REVIEW_SKILLS_REF` pins a full SHA. The embedded schema and transport remain compatible
+  with older released skills; changing a pin does not bypass the compatibility check.
+  The default model is `claude-sonnet-5-5` with `--effort medium`;
+  `CLAUDE_REVIEW_MODEL` overrides the model without a fallback.
+  Automatic triggers review a head with no yngwald review, or a new head after a review
+  with Critical or Important findings while the total yngwald review count is below 5.
+  One `auto-review-rounds-N` label, with integer N >= 1, overrides that threshold;
+  malformed or multiple threshold labels fail before inference. Explicit yngwald requests
+  and dispatch bypass the count while retaining the other guards.
 
 ## Rules
 
@@ -34,7 +38,10 @@
   review job and must not be tracked.
   To test a changed workflow on its own PR, push, wait for green CI, then open the PR or request
   yngwald: on the first head the `main` copy's `workflow_run` shares the review job's per-PR
-  group and can cancel the PR copy's review.
+  group and can cancel the PR copy's review. The `workflow_run` run carries the `main` head SHA,
+  not the PR head: wait for `gh run list --commit <full head SHA> --workflow CI` and then for
+  `gh run list --event workflow_run --limit 1` to complete before requesting yngwald. The
+  `/cr-request` version in the review footer shows which workflow copy posted it.
 - `claude-review.yml` keeps one run per head SHA (workflow-level concurrency), so automatic
   runs for one head no longer race, and a late CI run for an older head cannot cancel the review
   of a newer one; the review job's per-PR group lets a newer head's review cancel an older one,
@@ -51,10 +58,42 @@
   choice: an accepted trade-off, not a defect for review. The chain form
   (``Next step: `/verify <plan>` -> `/finalize` squash``) and the findings form
   (`` Next step: `/cr-received PR #<n>` ``) carry no reason and stay whole.
-  The footer regexes, the one-row Summary table parser, and the gate's parser of three
-  Summary layouts (verdicts first, counts first, and the vertical one of older reviews) have
-  no CI test, because the workflow is self-contained; an edit to them is checked by hand on
-  sample bodies. This is an accepted trade-off, not a defect for review.
+  CI executes the workflow's actual shell/Python blocks through
+  `scripts/test_claude_review.py`, including footer grammar, Summary parsing, gate labels,
+  ledger publication, partial-action recovery, and merged-summary fixtures. Run
+  `python3 -m unittest discover -s scripts -p 'test_claude_review.py'` after changes;
+  running the test file directly collects only its early classes. CI also runs
+  `python3 -m unittest discover -s plugins/aw/skills/cr-received/scripts -p 'test_*.py'`
+  and `python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'`.
+- The reviewer writes `review-actions.json` without a write PAT. Trusted publish
+  validates its schema, identities, current PR head, and yngwald token ownership, then
+  persists a `claude-review-ledger:v1` envelope in the review body with PUT/GET readback
+  before actions. Review artifacts are temporary transport; the ledger is the durable
+  source. Publishing reviews/replies needs Pull requests RW; accepted defer issues need
+  Issues RW on the selected repository and organization approval. The yngwald PAT and
+  its rights stay unchanged; yngwald authors reviews, issues, replies, ledgers, and
+  merged summaries. Only the API-only `resolve_threads` job gets `contents: write` and
+  `pull-requests: write` on GITHUB_TOKEN, which expires with the job; it resolves as
+  `github-actions[bot]`. This is an accepted trade-off, not a defect for review: a
+  long-lived Contents-write PAT would risk pushes to main. The job still has
+  content-write power during its lifetime, so it has no PAT, checkout, PR code,
+  artifacts, or model-output parser. It obtains thread IDs from GitHub metadata after
+  checking the current PR/head/review and origin/root; accepted defer also requires
+  fresh open-issue and root-bound reply metadata. Publish and completion keep
+  `pull-requests: read`, `statuses: write` on GITHUB_TOKEN. Completion independently
+  reads canonical, issue, reply, and thread evidence from the API before recording
+  success. Resolve readback accepts earlier actors too, without a
+  `resolvedBy == yngwald` requirement; source review, issue, and reply authors stay
+  yngwald. Do not infer write access from a successful metadata GET or widen token
+  rights automatically. Deferred work counts as complete only after issue, reply, and
+  resolve readback; retries recover recorded progress instead of duplicating writes. The
+  host's bounded REJECT helper reuses an identical disposition marker and stops on a
+  changed marker for an owner ruling.
+- The merged-only summary reads GitHub history without checkout or inference, validates
+  yngwald ledgers and source markers, and updates one own summary comment. REJECT counts
+  rejected findings; DECLINED defer does not. Later structured evidence determines each
+  finding's bucket; missing legacy evidence or duration stays unknown. Closed unmerged PRs
+  and PRs without yngwald reviews produce no summary. Its concurrency is separate from review.
 - `finalize` has no gate for work with neither a plan nor a spec: such work has no record
   host to hold a `Verify` line, and the option choice is the user's own confirmation. This
   is an accepted trade-off, not a defect for review.
@@ -72,6 +111,8 @@
   whose result ends the turn. With `--auto` each skill starts its local next step in the
   same turn and passes the flag on; it still stops on the user's decisions, the Round rule,
   an `Outward` action, and before the `finalize` choice, so nothing is pushed without it.
+  Already authorized defer issue/reply actions and the bounded REJECT reply in
+  `cr-received` may proceed under `--auto`; other outward gates remain in force.
   Each skill with a checkpoint (spec approval, plan, task, review round, record) commits its
   own paths locally there as part of the chain. `cross-cr` stays outside the chain: it runs
   only on request, next to or in place of the cr-request step, and hands findings to
@@ -87,9 +128,20 @@
   The runner keeps `Result contract` only up to the paragraph that starts with `` `Not
   checkable ``: text after it stays host-only. After a `brief.md` edit run
   `python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'`.
+  In `RunnerTestCase` tests do not remove a file in the temporary directory with
+  `self.addCleanup(...)`: `tearDown` deletes the directory first and the cleanup fails with
+  `FileNotFoundError`.
+- A `cross-cr` CLI reviewer and a same-host `cr-request` subagent can read local review
+  archives despite their exclusion from snapshots and briefs: an accepted trade-off, not
+  a defect for review, because stronger isolation is a separate future design outside this work.
 - A change to the cr-request output contract (closing lines, footer order, separators) goes
-  into `SKILL.md`, `references/brief.md`, and the top `CHANGELOG.md` entry in one commit and in
-  the same terms: each place left behind comes back as a separate review finding.
+  into `SKILL.md`, `references/brief.md` (the `Result contract` paragraph and
+  `### CI footer grammar`), the `claude-review.yml` prompt and `next_re`, and the top
+  `CHANGELOG.md` entry in one commit and in the same terms; find them all with
+  ``git grep -n 'Next step: `/'``. Each place left behind comes back as a separate review
+  finding.
+- A review fix that rewords a skill's `SKILL.md` also updates the same wording in that skill's
+  unreleased top `CHANGELOG.md` entry, in the same commit.
 - License: MIT, Ihor Orlovskyi.
 - Branches: `YYMMDD-dev-session`, squash-merged into `main` via PR.
 - English only, plain hyphen.

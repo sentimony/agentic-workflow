@@ -112,6 +112,8 @@ placeholders, and when a record is unfinished are rules of SKILL.md steps 1-5.
   only after a full `PASS` and a closed review, with its own confirmation, also under
   `--auto`; a `Check` that acts outward moves into such a task. A criterion only such
   tasks cover is `deferred to Task <n>` in the `verify` report and does not block `PASS`.
+  Already authorized defer issue/reply actions and the bounded REJECT reply in
+  `cr-received` may proceed under `--auto`; other outward gates remain in force.
 
 ## Execution record format
 

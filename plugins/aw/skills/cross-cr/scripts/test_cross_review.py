@@ -2915,5 +2915,239 @@ class ReviewRoundOneTests(GitRunnerTestCase):
                         self.assertNotIn(phrase, text)
 
 
+class HostArchiveTests(GitRunnerTestCase):
+    def setUp(self):
+        super().setUp()
+        self.session_repo = Path(self._tmp.name) / "host session"
+        git("init", "-q", str(self.session_repo))
+        self.pin = {"Tree": "Working tree " + "a" * 64, "HEAD": self.base}
+
+    def archive(self, runs, run_id="R1"):
+        return cr.archive_reviews(self.session_repo, run_id, runs, self.pin)
+
+    def test_archive_survives_temp_cleanup_and_keeps_reviewers_separate(self):
+        first = self.run_target("codex")
+        second = self.run_target("claude-code")
+        reports = [(p / "review.md").read_bytes() for p in (first, second)]
+        archive = self.archive([first, second])
+        self.assertEqual(archive, self.session_repo.resolve() / ".cross-review/R1")
+        shutil.rmtree(self.root)
+        for index, report in enumerate(reports, 1):
+            directory = archive / ("reviewer-%d" % index)
+            self.assertEqual((directory / "review.md").read_bytes(), report)
+            identity = json.loads((directory / "identity.json").read_text())
+            self.assertEqual(identity["session_root"], str(self.session_repo.resolve()))
+            self.assertEqual(identity["target_root"], str(self.repo.resolve()))
+            self.assertEqual(identity["target_identity"]["pin"], self.pin)
+            self.assertIn("target", identity["target_identity"]["runner"])
+            self.assertEqual(identity["review_file"], "review.md")
+            self.assertEqual(stat.S_IMODE(directory.stat().st_mode), 0o700)
+            for file in directory.iterdir():
+                self.assertEqual(stat.S_IMODE(file.stat().st_mode), 0o600)
+        self.assertFalse((self.repo / ".cross-review").exists())
+
+    def test_shared_local_archive_and_exclude_are_idempotent(self):
+        git("-C", str(self.session_repo), "config", "core.excludesFile", "/dev/null")
+        exclude = self.session_repo / ".git/info/exclude"
+        exclude.write_text("# preserve me\nkeep-me\n")
+        archive = cr.archive_local_review(self.session_repo, "local-1", self.repo,
+                                          self.pin, "full local review", "host-model")
+        self.assertEqual(archive, self.session_repo.resolve() / ".cross-review/local/local-1")
+        self.assertEqual((archive / "review.md").read_text(), "full local review")
+        identity = json.loads((archive / "identity.json").read_text())
+        self.assertIsNone(identity["reviewer_effort"])
+        self.assertIsNone(identity["cost_usd"])
+        self.archive([self.run_target("codex")])
+        self.assertEqual(exclude.read_text(), "# preserve me\nkeep-me\n/.cross-review/\n")
+        self.assertEqual(subprocess.check_output(["git", "-C", str(self.session_repo),
+                                                  "status", "--porcelain"]), b"")
+
+    def test_worktree_uses_git_info_exclude(self):
+        (self.session_repo / "tracked").write_text("base")
+        git("-C", str(self.session_repo), "add", "tracked")
+        git("-C", str(self.session_repo), "-c", "user.name=t", "-c", "user.email=t@t",
+            "commit", "-qm", "base")
+        worktree = Path(self._tmp.name) / "host-worktree"
+        git("-C", str(self.session_repo), "worktree", "add", "-qb", "other", str(worktree))
+        cr.archive_local_review(worktree, "w1", self.repo, self.pin, "review", "model")
+        self.assertIn("/.cross-review/", (self.session_repo / ".git/info/exclude").read_text())
+        self.assertEqual(subprocess.check_output(["git", "-C", str(worktree),
+                                                  "status", "--porcelain"]), b"")
+
+    def test_archive_rejects_collision_and_invalid_ids(self):
+        run = self.run_target("codex")
+        self.archive([run])
+        for run_id in ("R1", "local", ".", "..", "../outside", "a/b", "-bad"):
+            with self.subTest(run_id=run_id), self.assertRaises(cr.CrossReviewError) as caught:
+                self.archive([run], run_id)
+            self.assertEqual(caught.exception.code, 26)
+        self.assertTrue((run / "review.md").exists())
+
+    def test_archive_rejects_symlink_foreign_owner_and_tracked_archive(self):
+        run = self.run_target("codex")
+        archive_root = self.session_repo / ".cross-review"
+        archive_root.symlink_to(self.repo, target_is_directory=True)
+        with self.assertRaises(cr.CrossReviewError):
+            self.archive([run])
+        archive_root.unlink()
+        archive_root.mkdir(mode=0o700)
+        original = cr._ensure_private_dir
+        def foreign(path):
+            if path == archive_root.resolve():
+                raise cr.CrossReviewError(2, "foreign owner")
+            return original(path)
+        with mock.patch.object(cr, "_ensure_private_dir", side_effect=foreign):
+            with self.assertRaises(cr.CrossReviewError):
+                self.archive([run])
+        (archive_root / "tracked.md").write_text("prior archive")
+        git("-C", str(self.session_repo), "add", "-f", ".cross-review/tracked.md")
+        with self.assertRaises(cr.CrossReviewError):
+            self.archive([run])
+
+    def test_archive_write_failure_is_incomplete_and_keeps_temp(self):
+        run = self.run_target("codex")
+        with mock.patch.object(cr, "_atomic_archive_file", side_effect=OSError("disk full")):
+            with self.assertRaises(cr.CrossReviewError) as caught:
+                self.archive([run])
+        self.assertEqual(caught.exception.code, 26)
+        self.assertIn("INCOMPLETE", caught.exception.message)
+        self.assertIn("disk full", caught.exception.message)
+        self.assertTrue((run / "review.md").read_text())
+
+    def test_exclude_symlink_and_unignored_archive_fail_closed(self):
+        run = self.run_target("codex")
+        exclude = self.session_repo / ".git/info/exclude"
+        exclude.unlink()
+        outside = Path(self._tmp.name) / "outside-exclude"
+        outside.write_text("unchanged\n")
+        exclude.symlink_to(outside)
+        with self.assertRaises(cr.CrossReviewError) as caught:
+            self.archive([run])
+        self.assertEqual(caught.exception.code, 26)
+        self.assertEqual(outside.read_text(), "unchanged\n")
+        exclude.unlink()
+        (self.session_repo / ".gitignore").write_text("!/.cross-review/\n")
+        with self.assertRaises(cr.CrossReviewError) as caught:
+            self.archive([run])
+        self.assertEqual(caught.exception.code, 26)
+        self.assertFalse((self.session_repo / ".cross-review/R1").exists())
+
+    def test_invalid_identity_or_symlink_review_is_never_archived(self):
+        run = self.run_target("codex")
+        for pin in ({"HEAD": self.base}, {"Tree": "abc"}, {"sha256": "g" * 64},
+                    {"sha256": "a" * 40}):
+            with self.subTest(pin=pin), self.assertRaises(cr.CrossReviewError):
+                cr.archive_reviews(self.session_repo, "bad-pin", [run], pin)
+        report = run / "review.md"
+        report.unlink()
+        report.symlink_to(self.brief)
+        with self.assertRaises(cr.CrossReviewError) as caught:
+            self.archive([run])
+        self.assertEqual(caught.exception.code, 26)
+        self.assertFalse((self.session_repo / ".cross-review").exists())
+
+    def test_missing_or_failed_completion_never_archives_partial_report(self):
+        run = self.run_target("codex")
+        marker = run / "completed.txt"
+        marker.unlink()
+        with self.assertRaises(cr.CrossReviewError):
+            self.archive([run])
+        marker.write_text("22\n")
+        marker.chmod(0o600)
+        with self.assertRaises(cr.CrossReviewError):
+            self.archive([run])
+        self.assertFalse((self.session_repo / ".cross-review").exists())
+
+    def test_archive_cli_failure_and_restart_readback(self):
+        run = self.run_target("codex")
+        identity = Path(self._tmp.name) / "identity-input.json"
+        identity.write_text(json.dumps(self.pin))
+        command = [sys.executable, SCRIPT, "archive", "--session-root", str(self.session_repo),
+                   "--run-id", "from-process", "--run-dir", str(run),
+                   "--identity-file", str(identity)]
+        result = subprocess.run(command, env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("reviewer-1/review.md", result.stdout)
+        repeat = subprocess.run(command, env=self.env, capture_output=True, text=True)
+        self.assertEqual(repeat.returncode, 26)
+        self.assertIn("INCOMPLETE", repeat.stderr)
+
+    def test_legacy_temp_run_remains_resumable_after_archive(self):
+        run = self.run_target("claude-code")
+        header, tail = (run / "run.log").read_text().split("\n", 1)
+        meta = json.loads(header)
+        meta["reviewer"] = "claude"
+        (run / "run.log").write_text(json.dumps(meta) + "\n" + tail)
+        self.archive([run])
+        resumed = cr.resume_review(run, "Clarify coverage", self.env)
+        self.assertTrue((resumed / "review.md").read_text())
+        self.assertEqual((run / "run.log").read_text(), json.dumps(meta) + "\n" + tail)
+
+    def test_archive_and_peer_outputs_excluded_before_read_and_embedding(self):
+        sentinels = {".cross-review/R0/reviewer-1/review.md": "PEER_SECRET_1",
+                     ".cross-review/local/old/review.md": "LOCAL_SECRET_2"}
+        for name, value in sentinels.items():
+            path = self.repo / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(value)
+        # Also exclude tracked archive changes in the actual diff, not just a file list.
+        git("-C", str(self.repo), "add", "-f", ".cross-review/R0/reviewer-1/review.md")
+        before = cr.compute_target(self.repo, "working-tree", self.base)
+        for reviewer in ("claude-code", "antigravity", "codex"):
+            first = self.run_target(reviewer)
+            cr.run_review(None, self.repo, None, None, None, self.env,
+                          followup=first, dispositions=self.dispositions)
+            stdin = last_record(self)["stdin"]
+            for value in sentinels.values():
+                self.assertNotIn(value, stdin)
+        (self.repo / ".cross-review/R0/reviewer-1/review.md").write_text("CHANGED_PEER")
+        after = cr.compute_target(self.repo, "working-tree", self.base)
+        self.assertEqual(before["diff_sha256"], after["diff_sha256"])
+        self.assertFalse(any(".cross-review/" in path for path in after["files"]))
+        with mock.patch.object(Path, "read_bytes", side_effect=AssertionError("archive read")):
+            with self.assertRaises(cr.CrossReviewError):
+                cr.compute_documents({"plan": str(self.repo / ".cross-review/local/old/review.md")})
+
+    def test_explicit_and_symlink_archive_attachments_rejected(self):
+        directory = self.repo / ".cross-review/local/old"
+        directory.mkdir(parents=True)
+        archived = directory / "review.md"
+        archived.write_text("archive sentinel")
+        attachment = self.repo / "apparent-plan.md"
+        attachment.symlink_to(archived)
+        for path in (archived, attachment):
+            with self.subTest(path=path), self.assertRaises(cr.CrossReviewError):
+                self.run_target("claude-code", documents={"plan": str(path)})
+            with self.subTest(brief=path), self.assertRaises(cr.CrossReviewError):
+                self.run_target("codex", brief=path)
+        self.assertEqual(self.run_dirs(), [])
+
+    def test_focused_test_side_effects_stay_in_isolated_copy_through_runner(self):
+        fixture = self.repo / "focused_test.py"
+        fixture.write_text("from pathlib import Path\n"
+                           "Path('snapshot.out').write_text('generated')\n"
+                           "Path('.test-cache').mkdir()\n")
+        status_before = git("-C", str(self.repo), "status", "--porcelain=v1",
+                            "--untracked-files=all")
+        hash_before = hashlib.sha256(fixture.read_bytes()).hexdigest()
+        isolated = Path(self._tmp.name) / "isolated-test-copy"
+        shutil.copytree(self.repo, isolated, ignore=shutil.ignore_patterns(".git", ".cross-review"))
+        source = ("import pathlib,subprocess,sys; sys.stdin.read(); "
+                  "subprocess.run([sys.executable, %r], cwd=%r, check=True); "
+                  "pathlib.Path(sys.argv[2]).write_text('Target reviewed: fixture\\n"
+                  "Coverage: isolated focused test\\n')"
+                  % (str(isolated / "focused_test.py"), str(isolated)))
+        with mock.patch.object(cr, "build_run_command", fake_builder(source)):
+            run = cr.run_review("codex", self.repo, self.brief, None, None, self.env)
+        self.assertIn("isolated focused test", (run / "review.md").read_text())
+        self.assertEqual(git("-C", str(self.repo), "status", "--porcelain=v1",
+                             "--untracked-files=all"), status_before)
+        self.assertEqual(hashlib.sha256(fixture.read_bytes()).hexdigest(), hash_before)
+        self.assertTrue((isolated / "snapshot.out").exists())
+        self.assertTrue((isolated / ".test-cache").is_dir())
+        self.assertFalse((self.repo / "snapshot.out").exists())
+        self.assertFalse((self.repo / ".test-cache").exists())
+
+
 if __name__ == "__main__":
     unittest.main()

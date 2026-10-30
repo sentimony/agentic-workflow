@@ -1,9 +1,9 @@
 ---
 name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
-argument-hint: "[<base-ref>] [<spec-path>]"
+argument-hint: "[<base-ref>] [<spec-path>] [--auto]"
 metadata:
-  version: "0.0.9"
+  version: "0.0.10"
 license: MIT
 ---
 
@@ -39,7 +39,9 @@ A review of the wrong diff is worse than no review. Before anything else:
 - scan the `--stat` output and the untracked list for files that may hold secrets
   (env files, keys, credentials); exclude them with that reason before any diff is sent;
 - take the tree fingerprint with [tree-fingerprint.md](references/tree-fingerprint.md)
-  and write it as `Tree:` in the identity record, whatever the boundary;
+  (`Committed tree` for a committed boundary, `Working tree` when the boundary holds
+  uncommitted changes) and write it as `Tree:` in the identity record, whatever the
+  boundary;
 - confirm the diff is non-empty and record the target identity.
 
 When the caller hands over a prepared target (an identity record with the diff and log
@@ -114,8 +116,10 @@ Lenses for each axis, language-agnostic, are in [lenses.md](references/lenses.md
 - **Re-review** - after `cr-received` ruled on a round: previous findings with their
   rulings go in, and the base is the previously reviewed `Tree`. A fresh reviewer with
   the full brief marks each previous finding `ADDRESSED` or `NOT ADDRESSED` (a partial
-  attempt is `NOT ADDRESSED`), reports new findings only inside the fix diff, and does
-  not raise a rejected finding again without new evidence.
+  attempt is `NOT ADDRESSED`), reports new findings inside the fix diff, and does not
+  raise a rejected finding again without new evidence. Outside the fix diff it reports
+  only a regression the fix caused, tagged `[regression]`, with evidence that links it to
+  the fix; older code outside the fix diff stays out of scope.
 - **Document** - a spec or plan file, identified by its `sha256`; findings point to
   `§<heading>`. The three axes stay: Intent (it answers the request), System (it agrees
   with the repository and neighboring documents), Craft (every acceptance criterion is
@@ -151,9 +155,21 @@ identity; after any change to the target, the review is stale.
 
 ## 7. Record and hand off
 
-When the plan is known, append to its `## Execution record` after the result is
-accepted, at the end of the record (inside its ```` ```text ```` block, before the closing
-fence, when it has one), in this format:
+```text
+Record host: the plan when there is one (argument, conversation, or `Branch:` of its record);
+otherwise the spec (argument, conversation, or `Branch:` of its `## Verification record`;
+before the first write there, only the argument or the conversation); otherwise none. With
+no host there is no verdict file: the `Verify:` line is printed in the report only, and the
+`finalize` gate does not apply.
+```
+
+The block is shared with `verify`; for this skill, with no host the `Review`, `Finding`, and
+`Round` lines stay in the result only. This skill never creates a spec's
+`## Verification record`: `implement` or `verify` does, and before that the lines stay in
+the result too. With a host, append to its record (the plan's `## Execution record` or the
+spec's `## Verification record`) after the result is accepted, at the end of the record
+(inside its ```` ```text ```` block, before the closing fence, when it has one), in this
+format:
 
 ```text
 Review R<n>: <Summary line> tree <tree SHA> reviewer <model> mode <code|document|re-review>
@@ -164,41 +180,86 @@ Round review <n>: <cause>
 One `Finding` line per finding; `n` equals the review number `R<n>`, and a `Round` line
 the journal already has is skipped. Never rewrite existing lines. The full result stays
 in the response; it goes to a file only when the user or the caller (a CI run, step 4)
-asks for one. Before dispatch, take the round number from the journal
+asks for one. Before dispatch, take the round number from the record
 (`Round <loop> <n>`, loop `review`) so a fresh session continues:
 
 ```text
-Round rule: a round count the user gave explicitly allows exactly that many rounds;
-otherwise at most three. The same cause twice escalates to the user. Two rounds with
-findings and none accepted stop the loop.
+Round rule: only automatic rounds count. A round count the user gave explicitly allows
+exactly that many automatic rounds; otherwise at most three. A round the user starts by an
+explicit call after the limit runs once past it and is recorded as
+`Ruling: round R<n> started by the user past the limit - <user's words> - <cost if wrong>`.
+The same cause twice escalates to the user, in user-started rounds too. Two automatic rounds
+with findings and none accepted stop the loop.
 ```
 
-When the rule stops the loop, do not dispatch: end with
-`Next step: none - round limit reached, awaiting user`.
+A round is automatic when another skill or `--auto` starts it, and user-started when the
+user calls this skill for it. When the rule stops the loop, do not dispatch: end with
+`Next step: none - round limit reached, awaiting user`. A user-started round past the
+limit is dispatched once; its `Ruling` line goes into the record before its `Review` line,
+and the result says the round ran past the limit.
 
 The last line of the result is the next step:
 
 | Result | Last line |
 | --- | --- |
 | Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | `Next step: cr-received - <n> findings to rule on` |
+| Clean document review (mode `document`, or its re-review) | `Next step: implement - <plan path>` for a plan, `Next step: plan-craft - <spec path>` for an approved spec, `Next step: none - <spec path> is a draft, awaiting approval` for any other spec |
 | Clean, and a full `Verify: PASS` exists on this tree | `Next step: finalize - reviewed and verified on this tree` |
 | Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |
+
+```text
+With `--auto` in the arguments, a `Next step` that names a local skill (`cr-received`,
+`verify`, and after a clean document review `implement` or `plan-craft`) is not handed
+back: start that skill in the same turn and pass `--auto` on.
+The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
+`ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
+a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+`BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
+nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
+`--auto` is never written into a plan, spec, or record, and a `Next step` line never
+carries it; a new session or a manual call runs without it.
+```
+
+Under `--auto`, a chain that another skill started for a step it owns returns to that
+skill: `finalize` (healing its gate) at a `finalize` row, `cross-cr` at a re-review (its
+next round, never a same-host `cr-request`), and `plan-craft` after a clean document
+review of its plan or `REVIEWER UNAVAILABLE` on it, which then starts `implement`
+instead of `verify`.
 
 When the caller requires a closing line, that line goes right before the `Next step`
 line, in its exact text, and the `Next step` line stays the very last one. The CI
 auto-review (`claude-review.yml`) requires the signature
 ``Reviewed with: `/cr-request` <version> skill``, backticks included, where `<version>`
-is this skill's `metadata.version`, and requires the `Next step` line after it,
-written with ` · ` before the reason and the skill, whichever it is, as inline code
-with a leading slash: ``Next step: `/<skill>` · <reason>``, for example
-``Next step: `/cr-received` · 4 findings to rule on``; `none` stays plain text
+is this skill's `metadata.version`, and requires the `Next step` line after it. In that
+line each skill is inline code with a leading slash, its arguments inside the code
+span, and ` · ` goes before a reason:
+
+| Result | CI `Next step` line |
+| --- | --- |
+| Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | `` Next step: `/cr-received PR #<n>` `` |
+| Clean | ``Next step: `/verify <plan path>` -> `/finalize` squash`` |
+| `REVIEWER UNAVAILABLE` | `Next step: none · choose another reviewer or retry` |
+
+A clean CI review always gives the chain line: it reads no `Verify` line it can match,
+since the record host is outside the repository or, inside it, `Verify` lines name a
+fingerprint without the host that the CI `Tree` (`HEAD^{tree}`) never equals; `verify`
+then finds a `PASS` that exists. The findings line names the pull request and carries no
+reason. The plan path comes from the PR description or a `docs/plans/` file in the diff;
+with none found the line is ``Next step: `/verify` -> `/finalize` squash``. `squash`
+recommends the merge method; it is not an argument. Any other line keeps
+``Next step: `/<skill>` · <reason>``, and `none` stays plain text
 (`Next step: none · <reason>`). The skill writes the signature without a duration; the
 workflow may append the review duration to it afterwards as ` · In <m> min <s> sec`,
-with `In 0 min 42 sec` under a minute. Only these two CI lines use ` · `; every other
-`Next step` line keeps ` - `. The exact grammar of both lines, as regular expressions a
+with `In 0 min 42 sec` under a minute. Only these two CI lines use ` · ` and ` -> `;
+every other `Next step` line keeps the local `Next step: <skill> - <reason>` form that
+`--auto` and the chain read. The exact grammar of both lines, as regular expressions a
 workflow validator uses, and the accepted and rejected samples are in
-[brief.md](references/brief.md) "CI footer grammar"; the grammar is part of the contract.
+[brief.md](references/brief.md) "CI footer grammar"; the grammar is part of the
+contract. The CI body itself is the compact result of
+[compact.md](references/compact.md): a one-row verdict and count table, a `Readiness`
+line, one collapsed `<details>` block with the findings, target, axis verdicts, and
+gaps, then the two closing lines.
 
 ## When not to use
 
@@ -225,12 +286,15 @@ Capabilities: the skill runs read-only Git commands to pin the target, a fingerp
 recipe that writes Git objects and a temporary index but never the real index, and a hash
 of a document; it may dispatch one or more reviewer agents. Its only network access is
 reading a linked issue through a tool the user already configured. Reviewers are read-only
-and do not dispatch nested reviewers. The only file the skill edits is the plan's
-execution record; it does not edit code, commit, or push.
+and do not dispatch nested reviewers. The only file the skill edits is the record host's
+record (the plan's `## Execution record` or the spec's `## Verification record`); it does
+not edit code, commit, or push. `--auto` starts only the local next skill; it never pushes
+or publishes.
 
 ## References
 
 - [Target pinning](references/target.md)
 - [Tree fingerprint](references/tree-fingerprint.md)
 - [Reviewer brief and result contract](references/brief.md)
+- [Compact result](references/compact.md)
 - [Review lenses](references/lenses.md)

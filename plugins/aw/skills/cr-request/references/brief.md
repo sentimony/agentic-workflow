@@ -37,7 +37,9 @@ Fill every field with task-specific content; drop empty fields instead of paddin
 
     Tests: do not rerun the whole suite; the caller's results are signals. Run at
     most one focused test, only to settle a specific doubt, and report the command
-    and its output.
+    and its output. Never run a test that writes into the tree (snapshots, caches,
+    generated files), reaches an external service, or needs credentials; list it
+    under Not checkable from the diff with that reason.
 
     Inspect and report. Do not modify files, the index, HEAD, or branches. Read other
     revisions with git show <rev>:<path>, or from the prepared base copies when
@@ -51,9 +53,11 @@ Fill every field with task-specific content; drop empty fields instead of paddin
 ### Re-review kind
 
     For each previous finding, answer ADDRESSED or NOT ADDRESSED with evidence; a
-    partial attempt is NOT ADDRESSED. Report new findings only inside the fix diff.
-    A finding ruled REJECT stays closed unless you bring evidence the ruling did
-    not have. Keep the earlier IDs; new findings take the new round's IDs.
+    partial attempt is NOT ADDRESSED. Report new findings inside the fix diff.
+    Outside it, report only a regression the fix caused, tagged [regression], with
+    evidence that links it to the fix; older code outside the fix diff is out of
+    scope. A finding ruled REJECT stays closed unless you bring evidence the ruling
+    did not have. Keep the earlier IDs; new findings take the new round's IDs.
 
 ### Document kind
 
@@ -78,7 +82,7 @@ Fill every field with task-specific content; drop empty fields instead of paddin
     Previous findings: <re-review only: ID ADDRESSED | NOT ADDRESSED - evidence>
 
     Findings:
-      <R<n>-F<k>> [Critical|Important|Minor] [confidence: high|medium|low] [plan-mandated]
+      <R<n>-F<k>> [Critical|Important|Minor] [confidence: high|medium|low] [plan-mandated] [regression]
       Location: <file:line, or §<heading> for a document>
       Issue:
       Impact: <on which requirement, user, or system property>
@@ -102,13 +106,19 @@ goes right before the `Next step` line, in its exact text, and the `Next step` l
 stays the very last one. The CI auto-review (`claude-review.yml`) requires the
 signature ``Reviewed with: `/cr-request` <version> skill``, backticks included, where
 `<version>` is the skill's `metadata.version`, followed by the `Next step` line as
-the last line, written with ` · ` before the reason and the skill as inline code with
-a leading slash: ``Next step: `/<skill>` · <reason>``, for example
-``Next step: `/cr-received` · 4 findings to rule on``, with `none` as plain text
+the last line, with each skill as inline code with a leading slash, its arguments
+inside the code span, and ` · ` before a reason. Findings give
+`` Next step: `/cr-received PR #<n>` `` with no reason; a clean review (CI cannot match a
+`Verify` line) gives ``Next step: `/verify <plan path>` -> `/finalize` squash``,
+or ``Next step: `/verify` -> `/finalize` squash`` with no plan found; any other line is
+``Next step: `/<skill>` · <reason>``, with `none` as plain text
 (`Next step: none · <reason>`). The skill writes the signature without a duration;
 the workflow may append ` · In <m> min <s> sec` to it afterwards (`In 0 min 42 sec`
 under a minute).
-Only these two CI lines use ` · `; every other `Next step` line keeps ` - `.
+Only these two CI lines use ` · ` and ` -> `; every other `Next step` line keeps ` - `.
+The workflow chooses what it publishes the body as: a PR review (event `COMMENT`) leaves
+the approval state unchanged and is not counted in the comment count of the PR list,
+while a conversation comment is counted there but is not a review.
 
 ### CI footer grammar
 
@@ -122,11 +132,13 @@ from each.
 
 ```text
 signature: ^Reviewed with: `/cr-request` <version> skill( · In [0-9]+ min [0-9]+ sec)?$
-next step: ^Next step: (`/[a-z0-9-]+` · [^[:space:]].*|none( · [^[:space:]].*)?)$
+next step: ^Next step: (`/[a-z0-9-]+( [^`[:space:]]+)*`( -> `/[a-z0-9-]+`( [a-z0-9-]+)?)?( · [^[:space:]].*)?|none( · [^[:space:]].*)?)$
 ```
 
 The signature is the last non-blank line before `Next step`, and `Next step` is the
-last non-blank line.
+last non-blank line. A skill span holds the skill and its arguments separated by single
+spaces; an optional ` -> ` tail names the next skill and one word after it; the reason
+after ` · ` is optional.
 A workflow that appends the duration requires the suffix in its own check. Samples a
 validator can use as fixtures (`v` stands for the version):
 
@@ -136,11 +148,15 @@ validator can use as fixtures (`v` stands for the version):
 | the same two lines with CRLF line ends | accepted |
 | signature, then `Next step: none` | accepted |
 | signature, then `Next step: none · nothing to rule on` | accepted |
+| signature, then ``Next step: `/verify docs/plans/x.md` -> `/finalize` squash`` | accepted |
+| signature, then ``Next step: `/verify` -> `/finalize` squash`` | accepted |
+| signature, then `` Next step: `/cr-received PR #16` `` | accepted |
 | `Next step` line, then the signature last (the order before 0.0.6) | accepted only while a workflow keeps the transition branch |
 | signature, then `Next step: cr-received - 4 findings` | rejected |
 | signature, then `Next step: ` (empty) | rejected |
 | signature, then ``Next step: `/cr-received` - 4 findings`` | rejected |
 | signature, then `Next step: none - nothing to rule on` | rejected |
+| signature, then ``Next step: `/verify` - `/finalize` squash`` | rejected |
 | signature with a glued suffix (``skill· In 3 min 12 sec``) | rejected |
 | signature, a blank line, then `Next step` | accepted |
 | the two lines with trailing spaces | accepted |

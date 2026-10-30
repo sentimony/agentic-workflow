@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.0.5] - 2026-10-29
+
+- `--auto` in `argument-hint`: a local `Next step` (`verify`, `plan-craft`) starts in the
+  same turn, and the turn stops on the user's decisions, the Round rule, an `Outward`
+  action, `INCOMPLETE` or `BLOCKED`, and the `finalize` option choice.
+- Commits follow the shared checkpoint rule: `Initial dirty state` names staged paths
+  too, a task commit holds exactly the task's paths (own hunks for dirty files), content
+  the user staged stays staged, and the record gets `Commits: allowed | ask once |
+  forbidden` after `Base`: the answer to the user's and project's commit policy, with
+  `ask once` only while the question is open and a later answer appended as a new line.
+- Work without a plan records into the spec's `## Verification record`, or only into the
+  report when there is no spec; appending there does not reset the spec's approval.
+- Re-entry after a `FAIL`: each failing claim returns its task to `pending` with a
+  `Ruling`, a claim without a task goes to `plan-craft`, and a spec without a plan is a
+  candidate too; each cycle is an automatic `verify` round.
+- `Next step` order: spec draft, user decisions, Round rule, `plan-craft`, then `verify`.
+- Equal fixes that change neither the spec, a public contract, data, nor security are
+  chosen with `Ruling: <choice> over <alternative> - ...`; a task that removes an
+  accepted fix writes `Ruling: R<n>-F<k> superseded by Task <n> - ...`.
+- An `Outward` task runs only after a full `PASS` and the user's confirmation, under
+  `--auto` too.
+- Round rule: only automatic rounds count, a user call past the limit runs one more
+  round with a `Ruling`, and the same cause twice escalates in every round.
+- Subagents are the default for `Execution: unset`, read from the field's first word;
+  parallel subagents work in their own worktrees, return a `Verify:` line the controller
+  appends, and are asked for `Learnings:` and `Requests:` lines; their commits are
+  integrated locally without push or force.
+- Resume: a failure explained only by an unfinished task is checked again once that task
+  is `done`, and only a higher-numbered task can explain it.
+
 ## [0.0.4] - 2026-10-28
 
 - Without a plan argument, the plan is chosen among unfinished ones by `Branch`; zero or

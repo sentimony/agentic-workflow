@@ -18,9 +18,11 @@ The target identity makes a review reproducible and lets anyone tell when it is 
     Uncommitted state: none | tracked patch hash + untracked file hashes
     Captured at:
 
-`Tree` is filled for every boundary, including a committed range, from the recipe in
-[tree-fingerprint.md](tree-fingerprint.md). It is what the journal's `Review` line and
-`cr-received` compare against. Take it before writing anything to the journal.
+`Tree` is filled for every boundary, including a committed range, from
+[tree-fingerprint.md](tree-fingerprint.md): `Committed tree` for a committed range or
+commits, `Working tree` when the boundary holds uncommitted changes. Both leave out the
+record host (the plan or the spec that holds the record). It is what the record's `Review`
+line and `cr-received` compare against. Take it before writing anything to the record.
 
 ## Read-only commands
 
@@ -65,10 +67,17 @@ staged, and unstaged changes arrive together, plus the untracked files:
 Use it when the task or branch is partly committed; the `Tree` field then names exactly
 the state the reviewer saw.
 
-Fingerprint for uncommitted state:
+Fingerprint for uncommitted state (`Uncommitted state`):
 
-    git diff --no-ext-diff --no-textconv HEAD | git hash-object --stdin
-    git hash-object <each included untracked file>
+    git diff --no-ext-diff --no-textconv HEAD -- . ':(exclude)<host-path>' | git hash-object --stdin
+    git ls-files --others --exclude-standard -- . ':(exclude)<host-path>' | git hash-object --stdin-paths
+
+`<host-path>` is the record host relative to the root; drop the `-- . ':(exclude)...'`
+part when there is no host in the repository. Leaving the host out keeps the record lines
+appended after a review from changing the uncommitted state. `cr-received` uses the same
+two commands, so the recorded and the current state compare. `--stdin-paths` unquotes the
+C-quoted names that `ls-files` prints under `core.quotePath`, so untracked names with
+non-ASCII bytes, quotes, tabs, or newlines hash as they are.
 
 ## Secret scan before sending
 
@@ -114,17 +123,18 @@ diff, and base copies of modified, deleted, and type-changed files. Review from 
 files, name them in the brief as the target, and tell the reviewer to read them instead of
 running Git. Check that the identity names the same head the files came from; a mismatch
 is a wrong target. Take `Tree` from the caller's identity. Without it, when Git is
-allowed, run the recipe in [tree-fingerprint.md](tree-fingerprint.md) with
-`GIT_INDEX_FILE="$tmp" git read-tree '<head>'` in place of its `cp` and `git add -A`
-lines, so the plan stays out; `git rev-parse '<head>^{tree}'` gives the same ID only
-when the plan is not committed. Else write `Tree: unknown - <reason>`.
+allowed, run the `Committed tree` recipe in [tree-fingerprint.md](tree-fingerprint.md)
+with `'<head>'` in place of `HEAD`, so the record host stays out;
+`git rev-parse '<head>^{tree}'` gives the same ID only when the host is not committed.
+Else write `Tree: unknown - <reason>`.
 
 ## Base discovery
 
-When the user names no base, use the `Base` line of the plan's execution record if it
-is set (not `unset`); otherwise take the merge-base with the default branch
-(`git merge-base origin/HEAD HEAD`, falling back to `main` or `master`). State the choice in
-the brief. If the branch has no upstream and no obvious parent, ask.
+When the user names no base, use the `Base` line of the plan's execution record if it is
+set (not `unset`; a spec's `## Verification record` has no `Base`); otherwise take the
+merge-base with the default branch (`git merge-base origin/HEAD HEAD`, falling back to
+`main` or `master`). State the choice in the brief. If the branch has no upstream and no
+obvious parent, ask.
 
 ## Fail fast
 

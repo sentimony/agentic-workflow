@@ -1,5 +1,56 @@
 # Changelog
 
+## [0.0.10] - 2026-10-29
+
+- A re-review may report a finding outside the fix diff only when the fix caused it,
+  tagged `[regression]` with evidence of the link, in `SKILL.md`, the `Re-review kind` of
+  `references/brief.md`, and `references/lenses.md`; the finding header has a
+  `[regression]` slot next to `[plan-mandated]`. Older code stays out of scope, and a
+  rejected finding stays closed.
+- The reviewer never runs a test that writes into the tree, reaches an external service,
+  or needs credentials; it lists such a test under `Not checkable from the diff` with the
+  reason.
+- `references/brief.md` names the object the CI review is published as: a PR review
+  (event `COMMENT`) or a conversation comment, and which one the PR list counts; the
+  sentence sits after the `Not checkable` paragraph, outside what `cross-cr` sends to
+  reviewers (request 20261025-1922).
+- Record host: the plan, else the spec's `## Verification record`, else none; `Review`,
+  `Finding`, and `Round` lines go to that host. The fingerprint uses the `Committed tree`
+  or `Working tree` recipe by boundary and leaves the host out.
+- Round rule: only automatic rounds count; a user-started round past the limit runs once
+  and is recorded with a `Ruling` line; the same cause twice escalates in any round.
+- `--auto` starts `cr-received` or `verify` in the same turn and stops at the user's
+  decisions, the Round rule, and before the `finalize` option choice; `Next step` lines,
+  the CI one included, never carry it. A chain that `finalize`, `cross-cr`, or
+  `plan-craft` started for a step it owns returns to that skill: a clean plan review goes
+  back to `plan-craft` and `implement`, not to `verify`.
+- The skill never creates a spec's `## Verification record`; until `implement` or `verify`
+  does, the `Review` and `Finding` lines stay in the result. A clean document review ends
+  with `implement - <plan path>` or `plan-craft - <spec path>`, not `verify`.
+- `Uncommitted state` leaves the record host out and hashes each untracked file with the
+  same two commands `cr-received` uses.
+- CI `Next step` line (request 20261030-0141): a clean review always ends with
+  ``Next step: `/verify <plan path>` -> `/finalize` squash``, or
+  ``Next step: `/verify` -> `/finalize` squash`` when neither the PR description nor the
+  diff names a plan, instead of a bare `/verify` with a reason; a review with findings
+  ends with `` Next step: `/cr-received PR #<n>` `` and no reason. CI cannot match a
+  `Verify` line (the host is outside the repository, or `HEAD^{tree}` includes it), so
+  the `/finalize` row of the CI table is gone.
+  The "CI footer grammar" regular expression accepts arguments inside the skill span, a
+  ` -> ` tail, and a line without a reason, and has samples for the new forms. The local
+  `Next step: <skill> - <reason>` grammar is unchanged.
+- New `references/compact.md` (request 20261030-0208) describes the compact result the CI
+  review posts: the one-row `Intent | System | Craft | Critical | Important | Minor`
+  table, the `Readiness` line, one collapsed `<details>` block with `Findings`, `Target`,
+  `Axis verdicts`, and `Set aside, open questions, and review gaps`, the blank lines
+  around `<details>`, and the footer. `SKILL.md` links it; the workflow prompt keeps its
+  full description of the format until a release tag carries this file.
+- Under `--auto`, a clean document review starts `implement` or `plan-craft` in the same
+  turn, and a clean review of a spec that is not approved ends with
+  `Next step: none - <spec path> is a draft, awaiting approval` instead of `plan-craft`.
+  A plan review that `plan-craft` started returns to it on `REVIEWER UNAVAILABLE` too, as
+  `plan-craft` goes on to `implement` then.
+
 ## [0.0.9] - 2026-10-28
 
 - The fingerprint recipe in `references/tree-fingerprint.md` records the full object ID

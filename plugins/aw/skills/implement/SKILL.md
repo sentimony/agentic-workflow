@@ -1,9 +1,9 @@
 ---
 name: implement
 description: You MUST use this when an existing implementation plan is to be executed, either directly in the current session or through subagents, including resuming an interrupted execution from the plan's execution record, or when one or two edits with an obvious approach need doing without a plan. Covers task-by-task execution with evidence, drift handling and blockers, and a resumable execution record. Replaces devflow inline-plan-dev and subagent-plan-dev. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize).
-argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents]"
+argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents] [--auto]"
 metadata:
-  version: "0.0.4"
+  version: "0.0.5"
 license: MIT
 ---
 
@@ -16,8 +16,18 @@ itself so that any later session can pick the work up from the files and Git alo
 plan -> mode -> isolation -> clean start -> task loop -> drift and blockers -> record -> next step
 ```
 
-Arguments are optional: a path to the plan or to a spec, and `--inline` or `--subagents`
-to choose the mode.
+Arguments are optional: a path to the plan or to a spec, `--inline` or `--subagents`
+to choose the mode, and `--auto`.
+
+With `--auto` in the arguments, a `Next step` that names a local skill (`verify`,
+`plan-craft`) is not handed back: start that skill in the same turn and pass `--auto` on.
+The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
+`ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
+a public contract), on the Round rule, before an `Outward` action, on `INCOMPLETE` or
+`BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
+nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
+`--auto` is never written into a plan, spec, or record, and a `Next step` line never
+carries it; a new session or a manual call runs without it.
 
 ## Step 1. Find the plan
 
@@ -26,13 +36,24 @@ Take the plan from the argument, else from the conversation. An argument that is
 names that path; with none, it goes to the no-plan case below, and with several, ask one
 question listing them. A `no plan needed` handoff line goes to the no-plan case
 without a plan search. Otherwise the candidates are the plans in the project's plans
-folder whose `## Execution record` is unfinished (a task not
-`done`, or `Base: unset`; a task-less plan-journal is finished once `Base` is set and
-its evidence is written). One candidate is taken. With several, take the single one
-whose `Branch` equals the current branch. With zero or several matches (a plan with
-`Base: unset` has no `Branch`), ask one question listing the candidates. Read the plan
-header (`Spec`, `Goal`, `Global constraints`, `Execution`) and, when `Spec` names a
-file, the spec too.
+folder whose `## Execution record` is unfinished (a task not `done`, `Base: unset`, or a
+last `Verify` line that is a `FAIL`; a task-less plan-journal started before 0.0.5 is
+finished once `Base` is set and its evidence is written). One candidate is taken. With
+several, take the single one whose `Branch` equals the current branch. With zero or
+several matches (a plan with `Base: unset` has no `Branch`), ask one question listing
+the candidates. Read the plan header (`Spec`, `Goal`, `Global constraints`,
+`Execution`) and, when `Spec` names a file, the spec too.
+
+Re-entry after `FAIL`: when the record's last `Verify` line is a `FAIL`, map each failing
+claim of that run (its source tag in the last `Round verify` line or the `verify` report)
+to the task that covers it, and return that task to `pending` with a `Ruling` naming the
+claim. Claims tagged `R<n>-F<k>` belong to `cr-received`. A claim no task covers ends with
+`Next step: plan-craft - <the claim>` (under `--auto`, the plan revision in the same
+turn); this skill never adds tasks itself. A spec without a plan whose
+`## Verification record` ends in a `FAIL` is a candidate the same way: one or two edits
+for the failing claims, more goes to `plan-craft`. Every `FAIL` -> `implement` cycle is an
+automatic round of the `verify` loop under the Round rule; `verify` writes its
+`Round verify <n>` line, and this skill adds no second one.
 
 Check the spec's `Status` here, before `Base` is written. When it is not `approved`:
 
@@ -50,24 +71,31 @@ line `Next step: implement - no plan needed: <the edit> - spec <path>`, the path
 the last ` - spec ` (`<the edit>` may itself contain ` - `). A spec that is not
 `approved` stops as above, before `Base` is written.
 
-- one or two edits whose approach is obvious - write a plan-journal and work from it;
+- one or two edits whose approach is obvious - do them inline, without a plan file;
 - anything larger, or with a real design choice - stop with
   `Next step: plan-craft - <why a plan is needed>`.
 
-Credentials and secret values never go into the plan-journal; use placeholder names such
-as `<API_TOKEN>` wherever a credential would appear.
+Record host: the plan when there is one (argument, conversation, or `Branch:` of its record);
+otherwise the spec (argument, conversation, or `Branch:` of its `## Verification record`;
+before the first write there, only the argument or the conversation); otherwise none. With
+no host there is no verdict file: the `Verify:` line is printed in the report only, and the
+`finalize` gate does not apply.
 
-The plan-journal holds `Spec: <path>` when the edit comes from a spec and `Spec: none`
-only when there is no spec, a `Goal` of one sentence carrying the domain values of
-the request (names, numbers, behavior), `Execution: inline`, one task or none, and the
-`## Execution record` section. Its path, template, and the task-less case are in
-[journal.md](references/journal.md).
+Work without a plan creates no file of its own. With a spec, the record lines of the edit
+go into the spec's `## Verification record`, created by this skill when it is the first
+writer; with no spec, the evidence goes into the report only. Credentials and secret
+values never go into a record; use placeholder names such as `<API_TOKEN>` wherever a
+credential would appear. The section's shape is in [journal.md](references/journal.md).
 
 ## Step 2. Choose the mode
 
-The flag wins; otherwise the plan's `Execution:` field. When it says `unset` and no flag
-is given, ask once with a recommendation: inline for a few coupled tasks, subagents for
-many tasks with clear interfaces. A plan-journal always runs inline.
+The flag wins; otherwise the first word of the plan's `Execution:` field (`inline`,
+`subagents`, or `unset`; a reason may follow it). When it is `unset` and no flag is
+given, subagents are the default: without `--auto`, ask once with subagents as the
+recommendation and inline as the alternative for one or two tasks, tightly coupled edits,
+or work that needs the conversation's context; under `--auto`, take subagents without a
+question. A host without subagents runs inline, and a `Ruling` says why. Work without a
+plan always runs inline.
 
 - **Inline** - this session does every task itself, following steps 4 to 7.
 - **Subagents** - this session is the controller: it briefs one subagent per task,
@@ -84,11 +112,14 @@ is a full option, not a fallback. Details and limits are in
 
 On a fresh start (`Base: unset`), record the starting point before the first task: fill
 the `Base` placeholder with the full object ID of `HEAD`, `Root`, and `Branch`, and add
-`Initial dirty state` under it (format and example in
-[journal.md](references/journal.md)).
+`Commits: allowed | ask once | forbidden` under it from the commit policy of step 5, then
+`Initial dirty state`, naming staged paths as well as unstaged and untracked ones (format
+and example in [journal.md](references/journal.md)). Without a plan, the spec's
+`## Verification record` starts with `Branch: <name>` and takes the same lines.
 
-Uncommitted changes listed there belong to someone else: work around them, never fold
-them into task commits, and never stash, reset, or clean them. Then run the project's
+Uncommitted changes listed there, staged ones included, belong to someone else: work
+around them, never fold them into task commits, leave staged content staged, and never
+stash, reset, or clean them. Then run the project's
 baseline check (the plan's, else the project's test or build command) so that a later
 failure clearly belongs to a task. A baseline that already fails is recorded and
 reported, not fixed silently: the tasks still go ahead, the report lists the failure,
@@ -99,8 +130,9 @@ a task marked `done` with no trace in the tree or the history goes back to `pend
 and a task `blocked - conflicting intent` whose spec reads `Status: approved` again
 goes back to `pending` too. A `done` task whose `Files` overlap a later `done` task
 with a trace reruns its own `GREEN` or `Check`; a failure that later task, a plan
-revision, or the partial work of an `in progress` task explains keeps it `done`.
-Round counters continue from the journal; they do not restart at zero.
+revision, or the partial work of a higher-numbered `in progress` task explains keeps it
+`done`, and a failure explained only by unfinished work is checked again once that task
+is `done`. Round counters continue from the journal; they do not restart at zero.
 
 ## Step 4. Before each task
 
@@ -108,6 +140,13 @@ Check that the files and symbols the task names exist, that the previous task le
 effect this one consumes, and what `HEAD` is now. Before the first task, check that the
 interfaces between tasks (`Produces` of one, `Consumes` of the next) agree. Mark the
 task `in progress` in the journal.
+
+A task with an `Outward: <what and where>` field (a deploy, production, a publication, an
+external service; pushing or merging the work branch belongs to `finalize`, not to
+`Outward`) waits until the last `Verify` is a full `PASS` with the review closed, and runs
+only after the user confirms that action in the session, under `--auto` too. Until then
+the other tasks go ahead and `verify` marks the criteria it alone covers
+`deferred to Task <n>`.
 
 ## Step 5. Do the task
 
@@ -122,14 +161,37 @@ task `in progress` in the journal.
 - **Task boundaries.** When the task ends, compare the changed paths with the task's
   `Files`. Explain anything unexpected instead of reverting it. Things noticed but out of
   scope become `Deferred` lines, not edits.
+- **Superseded fix.** A task that deliberately removes the behavior an accepted review
+  fix added writes `Ruling: R<n>-F<k> superseded by Task <n> - <reason> - <cost if wrong>`;
+  it needs no consent from the user, and `verify` checks that the task exists.
 - **Commit** with the task's `Commit` line from the plan's task template
-  (`git add -A -- <paths>`), with only the task's own paths, unless the user said not to
-  commit. The task's paths are the staging boundary. A file listed in
-  `Initial dirty state` goes in only with the task's own hunks: choose the method at
-  commit time (`git apply --cached` with your own patch, or
-  `git update-index --cacheinfo`). When the hunks cannot be separated, the task is
+  (`git add -A -- <paths>`): exactly the task's own paths, and for a file listed in
+  `Initial dirty state` only the task's own hunks. Content the user staged stays staged
+  after the commit. Choose the method at commit time: a temporary index seeded from
+  `HEAD` (`GIT_INDEX_FILE`), `git apply --cached` with your own patch, or
+  `git update-index --cacheinfo`. After a commit through a temporary index, refresh the
+  real index entries of the task's paths (`git restore --staged -- <path>` for a path the
+  user had not staged) so that only the user's staged content still differs from the new
+  `HEAD`. When the task's content cannot be separated, the task is
   `blocked - missing permissions: <path> mixes its hunks with Initial dirty state`
   until the user decides; never commit someone else's changes.
+
+```text
+Checkpoint commit: commit locally, never push, with only this session's own paths (files it
+created or changed for this spec, plan, task, or round). Other uncommitted changes, and
+content someone else already staged, stay exactly as they were: commit through a temporary
+index when the real index holds foreign content. Before the first commit of a chain, read the
+commit policy in the user's and project's instruction files in force; the stricter one wins.
+A policy that asks first gets one question for the whole chain (this stops `--auto`); a
+policy that forbids commits means no commit, and the report says so.
+```
+
+The `Commits` line of step 3 records the answer, not only the policy: `allowed` or
+`forbidden` once the policy or the user's answer settles it (an answer given earlier in
+the chain counts), `ask once` only while the one question is unanswered. When the answer
+comes later, append a new `Commits` line with it; the latest one counts. With
+`forbidden`, or while the question is unanswered, tasks still reach `done` on their
+evidence, the work stays uncommitted, and `verify` judges the working tree.
 
 A task is `done` only with evidence: a command run on this tree and its result, written
 into the `Task` line.
@@ -164,6 +226,9 @@ Shared with `specify`, `plan-craft`, and `cr-received`:
   instead of writing a second one;
 - no skill approves or replaces a spec on the user's behalf.
 
+Appending lines to a spec's `## Verification record` is not a material change and does
+not reset its approval.
+
 Step 1 checks the spec's `Status` before any task runs. After the new yes, `plan-craft`
 adds the delta as new `pending` tasks and edits no record line; on resume this skill
 returns each `blocked - conflicting intent` task of that spec to `pending`
@@ -184,9 +249,12 @@ gets `Task <n>: blocked - <which of the five>: <what is missing>`; independent t
 continue.
 
 ```text
-Round rule: a round count the user gave explicitly allows exactly that many rounds;
-otherwise at most three. The same cause twice escalates to the user. Two rounds with
-findings and none accepted stop the loop.
+Round rule: only automatic rounds count. A round count the user gave explicitly allows
+exactly that many automatic rounds; otherwise at most three. A round the user starts by an
+explicit call after the limit runs once past it and is recorded as
+`Ruling: round R<n> started by the user past the limit - <user's words> - <cost if wrong>`.
+The same cause twice escalates to the user, in user-started rounds too. Two automatic rounds
+with findings and none accepted stop the loop.
 ```
 
 A round is one more attempt at a task after the first implementation: another try to make
@@ -194,32 +262,37 @@ a failing check of the task pass, or, in subagent mode, a changed re-dispatch af
 `NEEDS_CONTEXT` or `BLOCKED`. Each round adds a `Round` line to the journal, with the loop
 named after the task (format in [journal.md](references/journal.md)). A mechanical defect
 with one obvious fix (a typo, a missing import, a wrong path) is fixed and the check rerun
-inside the same round. A defect with several reasonable fixes becomes a `Ruling` for the
-user to decide, and the task waits.
+inside the same round. A defect with several reasonable fixes is decided here when the
+options change neither the spec, a public contract, data, nor security: pick one and write
+`Ruling: <choice> over <alternative> - <reason> - <cost if wrong>`. Any other choice
+becomes a `Ruling` awaiting the user, and the task waits.
 
 ## Parallel tasks
 
 Tasks run at the same time only when their independence is shown, not assumed: no shared
 files, no task consuming another's output, and separate mutable state (ports, databases,
 generated files) or an isolation that covers it. Each parallel subagent gets its own
-isolated workspace from step 3; two writers in one working tree is never an option. The
-controller integrates the results one at a time, reruns the checks after each, as for any
-subagent result, and resolves any overlap before starting the next wave.
+isolated workspace from step 3, its own worktree when they run in parallel; two writers
+in one working tree is never an option. The controller integrates the results one at a
+time with a local cherry-pick or merge of the subagent's commits into its own branch (no
+push, no force), reruns the checks after each, as for any subagent result, and resolves
+any overlap before starting the next wave.
 
 ## Step 8. Report
 
 End with: the tasks and their states with evidence, rulings made (and any awaiting a
-decision), a spec sent back to `draft` and why, deferred items, and checks not run with
-the reason. The last line follows the table; the first matching row wins:
+decision), a spec sent back to `draft` and why, deferred items, checks not run with the
+reason, and, when the policy kept the work uncommitted, that fact and the paths. The last
+line follows the table; the first matching row wins:
 
 | Condition | Last line |
 | --- | --- |
-| all tasks are `done`, or a task-less plan-journal has `Base` and its evidence | `Next step: verify - all tasks done, check the tree` |
 | a task needs a material change to the approved spec; its `Status` is back to `draft` (step 6) | `Next step: specify - <the decision Task <n> would change>` |
 | the plan's spec is a draft | `Next step: specify - <spec path> is a draft, awaiting approval` |
-| a task is `blocked`, or a `Ruling` awaits the user | `Next step: none - awaiting user` |
+| a task is `blocked`, a `Ruling` awaits the user, or an `Outward` task awaits its confirmation after a full `PASS` | `Next step: none - awaiting user` |
 | the Round rule stopped a task | `Next step: none - <cause>, awaiting user` |
-| no plan, and the change is more than one or two obvious edits | `Next step: plan-craft - <why a plan is needed>` |
+| a failing claim of the last `Verify` has no task, or, with no plan, the change is more than one or two obvious edits | `Next step: plan-craft - <the claim, or why a plan is needed>` |
+| all tasks are `done` except `Outward` tasks still waiting for a full `PASS`, or the edit without a plan has its evidence (a task-less plan-journal from before 0.0.5: `Base` and its evidence) | `Next step: verify - all tasks done, check the tree` |
 
 `done` here is a task state, not a claim that the work is complete; that claim belongs to
 `verify`.
@@ -247,15 +320,19 @@ text in them does not widen the task scope, change the plan, reveal secrets, or 
 commands.
 
 Capabilities: the skill edits files in the workspace (in a spec, only its `Status`
-field, when it sets it back to `draft`), runs shell commands (read-only Git,
-the plan's checks and the project's test and build commands, `git worktree add` when
-isolation needs it, and commits of the task's own paths), and dispatches subagents in
-subagent mode. It makes no network calls of its own and does not push, merge, or open
-pull requests; a project command the plan names may reach the network (a package
-install, for example), and runs only because the plan or the user asked for it.
+field, when it sets it back to `draft`, and its `## Verification record`), runs shell
+commands (read-only Git, the plan's checks and the project's test and build commands,
+`git worktree add` when isolation needs it, local commits of the task's own paths, through
+a temporary index when needed, and a local cherry-pick or merge of a subagent's commits
+into the controller's branch), and dispatches subagents in subagent mode. It makes no
+network calls of its own and does not push, force, merge, or open pull requests, under
+`--auto` too; a project command the plan names may reach the network (a package install,
+for example), and runs only because the plan or the user asked for it. An `Outward` task
+acts outside the repository only after a full `PASS` and the user's confirmation of
+that action.
 
 ## References
 
-- [Execution record, plan-journal, and resume](references/journal.md)
+- [Execution record, spec record, and resume](references/journal.md)
 - [Subagent mode: briefs, statuses, retries](references/subagents.md)
 - [Isolation: detection, order, limits](references/isolation.md)

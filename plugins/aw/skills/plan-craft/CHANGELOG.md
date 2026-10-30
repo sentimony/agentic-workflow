@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.0.5] - 2026-10-29
+
+- `--auto`: the plan review and `implement` start in the same turn; the turn still
+  stops on user decisions, the Round rule, `Outward`, `INCOMPLETE` or `BLOCKED`, and the
+  `finalize` choice; `--auto` is never written into a plan, spec, or record.
+- Checkpoint commits replace the old no-commit rule: `Plan <topic>` once `Execution` is
+  written and `Revise plan <topic>: <reason>` per revision, local, own paths only, under
+  the user's and project's commit policy.
+- Under `--auto` the plan review is `cr-request` in document mode with up to three
+  automatic rounds; the review chain returns to `plan-craft`, which starts `implement`
+  after a clean round; `cross-cr plan` only when the user names it; an unavailable
+  reviewer is one report line.
+- Step 7 offers `implement` with subagents first and by default, `inline` with its
+  reason; under `--auto` it picks without a question (`inline` for one or two tasks or
+  tasks on the same files) and writes the reason after the value; a revision does not
+  ask again. Tasks are self-contained for a fresh agent.
+- An existing plan for the spec is revised before the "no plan needed" step; without a
+  plan, `implement` writes into the spec's `## Verification record`, and plan-craft no
+  longer mentions a journal of its own for such edits.
+- Commands are checked against the project's script definitions, `--help` only for
+  syntax they do not show; running existing code gives expected values only for
+  behavior the spec keeps unchanged.
+- New task field `Outward: <what and where>`; new record line
+  `Ruling: R<n>-F<k> superseded by ...` written on a revision that removes an accepted
+  fix.
+- The template's record format adds `Commits`, `Verify ... [working]`, the record host
+  order, the spec's `## Verification record`, and the named `Ruling` forms; the writers
+  table adds `specify`, `finalize`, and round-past-limit writers, and `verify` no
+  longer creates a journal without a plan.
+- Approval invariant: appending to a spec's `## Verification record` does not reset its
+  approval.
+
 ## [0.0.4] - 2026-10-28
 
 - The `no plan needed` handoff carries the approved spec:

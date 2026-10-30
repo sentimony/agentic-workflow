@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.0.2] - 2026-10-29
+
+- Before round 1 the skill commits this session's own uncommitted spec, plan, or code
+  locally as `Checkpoint before cross-cr R1: <topic>`, through a temporary index when the
+  real one holds foreign content, under the user's and project's commit policy; other
+  uncommitted paths are listed and left alone. The old ban on any commit made only to fit
+  the boundary is gone; foreign changes are still never committed to fit it. With no
+  explicit or plan-start base, the review then runs against the `HEAD` from before that
+  commit (`--target working-tree <SHA>`), so the committed change stays in the diff.
+- Only automatic rounds count against the limit (three, or the named rounds); a round
+  the user starts past the limit runs once and is recorded as a `Ruling` line, and the
+  same cause twice escalates also in user-started rounds. Dispositions can be
+  "escalated, open".
+- `--auto`: the skill takes it out of the arguments before the runner's `resolve` and
+  runs review, `cr-received`, `verify`, and the next round without pauses, stopping on
+  user decisions, the Round rule, and before the `finalize` choice.
+- The runner reads `~/.gemini/antigravity-cli/settings.json` (through `HOME`) before every
+  Antigravity `run` and `resume`: a non-empty `permissions.allow`, or a file it cannot read
+  or parse, is exit 2 before any brief is sent, with a message that names the file but not
+  its content; a missing file lets the run proceed.
+- `Review`, `Finding`, and `Round review <n>` lines go to the record host, the plan or
+  else the spec's `## Verification record`, as in `cr-request`, and the round counter is
+  read from them; like `cr-request`, it never creates a spec's record. Under `--auto` a
+  re-review comes back to `cross-cr` as its next round, never as a same-host `cr-request`.
+- A runner test checks that `standard_sections()` leaves out the host-only text of
+  cr-request `brief.md` (`Reviewed with`, `CI footer grammar`, `conversation comment`).
+- Step 7 shows each reviewer's result in the chat as one compact block (request
+  20261030-0208): the verdict and count table and `Readiness` from `review.md`, as in
+  cr-request `references/compact.md` without `<details>`, a one-line run report
+  `Reviewer: <reviewer> · <model> · effort <effort> · ~$<cost>` with the conditional
+  `Session`, `Target`, `Warning`, and `Stopped` lines, and `Details: <run dir>/review.md`.
+  The token line and the separate cost line of the run report are gone, and findings are
+  no longer listed in the chat; `cr-received` reads them from `review.md`. Several
+  reviewers get one block each and one shared `Next step` line, whose findings form now
+  ends with the `review.md` path.
+
 ## [0.0.1] - 2026-10-27
 
 - New skill, forked from sentimony/skills devflow `cross-review` 1.4.2, which it

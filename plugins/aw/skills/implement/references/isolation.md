@@ -20,7 +20,8 @@ Existing isolation is used as it is. Do not stack a new worktree on top of one.
 
 1. **Work in place.** A full option, chosen whenever the branch is right and the
    uncommitted changes (if any) are unrelated and can be kept out of task commits by
-   committing with explicit paths.
+   committing with explicit paths, through a temporary index when someone else's content
+   is already staged.
 2. **The harness mechanism.** When the runtime offers its own isolated workspace, use it
    instead of managing worktrees by hand.
 3. **A Git worktree.** When the work must not share a working tree with other changes or
@@ -30,8 +31,10 @@ Existing isolation is used as it is. Do not stack a new worktree on top of one.
    the journal, there. Tasks get absolute paths to that copy; an uncommitted plan is not
    copied into the worktree, and a committed copy inside it is neither read nor edited.
 
-Parallel subagents each need a separate workspace; the rule is in the skill's Parallel
-tasks section.
+Parallel subagents each need a separate worktree on their own branch from the
+controller's branch (`git worktree add -b <branch> <path> <controller branch>`); the rule is
+in the skill's Parallel tasks section. The controller integrates their commits locally,
+by cherry-pick or merge into its own branch, and never pushes or forces for it.
 
 ## Limits
 
@@ -41,6 +44,6 @@ in different worktrees.
 
 ## Never
 
-Never reset, stash, clean, or check out over changes that someone else left in the tree.
-Name them in `Initial dirty state` and work around them. Removing a worktree after the
-change is integrated belongs to `finalize`, not to this skill.
+Never reset, stash, clean, or check out over changes that someone else left in the tree
+or staged in the index. Name them in `Initial dirty state` and work around them. Removing
+a worktree after the change is integrated belongs to `finalize`, not to this skill.

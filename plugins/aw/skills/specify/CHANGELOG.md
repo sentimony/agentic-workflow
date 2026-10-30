@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.0.5] - 2026-10-29
+
+- `--auto` in the arguments (`argument-hint` `[--auto]`): the `direct` route starts
+  `implement --auto` and an approved spec starts `plan-craft --auto` in the same turn;
+  the turn still stops on the user's decisions, the Round rule, `Outward`, `INCOMPLETE`
+  or `BLOCKED`, and the `finalize` option choice. `--auto` never approves a spec and is
+  never written into a spec, plan, or record.
+- After the explicit yes the skill commits the spec and its spec-index line locally as
+  `Approve spec <topic>`, with only its own paths and under the user's and project's
+  commit policy (one question per chain when it asks first, no commit when it forbids).
+- The spec template has an optional last section `## Verification record` for work
+  without a plan: a fenced block that starts with `Branch: <name>` and takes the plan
+  record's lines and append rules. Appending to it does not reset approval, and a
+  re-approval of a spec with that section appends `Ruling: spec re-approved - <date>`.
+- The coverage check for `note` traces criteria to `Goal` or a decision, without
+  `Behavior` and `Contract`. A decision names a rejected alternative only when one was
+  considered; `Rejected:` in the template is optional. An explicitly accepted risk still
+  approves a spec.
+
 ## [0.0.4] - 2026-10-28
 
 - An entry of the assumptions list is material when its opposite would change a decision

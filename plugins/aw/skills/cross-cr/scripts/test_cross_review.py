@@ -950,6 +950,10 @@ class RunnerTestCase(unittest.TestCase):
         self.brief.write_text("fixture brief", encoding="utf-8")
         self.env = {k: v for k, v in os.environ.items() if k != "CROSS_REVIEW_DEPTH"}
         self.env["TASK_SENTINEL"] = "present"
+        # The Antigravity preflight reads HOME: never the real ~/.gemini settings.
+        self.home = base / "home"
+        self.home.mkdir()
+        self.env["HOME"] = str(self.home)
         # Isolate from a parent CROSS_REVIEW_DEPTH: restored when the test ends.
         env_patch = mock.patch.dict(os.environ, clear=False)
         env_patch.start()
@@ -2683,6 +2687,89 @@ class AgyIdleTests(RunnerTestCase):
         self.assertNotIn("exit_reason", json.loads((run_dir / "usage.json").read_text()))
 
 
+class AgyIsolationTests(RunnerTestCase):
+    """Fail-closed preflight on the agy settings of the fixture HOME."""
+
+    SECRET_ENTRY = "npm test --secret-entry"
+
+    def setUp(self):
+        super().setUp()
+        install_fake_bin(self)
+        self.settings = self.home / ".gemini" / "antigravity-cli" / "settings.json"
+
+    def write_settings(self, text):
+        self.settings.parent.mkdir(parents=True, exist_ok=True)
+        self.settings.write_text(text)
+
+    def assert_stopped_before_the_brief(self, exc):
+        self.assertEqual(exc.code, cr.EXIT_INVALID_INPUT)
+        self.assertIn(str(self.settings), exc.message)
+        self.assertNotIn(self.SECRET_ENTRY, exc.message)
+        self.assertIsNone(exc.run_dir)
+        self.assertEqual(self.run_dirs(), [])
+        self.assertEqual(list(self.record.iterdir()), [])
+
+    def run_agy_error(self):
+        with self.assertRaises(cr.CrossReviewError) as caught:
+            cr.run_review("antigravity", self.repo, self.brief, None, None, self.env)
+        return caught.exception
+
+    def test_non_empty_allow_list_exits_2_before_the_brief_is_sent(self):
+        self.write_settings(json.dumps({"permissions": {"allow": [self.SECRET_ENTRY]}}))
+        self.assert_stopped_before_the_brief(self.run_agy_error())
+
+    def test_main_returns_2_and_names_the_file_without_its_content(self):
+        self.write_settings(json.dumps({"permissions": {"allow": [self.SECRET_ENTRY]}}))
+        err = io.StringIO()
+        with redirect_stdout(io.StringIO()), redirect_stderr(err), \
+                mock.patch.dict(os.environ, self.env):
+            code = cr.main(["run", "--agent", "gemini", "--repo", str(self.repo),
+                            "--brief", str(self.brief)])
+        self.assertEqual(code, 2)
+        self.assertIn(str(self.settings), err.getvalue())
+        self.assertNotIn(self.SECRET_ENTRY, err.getvalue())
+        self.assertEqual(list(self.record.iterdir()), [])
+
+    def test_unparsable_settings_exit_2(self):
+        for text in ("{not json " + self.SECRET_ENTRY, "[]",
+                     json.dumps({"permissions": [self.SECRET_ENTRY]}),
+                     json.dumps({"permissions": {"allow": self.SECRET_ENTRY}})):
+            with self.subTest(text=text):
+                self.write_settings(text)
+                self.assert_stopped_before_the_brief(self.run_agy_error())
+
+    @unittest.skipIf(os.geteuid() == 0, "root reads a mode 000 file")
+    def test_unreadable_settings_exit_2(self):
+        self.write_settings(json.dumps({"permissions": {"allow": []}}))
+        self.settings.chmod(0)
+        self.assert_stopped_before_the_brief(self.run_agy_error())
+
+    def test_missing_settings_file_lets_the_run_proceed(self):
+        run_dir = cr.run_review("antigravity", self.repo, self.brief, None, None, self.env)
+        self.assertEqual(last_record(self)["stdin"], "fixture brief")
+        self.assertTrue((run_dir / "review.md").exists())
+
+    def test_empty_allow_list_lets_the_run_proceed(self):
+        for text in (json.dumps({"permissions": {"allow": []}}), json.dumps({"theme": "x"})):
+            with self.subTest(text=text):
+                self.write_settings(text)
+                cr.run_review("antigravity", self.repo, self.brief, None, None, self.env)
+
+    def test_other_reviewers_do_not_read_the_agy_settings(self):
+        self.write_settings(json.dumps({"permissions": {"allow": [self.SECRET_ENTRY]}}))
+        cr.run_review("claude-code", self.repo, self.brief, None, None, self.env)
+
+    def test_resume_checks_the_settings_again(self):
+        original = cr.run_review("antigravity", self.repo, self.brief, None, None, self.env)
+        self.write_settings(json.dumps({"permissions": {"allow": [self.SECRET_ENTRY]}}))
+        before = len(list(self.record.iterdir()))
+        with self.assertRaises(cr.CrossReviewError) as caught:
+            cr.resume_review(original, "Re-check.", self.env)
+        self.assertEqual(caught.exception.code, cr.EXIT_INVALID_INPUT)
+        self.assertEqual(len(list(self.record.iterdir())), before)
+        self.assertEqual(self.run_dirs(), [original])
+
+
 class ReviewRoundOneTests(GitRunnerTestCase):
     """Fixes for the yngwald review round 1 findings on PR #13."""
 
@@ -2814,6 +2901,18 @@ class ReviewRoundOneTests(GitRunnerTestCase):
         text = cr.standard_sections("plan", "codex")
         self.assertIn("### Document kind", text)
         self.assertNotIn("### Re-review kind", text)
+
+    def test_standard_sections_leave_out_the_host_only_text(self):
+        # The cut at `Not checkable keeps the CI signature, the footer grammar, and the
+        # publication-object sentence of cr-request brief.md out of the reviewer's brief.
+        for mode in cr.MODES:
+            for reviewer in cr.REVIEWERS:
+                with self.subTest(mode=mode, reviewer=reviewer):
+                    text = cr.standard_sections(mode, reviewer)
+                    self.assertIn("## Result contract", text)
+                    for phrase in ("Reviewed with", "CI footer grammar",
+                                   "conversation comment"):
+                        self.assertNotIn(phrase, text)
 
 
 if __name__ == "__main__":

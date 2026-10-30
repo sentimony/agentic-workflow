@@ -23,22 +23,30 @@ local diff drivers from rewriting the output.
     git rev-parse HEAD
     git status --porcelain=v1 --untracked-files=all
     git diff --no-ext-diff --no-textconv --name-status <reviewed-head> HEAD
-    git diff --no-ext-diff --no-textconv HEAD | git hash-object --stdin
-    git ls-files --others --exclude-standard
+    git diff --no-ext-diff --no-textconv HEAD -- . ':(exclude)<host-path>' | git hash-object --stdin
+    git ls-files --others --exclude-standard -- . ':(exclude)<host-path>' | git hash-object --stdin-paths
 
-The tree fingerprint comes from the recipe in [tree-fingerprint.md](tree-fingerprint.md).
+`<host-path>` is the record host relative to the root; drop the `-- . ':(exclude)...'`
+part when there is no host in the repository. Leaving the host out keeps the record lines
+that `cr-request` appends after a review from changing the uncommitted state. The last two
+commands are the `Uncommitted state` recipe of `cr-request` `references/target.md`, word
+for word, so the two values compare. `--stdin-paths` unquotes the C-quoted names that
+`ls-files` prints under `core.quotePath`, so untracked names with non-ASCII bytes, quotes,
+tabs, or newlines hash as they are.
+The tree fingerprint comes from the `## Committed tree` recipe in
+[tree-fingerprint.md](tree-fingerprint.md).
 
 ## Identity record
 
     Reviewed head: <full SHA from the review, or unknown>
     Base: <base ref and SHA, or unknown>
     Included paths: <paths or whole tree>
-    Uncommitted fingerprint: <diff hash and untracked files, or none>
+    Uncommitted state: <diff hash and untracked file hashes without the host, or none>
     Tree: <fingerprint>
 
 Keep one record for the reviewed target (`Tree` from the review when it states one) and
 one for the current tree. The current tree matches the reviewed target when HEAD, the
-base, the included paths, the uncommitted fingerprint, and `Tree` all match. Any
+base, the included paths, the uncommitted state, and `Tree` all match. Any
 difference moves the affected findings to a recheck against current code. Every
 disposition is bound to the current `Tree`: after any edit, earlier decisions on other
 records stand only once rechecked against the new fingerprint.
@@ -82,7 +90,8 @@ Assessment and disposition are separate: a `CONFIRMED` finding can be `DEFER`, a
   blocker.
 - `ESCALATE` - needs a decision the user or another owner makes: product scope,
   architecture, security posture, a public contract, or a conflict with an earlier user
-  decision.
+  decision. It stays open across rounds until a `Ruling: R<n>-F<k> escalation decided`
+  line; records that do not depend on it are fixed in the same pass.
 
 ## Evidence for findings on a spec or plan
 
@@ -110,9 +119,9 @@ The resolution evidence of a document fix is the edited section and the file's n
     Rejected:  <ID - assessment - evidence>
     Deferred:  <ID - owner - where tracked>
     Set aside: <row - ruling>
-    Escalated: <ID - decision needed - options>
+    Escalated: <ID - decision needed - options; open ones from earlier rounds too>
     Open questions: <from the review and from verification>
-    Checks run: <commands and results>
+    Checks run: <commands, results, and the class of each failure>
     Re-review: <needed for which scope, or not needed - reason>
 
 Report counts as they are; a rejected or deferred finding is a result, not a failure to

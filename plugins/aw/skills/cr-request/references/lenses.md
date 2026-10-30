@@ -65,6 +65,8 @@ Locate each finding by section (`§<heading>`), not by line.
 - A fix that moves the defect elsewhere is `NOT ADDRESSED` plus a new finding.
 - Look for breakage the fix introduced in its own lines; older code outside the fix diff
   is out of scope for this round.
+- Outside the fix diff, report only a regression the fix caused, tagged `[regression]`,
+  with evidence that links it to the fix.
 
 ## Common smells
 

@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.0.6] - 2026-10-29
+
+- `--auto` in the arguments starts the next local step (`verify`, `plan-craft`) in the
+  same turn; it stops on a user decision, the Round rule, `ESCALATE`, `INCOMPLETE` or
+  `BLOCKED`, and before the `finalize` choice; a chain that `finalize`, `cross-cr`, or
+  `plan-craft` started returns to that skill.
+- Each round's fixes and record lines are committed locally as
+  `Address R<n> findings: <IDs>`, with only the session's own paths and under the commit
+  policy of the user's and project's instructions.
+- The Round rule counts only automatic rounds; a round the user starts past the limit runs
+  once and is recorded with a `Ruling`; the same cause twice always escalates.
+- An `ESCALATE` no longer holds back independent records, and it stays open in `Blocking`
+  across rounds until a `Ruling: R<n>-F<k> escalation decided` line closes it.
+- A `Ruling: R<n>-F<k> superseded by ...` line records an accepted fix that a later task,
+  finding, or marker removed on purpose.
+- Failing checks are classed as `caused by fix`, `pre-existing`, `environment`, `flaky`,
+  or `tool unavailable`; only a passing check resolves a finding. A test is shown to fail
+  without its fix in a temporary detached worktree, never with `git stash`.
+- A ruling to leave code as it is leaves a durable trail (a comment by the line and, for
+  the owner's decision or after the user's yes, a sentence in `AGENTS.md`); the return
+  block gains `Durable rulings: <paths or none>`.
+- Without a plan, record lines go to the spec's `## Verification record`, and appending
+  there does not reset the spec's approval. The anchor uses the `## Committed tree`
+  fingerprint recipe; a review of an uncommitted boundary keeps its identity only while
+  `HEAD` and the uncommitted state (without the record host, by the same commands as
+  `cr-request`) are unchanged. `Previous verification` is `stale` whenever `Changed paths`
+  is not `none`, and only a `Commits` line that says `allowed` or `forbidden` answers the
+  commit-policy question.
+- The argument may be several review paths (the `cross-cr` findings line lists one per
+  reviewer), or `PR #<n>`, the form the CI review's `Next step` line passes: the
+  latest review on that pull request, the CI auto-review by default, read through a tool
+  the user already configured.
+
 ## [0.0.5] - 2026-10-28
 
 - The fingerprint recipe in `references/tree-fingerprint.md` records the full object ID

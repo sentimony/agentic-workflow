@@ -282,7 +282,7 @@ jobs:
                       if origins.get(key)!={k:f[k] for k in ('origin_review_id','original_id','path','severity')}:
                           history_gap=True; continue
                       try:
-                          timeline[key].append((timestamp(r.get('submitted_at')),0,r['id'],'review',f['status']))
+                          timeline[key].append((timestamp(r.get('submitted_at')),0,r['id'],'review',(f,d)))
                       except (Stop, ValueError, TypeError, KeyError): history_gap=True
               # Read host replies directly; ledger event metadata is never treated as proof of source.
               for key,f in origins.items():
@@ -297,24 +297,35 @@ jobs:
                       for v,c in candidates:
                           if v['head_sha'] not in known_heads:
                               history_gap=True; continue
-                          timeline[key].append((timestamp(c['updatedAt']),1,c['databaseId'],'host',v['disposition']))
+                          timeline[key].append((timestamp(c['updatedAt']),1,c['databaseId'],'host',v))
                       # Host dispositions are explicit; NOT_ADDRESSED only clears a prior fixed status.
                       # A later ADDRESSED proves a fix, while a later explicit host decision replaces it.
+                      acceptance=None; host=None
                       for _,_,_,kind,value in sorted(timeline[key]):
-                          if kind=='host': states[key]=value
-                          elif value=='ADDRESSED': states[key]='fixed'
-                          elif states[key]=='fixed': states[key]=None
+                          if kind=='host':
+                              host=value; states[key]=host['disposition']; acceptance=None
+                          else:
+                              previous,envelope=value
+                              if previous['status']=='ADDRESSED':
+                                  states[key]='fixed'; acceptance=None
+                              else:
+                                  if states[key]=='fixed': states[key]=None
+                                  acceptance=None
+                                  if (states[key]=='DEFER' and previous['defer_decision']=='ACCEPTED'
+                                      and host is not None and envelope['head_sha']==host['head_sha']
+                                      and previous['owner']==host['owner']):
+                                      acceptance=(previous,envelope)
                       if states[key]=='DEFER':
                           complete=False
-                          for _,d in valid:
-                              accepted=[p for p in d['previous_findings'] if (p['origin_review_id'],p['original_id'])==key and p['defer_decision']=='ACCEPTED']
+                          for accepted_finding,d in ([acceptance] if acceptance else []):
+                              accepted=[accepted_finding]
                               for p in d['action_progress']:
                                   if not accepted or (p['origin_review_id'],p['original_id'])!=key or not all(p[x]['state']=='SUCCEEDED' for x in ('issue','reply','resolve')): continue
                                   issue=gh(f'{prefix}/issues/{p["issue"]["number"]}')
                                   marker='<!-- claude-review-deferred:v1 '+encoded({'repository':repo,'pr_number':number,'origin_review_id':key[0],'original_id':key[1],'path':f['path']})+' -->'
                                   url=f'https://github.com/{repo}/issues/{p["issue"]["number"]}'
                                   reply=[c for c in thread['comments'][1:] if c.get('databaseId')==p['reply']['comment_id'] and (c.get('author') or {}).get('login')==reviewer and (c.get('body') or '').count(marker)==1 and url in c['body']]
-                                  if (issue.get('number')==p['issue']['number'] and 'pull_request' not in issue and (issue.get('user') or {}).get('login')==reviewer and issue.get('html_url')==url and p['issue']['url']==url and (issue.get('body') or '').count(marker)==1 and '#discussion_r'+str(root['databaseId']) in issue['body'] and f['original_id'] in issue['body'] and f['severity'] in issue['body'] and accepted[0]['owner'].replace('<','&lt;').replace('>','&gt;') in issue['body'] and accepted[0]['reason'].replace('<','&lt;').replace('>','&gt;') in issue['body'] and thread['id']==p['resolve']['thread_id'] and thread['isResolved'] is True and len(reply)==1): complete=True
+                                  if (issue.get('state')=='open' and issue.get('number')==p['issue']['number'] and 'pull_request' not in issue and (issue.get('user') or {}).get('login')==reviewer and issue.get('html_url')==url and p['issue']['url']==url and (issue.get('body') or '').count(marker)==1 and '#discussion_r'+str(root['databaseId']) in issue['body'] and f['original_id'] in issue['body'] and f['severity'] in issue['body'] and accepted[0]['owner'].replace('<','&lt;').replace('>','&gt;') in issue['body'] and accepted[0]['reason'].replace('<','&lt;').replace('>','&gt;') in issue['body'] and thread['id']==p['resolve']['thread_id'] and thread['isResolved'] is True and len(reply)==1): complete=True
                           states[key]='deferred' if complete else None
                   except (Stop, ValueError, KeyError, TypeError):
                       history_gap=True
@@ -1538,7 +1549,7 @@ jobs:
                               issue=gh(f'{prefix}/issues','POST',{'title':'Deferred review finding '+f['original_id'],'body':body})
                           require(positive(issue.get('number')),'issue response missing number')
                           issue=gh(f'{prefix}/issues/{issue["number"]}')
-                          require((issue.get('user') or {}).get('login')==reviewer and (issue.get('body') or '').count(marker)==1
+                          require(issue.get('state')=='open' and (issue.get('user') or {}).get('login')==reviewer and (issue.get('body') or '').count(marker)==1
                               and positive(issue.get('number')) and issue.get('html_url')==f'https://github.com/{repo}/issues/{issue["number"]}'
                           and f['original_id'] in issue.get('body','') and f['severity'] in issue.get('body','')
                           and ('#discussion_r'+str(root['databaseId'])) in issue.get('body','')
@@ -1547,6 +1558,7 @@ jobs:
                           progress['issue'].update(state='SUCCEEDED',number=issue['number'],url=issue['html_url'])
                           persist(d)
                           operation='reply'
+                          require(gh(f'{prefix}/issues/{issue["number"]}').get('state')=='open','deferred issue is closed')
                           thread,_=matching_thread(f,threads())
                           require(thread['id']==initial['id'],'source thread changed')
                           replies=[c for c in thread['comments'][1:] if marker in c.get('body','')]
@@ -1565,6 +1577,8 @@ jobs:
                           progress['reply'].update(state='SUCCEEDED',comment_id=replies[0]['databaseId'])
                           persist(d)
                       operation='resolve'
+                      if accepted:
+                          require(gh(f'{prefix}/issues/{issue["number"]}').get('state')=='open','deferred issue is closed')
                       thread,_=matching_thread(f,threads())
                       require(thread['id']==initial['id'],'source thread changed')
                       if not thread['isResolved']:

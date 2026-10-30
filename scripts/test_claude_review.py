@@ -190,6 +190,17 @@ class DeferTest(unittest.TestCase):
             self.assertFalse(state['thread']['isResolved'])
             self.assertIn('WRITE_FAILED',state['body'])
             self.assertIn('ready with fixes',state['body'])
+            # A closed durable issue cannot authorize a retry's dependent writes.
+            state['issue']['state']='closed'
+            (root/'state.json').write_text(json.dumps(state))
+            closed=subprocess.run(['bash','-eo','pipefail','-c',run],env=env,capture_output=True,text=True)
+            self.assertNotEqual(closed.returncode,0,closed.stderr)
+            closed_state=json.loads((root/'state.json').read_text())
+            self.assertFalse(closed_state['thread']['isResolved'])
+            self.assertEqual(len(closed_state['thread']['comments']),2)
+            self.assertIn('WRITE_FAILED',closed_state['body'])
+            state['issue']['state']='open'
+            (root/'state.json').write_text(json.dumps(state))
             second=subprocess.run(['bash','-eo','pipefail','-c',run],env=env,capture_output=True,text=True)
             self.assertEqual(second.returncode,0,second.stderr)
             state=json.loads((root/'state.json').read_text())
@@ -572,7 +583,7 @@ class SummaryRunTest(unittest.TestCase):
         self.assertIn('Duration total: 60 sec',body)
         self.assertIn('Duration mean: 30.00 sec',body)
 
-    def test_defer_requires_all_readbacks(self):
+    def defer_fixture(self):
         origin=self.review()
         d=json.loads(origin['body'].split('v1 ',1)[1].split(' -->')[0]); finding=d['findings'][0]
         prev={**finding,'status':'NOT_ADDRESSED','defer_decision':'ACCEPTED','reason':'Later','owner':'alice'}
@@ -583,13 +594,64 @@ class SummaryRunTest(unittest.TestCase):
         deferred='<!-- claude-review-deferred:v1 '+json.dumps({k:payload[k] for k in ('repository','pr_number','origin_review_id','original_id','path')},separators=(',',':'))+' -->'
         def c(i,author,body,review): return {'databaseId':i,'author':{'login':author},'authorAssociation':'MEMBER','body':body,'updatedAt':'2026-10-30T00:00:00Z','pullRequestReview':review}
         thread={'id':'t','path':'a.py','isResolved':True,'comments':[c(1,'yngwald','**Important** R1-F1 - finding',{'databaseId':101}),c(2,'alice','<!-- cr-received-disposition:v1 '+json.dumps(payload)+' -->',None),c(3,'yngwald','https://github.com/owner/repo/issues/57\n'+deferred,None)]}
-        issue={'number':57,'user':{'login':'yngwald'},'html_url':'https://github.com/owner/repo/issues/57','body':'R1-F1 Important #discussion_r1 alice Later\n'+deferred}
-        data={'reviews':[origin,carry],'threads':[thread],'issue':issue}
+        issue={'number':57,'state':'open','user':{'login':'yngwald'},'html_url':'https://github.com/owner/repo/issues/57','body':'R1-F1 Important #discussion_r1 alice Later\n'+deferred}
+        d['disposition_events']=[{'origin_review_id':101,'original_id':'R1-F1','path':'a.py',
+            'disposition':'DEFER','reason':'Later','source_comment_id':2,'source_author':'alice',
+            'source_updated_at':'2026-10-30T00:00:00Z'}]
+        carry['body']='<!-- claude-review-ledger:v1 '+json.dumps(d)+' -->'
+        return {'reviews':[origin,carry],'threads':[thread],'issue':issue}
+
+    def test_defer_requires_all_readbacks(self):
+        data=self.defer_fixture()
+        thread=data['threads'][0]
         state,_=self.run_summary(data)
         self.assertIn('Deferred: 1\n',state['comments'][0]['body'])
         thread['isResolved']=False
         state,_=self.run_summary(data)
         self.assertIn('Deferred: 0 + unknown',state['comments'][0]['body'])
+
+    def test_acceptance_reason_can_differ_from_proposal(self):
+        data=self.defer_fixture()
+        carry=data['reviews'][1]
+        d=json.loads(carry['body'].split('v1 ',1)[1].split(' -->')[0])
+        d['previous_findings'][0]['reason']='Reviewer confirms later work'
+        carry['body']='<!-- claude-review-ledger:v1 '+json.dumps(d)+' -->'
+        data['issue']['body']=data['issue']['body'].replace('alice Later','alice Reviewer confirms later work')
+        state,_=self.run_summary(data)
+        self.assertIn('Deferred: 1\n',state['comments'][0]['body'])
+
+    def test_closed_deferred_issue_is_incomplete(self):
+        data=self.defer_fixture()
+        data['issue']['state']='closed'
+        state,_=self.run_summary(data)
+        self.assertIn('Deferred: 0 + unknown',state['comments'][0]['body'])
+
+    def test_latest_defer_decision_controls_completion(self):
+        for decision in ('DECLINED','NONE'):
+            for reverse in (False,True):
+                with self.subTest(decision=decision,reverse=reverse):
+                    data=self.defer_fixture()
+                    later=json.loads(json.dumps(data['reviews'][1]))
+                    d=json.loads(later['body'].split('v1 ',1)[1].split(' -->')[0])
+                    d.update(review_source_id=303,published_review_id=303,action_progress=[])
+                    d['previous_findings'][0].update(defer_decision=decision,owner=None)
+                    later.update(id=303,submitted_at='2026-10-30T00:00:03Z',body='<!-- claude-review-ledger:v1 '+json.dumps(d)+' -->')
+                    data['reviews'].append(later)
+                    if reverse: data['reviews'].reverse()
+                    state,_=self.run_summary(data)
+                    self.assertIn('Deferred: 0 + unknown',state['comments'][0]['body'])
+                    self.assertIn('Rejected: 0 + unknown',state['comments'][0]['body'])
+
+    def test_new_host_defer_requires_fresh_matching_acceptance(self):
+        for change in ('head','reason'):
+            data=self.defer_fixture()
+            marker=data['threads'][0]['comments'][1]
+            payload=json.loads(marker['body'].split('v1 ',1)[1].split(' -->')[0])
+            payload['head_sha' if change=='head' else 'reason']='c'*40 if change=='head' else 'New reason'
+            marker.update(updatedAt='2026-10-30T00:00:04Z',body='<!-- cr-received-disposition:v1 '+json.dumps(payload)+' -->')
+            data['head_sha']='c'*40
+            state,_=self.run_summary(data)
+            self.assertIn('Deferred: 0 + unknown',state['comments'][0]['body'])
 
     def test_thread_and_reply_pagination(self):
         review=self.review()

@@ -117,8 +117,11 @@ Read the record of the host, the plan or the spec:
 - every round counts, document reviews included: a new round does not close an old finding;
 - each `Finding` of any round with severity `Critical` or `Important` is a blocker until
   a `Received` line gives its ID a disposition; `REJECT` and `OUTDATED` close it, and
-  `DEFER` closes it only with issue, reply, and resolve API evidence; pending or failed
-  writes block. `ACCEPT` and `PARTIAL` mark it fixed, with its claim (tag `R<n>-F<k>`)
+  `DEFER` closes it with an owner and tracking in an issue, plan task, or follow-up.
+  For GitHub findings with source threads, it also needs an open issue, reply, and
+  resolve API evidence; pending or failed GitHub writes block. Local and document
+  reviews retain the owner-and-tracking rule. `ACCEPT` and `PARTIAL` mark it fixed,
+  with its claim (tag `R<n>-F<k>`)
   checked in this run over the current tree as the proof;
 - any `ESCALATE` in any `Received` line is a blocker until a
   `Ruling: R<n>-F<k> escalation decided - <owner's decision> - <cost if wrong>` line for

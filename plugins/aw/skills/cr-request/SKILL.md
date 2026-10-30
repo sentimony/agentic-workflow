@@ -229,16 +229,29 @@ When the caller requires a closing line, that line goes right before the `Next s
 line, in its exact text, and the `Next step` line stays the very last one. The CI
 auto-review (`claude-review.yml`) requires the signature
 ``Reviewed with: `/cr-request` <version> skill``, backticks included, where `<version>`
-is this skill's `metadata.version`, and requires the `Next step` line after it,
-written with ` · ` before the reason and the skill, whichever it is, as inline code
-with a leading slash: ``Next step: `/<skill>` · <reason>``, for example
-``Next step: `/cr-received` · 4 findings to rule on``; `none` stays plain text
-(`Next step: none · <reason>`). The skill writes the signature without a duration; the
-workflow may append the review duration to it afterwards as ` · In <m> min <s> sec`,
-with `In 0 min 42 sec` under a minute. Only these two CI lines use ` · `; every other
-`Next step` line keeps ` - `. The exact grammar of both lines, as regular expressions a
-workflow validator uses, and the accepted and rejected samples are in
-[brief.md](references/brief.md) "CI footer grammar"; the grammar is part of the contract.
+is this skill's `metadata.version`, and requires the `Next step` line after it. In that
+line each skill is inline code with a leading slash, its arguments inside the code
+span, and ` · ` goes before a reason:
+
+| Result | CI `Next step` line |
+| --- | --- |
+| Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | `` Next step: `/cr-received PR #<n>` `` |
+| Clean, and a full `Verify: PASS` exists on this tree | ``Next step: `/finalize` · reviewed and verified on this tree`` |
+| Clean, no full `Verify: PASS` on this tree | ``Next step: `/verify <plan path>` -> `/finalize` squash`` |
+| `REVIEWER UNAVAILABLE` | `Next step: none · choose another reviewer or retry` |
+
+The findings line names the pull request and carries no reason. The plan path comes from
+the PR description or a `docs/plans/` file in the diff; with none found the line is
+``Next step: `/verify` -> `/finalize` squash``. `squash` recommends the merge method; it
+is not an argument. Any other line keeps ``Next step: `/<skill>` · <reason>``, and `none`
+stays plain text (`Next step: none · <reason>`). The skill writes the signature without
+a duration; the workflow may append the review duration to it afterwards as
+` · In <m> min <s> sec`, with `In 0 min 42 sec` under a minute. Only these two CI lines
+use ` · ` and ` -> `; every other `Next step` line keeps the local
+`Next step: <skill> - <reason>` form that `--auto` and the chain read. The exact grammar
+of both lines, as regular expressions a workflow validator uses, and the accepted and
+rejected samples are in [brief.md](references/brief.md) "CI footer grammar"; the grammar
+is part of the contract.
 
 ## When not to use
 

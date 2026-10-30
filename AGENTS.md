@@ -47,8 +47,10 @@
   time instead of changing the workflow.
 - The `publish` footer check accepts the signature with the measured duration followed by a
   `Next step` line in its full format, and the pre-0.0.6 order with the signature last. The
-  posted review shows only the skill of the `Next step` line, its reason dropped, on the
-  owner's choice: an accepted trade-off, not a defect for review.
+  posted review drops the reason after ` · ` from the `Next step` line, on the owner's
+  choice: an accepted trade-off, not a defect for review. The chain form
+  (``Next step: `/verify <plan>` -> `/finalize` squash``) and the findings form
+  (`` Next step: `/cr-received PR #<n>` ``) carry no reason and stay whole.
   The footer regexes, the one-row Summary table parser, and the gate's parser of three
   Summary layouts (verdicts first, counts first, and the vertical one of older reviews) have
   no CI test, because the workflow is self-contained; an edit to them is checked by hand on

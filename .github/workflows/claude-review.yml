@@ -398,14 +398,21 @@ jobs:
 
             Never copy a token or secret into the body or the comments. Write GitHub logins, team names, and any
             other text that starts with @ inside backticks, so the posted review notifies nobody.
-            End the body with the two CI closing lines that the cr-request skill states (the publish step then
-            cuts the reason from the `Next step` line): the signature line below, backticks included, then
-            the `Next step` line as the very last line, written with ` · ` before the reason and the skill,
-            whichever it is, as inline code with a leading slash:
-            ``Next step: `/<skill>` · <reason>``, for example ``Next step: `/cr-received` · 4 findings to rule on``;
-            `none` stays plain text (`Next step: none · <reason>`). The ` · ` in these two lines is the required
-            format, not a dash. The skill writes the signature without a duration; the workflow appends the review
-            duration to it afterwards as ` · In <m> min <s> sec`. The signature line:
+            End the body with the two CI closing lines that the cr-request skill states: the signature line
+            below, backticks included, then the `Next step` line as the very last line. In that line each skill
+            is inline code with a leading slash, its arguments inside the code span, and ` · ` goes before a
+            reason; pick the line by the result:
+            - Findings, or a previous yngwald finding left not addressed, with no reason:
+              `` Next step: `/cr-received PR #${{ needs.gate.outputs.number }}` ``
+            - No findings: ``Next step: `/verify <plan path>` -> `/finalize` squash``, where the plan path is
+              the plan the PR description names, else a file under `docs/plans/` in diff.patch; with no plan
+              found, ``Next step: `/verify` -> `/finalize` squash``. `squash` recommends the merge method.
+            - Any other result: ``Next step: `/<skill>` · <reason>``; `none` stays plain text
+              (`Next step: none · <reason>`).
+            The publish step cuts the reason after ` · ` and leaves the first two forms whole. The ` · ` and
+            ` -> ` in these two lines are the required format, not dashes. The skill writes the signature without
+            a duration; the workflow appends the review duration to it afterwards as ` · In <m> min <s> sec`.
+            The signature line:
             Reviewed with: `/cr-request` ${{ steps.skill.outputs.version }} skill
           # Reads stay in the workspace and the installed skill, so injected PR text cannot steer the agent
           # to runner files or /proc and copy a token into the body. Grep and Glob are allowed bare: the
@@ -639,7 +646,7 @@ jobs:
           last=$(tail -n 1 <<< "$tail2")
           signature_re="^Reviewed with: \`/cr-request\` ${VERSION//./\\.} skill · In [0-9]+ min [0-9]+ sec\$"
           # Accepted trade-off (AGENTS.md): the footer regexes have no CI test; check edits on sample bodies.
-          next_re="^Next step: (\`/[a-z0-9-]+\` · [^[:space:]].*|none( · [^[:space:]].*)?)\$"
+          next_re="^Next step: (\`/[a-z0-9-]+( [^\`[:space:]]+)*\`( -> \`/[a-z0-9-]+\`( [a-z0-9-]+)?)?( · [^[:space:]].*)?|none( · [^[:space:]].*)?)\$"
           if [[ "$prev" =~ $signature_re ]] && [[ "$last" =~ $next_re ]]; then
             signature="$prev"
           elif [[ "$last" =~ $signature_re ]]; then
@@ -647,9 +654,10 @@ jobs:
           else
             fail "The review body does not end with the signature and Next step lines"
           fi
-          # The Next step line keeps only the skill, its reason dropped, and sits right under the signature
-          # with no blank line between (GitHub renders the line break). A blank line goes before the footer:
-          # right after `</details>` it would join that HTML block raw.
+          # The Next step line loses the reason after ` · ` (the chain and findings forms have none, so they
+          # stay whole) and sits right under the signature with no blank line between (GitHub renders the
+          # line break). A blank line goes before the footer: right after `</details>` it would join that
+          # HTML block raw.
           pair=0
           [ "$signature" = "$last" ] || pair=1
           awk -v pair="$pair" '

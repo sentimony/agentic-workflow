@@ -1,6 +1,6 @@
 {
   "name": "aw",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "Agentic workflow skills for one change from request to merge: specify the design, craft the plan, implement it, verify with evidence, request and resolve an independent code review, finalize the branch, and record session learnings.",
   "author": {
     "name": "Ihor Orlovskyi",
@@ -20,15 +20,5 @@
     "engineering",
     "best-practices"
   ],
-  "skills": [
-    "./skills/specify",
-    "./skills/plan-craft",
-    "./skills/implement",
-    "./skills/verify",
-    "./skills/cr-request",
-    "./skills/cr-received",
-    "./skills/cross-cr",
-    "./skills/finalize",
-    "./skills/session-learnings"
-  ]
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json"
 }

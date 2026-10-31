@@ -6,7 +6,7 @@
 - `plugins/aw/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
 - `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
-  `claude-review.yml` separates the gate, read-only reviewer, trusted publish, API-only
+  `pr-auto-review.yml` separates the gate, read-only reviewer, trusted publish, API-only
   thread resolver, completion, and merged summary. The reviewer uses `cr-request` from
   the newest `vX.Y.Z` tag unless
   `REVIEW_SKILLS_REF` pins a full SHA. The embedded schema and transport remain compatible
@@ -36,7 +36,7 @@
 - Releases go through the `rc-verifier` and `releaser` roles (contracts and the release
   checklist in the `skills-aiassist` workbench): `rc-verifier` approves the tree, then
   `releaser` commits, squash-merges the PR, and pushes the annotated tag.
-- `claude-review.yml` changes in a PR reach `workflow_run` only after merge (it uses the default
+- `pr-auto-review.yml` changes in a PR reach `workflow_run` only after merge (it uses the default
   branch copy); `pull_request` runs use the PR branch copy. `.auto-review/` is reserved for the
   review job and must not be tracked.
   To test a changed workflow on its own PR, push, wait for green CI, then open the PR or request
@@ -45,7 +45,7 @@
   not the PR head: wait for `gh run list --commit <full head SHA> --workflow CI` and then for
   `gh run list --event workflow_run --limit 1` to complete before requesting yngwald. The
   `/cr-request` version in the review footer shows which workflow copy posted it.
-- `claude-review.yml` keeps one run per head SHA (workflow-level concurrency), so automatic
+- `pr-auto-review.yml` keeps one run per head SHA (workflow-level concurrency), so automatic
   runs for one head no longer race, and a late CI run for an older head cannot cancel the review
   of a newer one; the review job's per-PR group lets a newer head's review cancel an older one,
   which publish reports as superseded. A `workflow_dispatch` run and an event-driven run for the
@@ -148,7 +148,7 @@
   a defect for review, because stronger isolation is a separate future design outside this work.
 - A change to the cr-request output contract (closing lines, footer order, separators) goes
   into `SKILL.md`, `references/brief.md` (the `Result contract` paragraph and
-  `### CI footer grammar`), the `claude-review.yml` prompt and `next_re`, and the top
+  `### CI footer grammar`), the `pr-auto-review.yml` prompt and `next_re`, and the top
   `CHANGELOG.md` entry in one commit and in the same terms; find them all with
   ``git grep -n 'Next step: `/'``. Each place left behind comes back as a separate review
   finding.

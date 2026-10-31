@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.4] - 2026-11-01
+
+1. Move complete workflow and anti-pattern details into a linked reference, retaining
+   reviewer routing and the full Security Model in the entrypoint. Read each detailed
+   section before its numbered step; all existing conditions and exceptions remain.
+2. Add body-size, relative-link, and dependency-heading regression checks, with an
+   original-to-current block map for contract preservation.
+
 ## [0.0.3] - 2026-10-30
 
 - Align the automatic outward exception with authorized defer actions and the bounded REJECT reply.

@@ -12,20 +12,21 @@ SP_JOBS = ['Lint', 'Typecheck', 'Unit tests', 'Build', 'Public pages load', 'Rev
 ADAPTERS = {
     'storypoker': dict(reviewer='so-upstars', secret='SO_UPSTARS_PR_TOKEN',
                       workflow='.github/workflows/claude-review.yml', name='Claude review',
-                      dispatch='pr_number', jobs=SP_JOBS, events=['pull_request'],
+                      dispatch='pr_number', jobs=SP_JOBS, events=['pull_request'], skippable_jobs=[],
                       ci_description='Lint, Typecheck, Unit tests, Build, Public pages load, and review-workflow fixtures'),
     'agentic-workflow': dict(reviewer='yngwald', secret='YNGWALD_PR_TOKEN',
                            workflow='.github/workflows/claude-review.yml', name='Claude review',
-                           dispatch='pr_number', jobs=['validate'], events=['push', 'workflow_dispatch'],
+                           dispatch='pr_number', jobs=['validate'], events=['push', 'workflow_dispatch'], skippable_jobs=[],
                            ci_description='validate'),
     'soundcloud-catalog': dict(reviewer='yngwald', secret='YNGWALD_PR_TOKEN',
                              workflow='.github/workflows/claude-review.yml', name='Claude review',
-                             dispatch='pr_number', jobs=['check'], events=['push', 'workflow_dispatch'],
+                             dispatch='pr_number', jobs=['check'], events=['push', 'workflow_dispatch'], skippable_jobs=[],
                              ci_description='check'),
     'agilecharts': dict(reviewer='so-upstars', secret='SO_UPSTARS_PR_TOKEN',
                         workflow='.github/workflows/auto-review.yml', name='Auto review',
                         dispatch='pr', jobs=[x for x in SP_JOBS if x != 'Public pages load'],
                         events=['push', 'workflow_dispatch'],
+                        skippable_jobs=['Lint', 'Typecheck', 'Unit tests', 'Build'],
                         ci_description='Lint, Typecheck, Unit tests, Build, and review-workflow fixtures'),
 }
 PACKAGE_FILES = (
@@ -51,6 +52,8 @@ def slots(adapter):
          '          REQUIRED_JOBS: @@CI_JOBS@@\n', 1),
         ("          CI_EVENTS: '" + compact(adapter['events']) + "'\n",
          '          CI_EVENTS: @@CI_EVENTS@@\n', 1),
+        ("          SKIPPABLE_JOBS: '" + compact(adapter['skippable_jobs']) + "'\n",
+         '          SKIPPABLE_JOBS: @@SKIPPABLE_JOBS@@\n', 1),
         ('            CI (' + adapter['ci_description'] + ') is green on HEAD SHA;',
          '            CI (@@CI_DESCRIPTION@@) is green on HEAD SHA;', 1),
     )

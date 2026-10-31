@@ -45,6 +45,16 @@ class ReviewParityTest(unittest.TestCase):
                     parity.check(self.root)
                 self.manifest['adapter'] = original
 
+    def test_skip_allowlist_cannot_expand_for_any_profile(self):
+        for name,adapter in parity.ADAPTERS.items():
+            for expanded in (adapter['skippable_jobs']+['Review workflow fixtures'],
+                             adapter['skippable_jobs']+['unknown job']):
+                with self.subTest(profile=name,expanded=expanded):
+                    self.manifest['adapter']={**adapter,'skippable_jobs':expanded}
+                    self.write_manifest()
+                    with self.assertRaisesRegex(ValueError, 'adapter'):
+                        parity.check(self.root)
+
     def test_logic_and_adapter_slot_drift_is_rejected(self):
         workflow = self.root / self.manifest['adapter']['workflow']
         original = workflow.read_text()

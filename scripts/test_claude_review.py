@@ -900,19 +900,21 @@ class SummaryParserTest(unittest.TestCase):
                 self.assertEqual(int(p.stdout),expected)
 
 class GateTest(unittest.TestCase):
-    def run_gate(self, reviews=(), labels=(), action='', event='pull_request', requested=False, ci='success', jobs=None, author='author', source_events=None, runs=None):
+    def run_gate(self, reviews=(), labels=(), action='', event='pull_request', requested=False, ci='success', jobs=None, author='author', source_events=None, runs=None, required_jobs=None, skippable_jobs=None):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
             pr={'head':{'sha':'a'*40,'repo':{'full_name':'owner/repo'}}, 'base':{'sha':'b'*40},
                 'state':'open','draft':False,'user':{'type':'User','login':author},
                 'labels':[{'name':x} for x in labels], 'requested_reviewers':[{'login':'so-upstars'}] if requested else []}
             source_events = ADAPTER['events'] if source_events is None else source_events
+            required_jobs = ADAPTER['jobs'] if required_jobs is None else required_jobs
+            skippable_jobs = ADAPTER.get('skippable_jobs', []) if skippable_jobs is None else skippable_jobs
             if runs is None:
                 runs = [] if ci == 'none' else [{'id':900,'event':source_events[0],
                     'status':'completed' if ci in ('success','failure') else ci,
                     'conclusion':ci if ci in ('success','failure') else None}]
             (root/'data.json').write_text(json.dumps({'pr':pr,'reviews':reviews,'runs':runs,
-                'jobs':jobs if jobs is not None else [{'name':n,'conclusion':'success'} for n in ADAPTER['jobs']]}))
+                'jobs':jobs if jobs is not None else [{'name':n,'conclusion':'success'} for n in required_jobs]}))
             fake=root/'gh'
             fake.write_text('''#!/usr/bin/env python3
 import json, os, subprocess, sys
@@ -939,7 +941,8 @@ sys.exit(2)
             fake.chmod(0o755)
             env={**os.environ,'PATH':str(root)+os.pathsep+os.environ['PATH'],'DATA':str(root/'data.json'),
                  'REPO':'owner/repo','REVIEWER':'so-upstars','RUN_SHA':'','RUN_HEAD_REPO':'',
-                 'REQUIRED_JOBS':json.dumps(ADAPTER['jobs']),'CI_EVENTS':json.dumps(source_events),
+                 'REQUIRED_JOBS':json.dumps(required_jobs),'CI_EVENTS':json.dumps(source_events),
+                 'SKIPPABLE_JOBS':json.dumps(skippable_jobs),
                  'EVENT_PR':'42','EVENT_NAME':event,'EVENT_ACTION':action,'CONTEXT':'Claude review',
                  'RUN_URL':'url','GITHUB_OUTPUT':str(root/'output'),'GITHUB_STEP_SUMMARY':str(root/'summary')}
             result=subprocess.run(['bash','-eo','pipefail','-c',step('Review gate decision')],env=env,capture_output=True,text=True)
@@ -970,6 +973,44 @@ sys.exit(2)
         self.assertEqual(result.returncode,0,result.stderr)
         self.assertIn('review=false',output)
         self.assertIn('is by so-upstars',result.stdout)
+
+    def test_docs_only_ci_skips_require_explicit_project_allowlist(self):
+        app_jobs=['Lint','Typecheck','Unit tests','Build']
+        fixture='Review workflow fixtures'
+        required=app_jobs+[fixture]
+        skipped=[{'name':name,'conclusion':'skipped' if name in app_jobs else 'success'}
+                 for name in required]
+        result,output=self.run_gate(jobs=skipped,required_jobs=required,skippable_jobs=app_jobs)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('review=true',output)
+        for ci in ('failure','in_progress','none'):
+            with self.subTest(ci=ci):
+                result,output=self.run_gate(jobs=skipped,required_jobs=required,
+                    skippable_jobs=app_jobs,ci=ci)
+                self.assertEqual(result.returncode,0,result.stderr)
+                self.assertIn('review=false',output)
+        for name in required:
+            for conclusion in ('missing','failure','timed_out','skipped'):
+                if name in app_jobs and conclusion=='skipped':
+                    continue
+                with self.subTest(name=name,conclusion=conclusion):
+                    jobs=[{**job,'conclusion':conclusion} if job['name']==name else job
+                          for job in skipped if job['name']!=name or conclusion!='missing']
+                    result,output=self.run_gate(jobs=jobs,required_jobs=required,skippable_jobs=app_jobs)
+                    self.assertEqual(result.returncode,0,result.stderr)
+                    self.assertIn('review=false',output)
+
+    def test_strict_adapters_reject_every_skipped_required_job(self):
+        profiles=(['Lint','Typecheck','Unit tests','Build','Public pages load','Review workflow fixtures'],
+                  ['validate'],['check'])
+        for required in profiles:
+            for name in required:
+                with self.subTest(required=required,name=name):
+                    jobs=[{'name':job,'conclusion':'skipped' if job==name else 'success'}
+                          for job in required]
+                    result,output=self.run_gate(jobs=jobs,required_jobs=required,skippable_jobs=[])
+                    self.assertEqual(result.returncode,0,result.stderr)
+                    self.assertIn('review=false',output)
 
     def test_source_ci_event_selection_uses_newest_allowed_run(self):
         def run(event, conclusion='success'):
@@ -1073,6 +1114,7 @@ sys.exit(2)
         self.assertEqual(gate['env']['REVIEWER'],ADAPTER['reviewer'])
         self.assertEqual(json.loads(gate['env']['REQUIRED_JOBS']),ADAPTER['jobs'])
         self.assertEqual(json.loads(gate['env']['CI_EVENTS']),ADAPTER['events'])
+        self.assertEqual(json.loads(gate['env']['SKIPPABLE_JOBS']),ADAPTER['skippable_jobs'])
         self.assertIn('inputs.'+ADAPTER['dispatch'],gate['env']['EVENT_PR'])
         self.assertIn('inputs.'+ADAPTER['dispatch'],workflow['concurrency']['group'])
         self.assertEqual(workflow['jobs']['publish']['env']['REVIEWER'],ADAPTER['reviewer'])

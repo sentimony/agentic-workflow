@@ -2,9 +2,9 @@
 
 ## Layout
 
-- `plugins/aw/.claude-plugin/plugin.json` - Claude Code manifest; lists skills.
-- `plugins/aw/.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
-- `plugins/aw/skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
+- `.claude-plugin/plugin.json` - Claude Code manifest; discovers root `skills/` implicitly.
+- `.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
+- `skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
   `claude-review.yml` separates the gate, read-only reviewer, trusted publish, API-only
   thread resolver, completion, and merged summary. The reviewer uses `cr-request` from
@@ -24,8 +24,10 @@
 
 ## Rules
 
-- New skill: add it to `skills` in the Claude Code manifest; frontmatter `name` equals
-  the directory.
+- New skill: place it in root `skills/`; frontmatter `name` equals the directory.
+  `plugin.json` is portable; `.codex-plugin/plugin.json` retains the complete OpenAI
+  interface fallback. Claude Code and Antigravity discover root skills implicitly.
+  Keep name/version equal across all four manifests; do not repeat default skill paths.
 - Versions: patch bumps; manifest `version` equals the release tag without `v`; the top
   `CHANGELOG.md` entry matches `metadata.version`. README shows the repository
   version, each plugin version, and each skill version.
@@ -66,8 +68,8 @@
   ledger publication, partial-action recovery, and merged-summary fixtures. Run
   `python3 -m unittest discover -s scripts -p 'test_claude_review.py'` after changes;
   direct execution and unittest discovery both collect all test classes. CI also runs
-  `python3 -m unittest discover -s plugins/aw/skills/cr-received/scripts -p 'test_*.py'`
-  and `python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'`.
+  `python3 -m unittest discover -s skills/cr-received/scripts -p 'test_*.py'`
+  and `python3 -m unittest discover -s skills/cross-cr/scripts -p 'test_*.py'`.
 - The reviewer writes `review-actions.json` without a write PAT. Trusted publish
   validates its schema, identities, current PR head, and yngwald token ownership, then
   persists a `claude-review-ledger:v1` envelope in the review body with PUT/GET readback
@@ -139,7 +141,7 @@
   `Craft` sections of `lenses.md` by heading: renaming one breaks its briefs.
   The runner keeps `Result contract` only up to the paragraph that starts with `` `Not
   checkable ``: text after it stays host-only. After a `brief.md` edit run
-  `python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'`.
+  `python3 -m unittest discover -s skills/cross-cr/scripts -p 'test_*.py'`.
   In `RunnerTestCase` tests do not remove a file in the temporary directory with
   `self.addCleanup(...)`: `tearDown` deletes the directory first and the cleanup fails with
   `FileNotFoundError`.

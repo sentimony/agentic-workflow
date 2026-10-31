@@ -19,11 +19,13 @@ jobs:
 
       - name: Test review helpers
         run: |
+          python3 scripts/check_plugin_layout.py --self-test
+          python3 -m unittest discover -s scripts -p 'test_plugin_layout.py'
           python3 scripts/check_review_parity.py --self-test
           python3 -m unittest discover -s scripts -p 'test_review_parity.py'
           python3 -m unittest discover -s scripts -p 'test_claude_review.py'
-          python3 -m unittest discover -s plugins/aw/skills/cr-received/scripts -p 'test_*.py'
-          python3 -m unittest discover -s plugins/aw/skills/cross-cr/scripts -p 'test_*.py'
+          python3 -m unittest discover -s skills/cr-received/scripts -p 'test_*.py'
+          python3 -m unittest discover -s skills/cross-cr/scripts -p 'test_*.py'
 
       - name: Validate SKILL.md frontmatter
         run: |
@@ -31,9 +33,9 @@ jobs:
           import pathlib, re, sys
 
           errors = []
-          skills = sorted(pathlib.Path("plugins").glob("*/skills/*/SKILL.md"))
+          skills = sorted(pathlib.Path("skills").glob("*/SKILL.md"))
           if not skills:
-              errors.append("no plugins/*/skills/*/SKILL.md found")
+              errors.append("no skills/*/SKILL.md found")
           for skill_md in skills:
               m = re.match(r"^---\n(.*?)\n---\n", skill_md.read_text(encoding="utf-8"), re.DOTALL)
               if not m:
@@ -84,7 +86,7 @@ jobs:
           import json, pathlib, re, sys
 
           errors = []
-          root = pathlib.Path("plugins")
+          root = pathlib.Path(".")
           load = lambda path: json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
           readme = pathlib.Path("README.md").read_text(encoding="utf-8")
           # The repository version in README is the release every plugin tracks.
@@ -93,40 +95,18 @@ jobs:
           if not release:
               errors.append("README.md: missing 'Version: `vX.Y.Z`' line")
 
-          plugin_dirs = sorted(p.name for p in root.iterdir() if p.is_dir())
-          # The marketplace lives in sentimony/marketplace; this repository has none of its own.
+          import subprocess
+          subprocess.run([sys.executable, "scripts/check_plugin_layout.py"], check=True)
+          plugin = load("plugin.json")
+          if plugin.get("version") != release:
+              errors.append("plugin.json version != README version")
+          if not re.search(rf"^\| \[aw\]\([^)]*\) \| {re.escape(str(release))} \|", readme, re.MULTILINE):
+              errors.append("README.md: Plugins table row for aw missing or stale")
           for market in (".claude-plugin/marketplace.json", ".agents/plugins/marketplace.json"):
               if pathlib.Path(market).exists():
-                  errors.append(f"{market}: the aw marketplace entry lives in sentimony/marketplace; remove this file")
+                  errors.append(f"{market}: marketplace belongs in sentimony/marketplace")
 
-          owner = {}
-          for name in plugin_dirs:
-              base = root / name
-              dirs = sorted(p.parent.name for p in base.glob("skills/*/SKILL.md"))
-              for skill in dirs:
-                  if skill in owner:
-                      errors.append(f"skill {skill} is in both {owner[skill]} and {name}")
-                  owner[skill] = name
-              claude_path, codex_path = base / ".claude-plugin/plugin.json", base / ".codex-plugin/plugin.json"
-              if not claude_path.is_file() or not codex_path.is_file():
-                  errors.append(f"{base}: needs .claude-plugin/plugin.json and .codex-plugin/plugin.json")
-                  continue
-              plugin, codex = load(claude_path), load(codex_path)
-              listed = sorted(s.removeprefix("./skills/") for s in plugin.get("skills", []))
-              if listed != dirs:
-                  errors.append(f"{claude_path} skills {listed} != {base}/skills directories {dirs}")
-              if plugin.get("name") != name:
-                  errors.append(f"{claude_path} name {plugin.get('name')} != directory {name}")
-              if plugin.get("version") != release:
-                  errors.append(f"{claude_path} version {plugin.get('version')} != README version {release}")
-              if (codex.get("name"), codex.get("version")) != (plugin.get("name"), plugin.get("version")):
-                  errors.append(f"{codex_path} name/version != {claude_path}")
-              if codex.get("skills") != "./skills/":
-                  errors.append(f"{codex_path} skills {codex.get('skills')!r} != './skills/'")
-              if not re.search(rf"^\| \[{re.escape(name)}\]\([^)]*\) \| {re.escape(str(plugin.get('version')))} \|", readme, re.MULTILINE):
-                  errors.append(f"README.md: Plugins table row for {name} {plugin.get('version')} missing or stale")
-
-          for skill_md in root.glob("*/skills/*/SKILL.md"):
+          for skill_md in root.glob("skills/*/SKILL.md"):
               fm = re.match(r"^---\n(.*?)\n---\n", skill_md.read_text(encoding="utf-8"), re.DOTALL)
               # Same metadata regex as in the frontmatter check above; change both together.
               metadata = fm and re.search(r"^metadata:[ \t]*\n((?:[ \t]+.*\n?)*)", fm.group(1) + "\n", re.MULTILINE)

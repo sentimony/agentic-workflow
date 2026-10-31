@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.12] - 2026-11-01
+
+1. Update the CI workflow reference to `pr-auto-review.yml` in the skill and its
+   result-contract references; preserve the review and footer behavior.
+
 ## [0.0.11] - 2026-10-30
 
 - Align the automatic outward exception with authorized defer actions and the bounded REJECT reply.

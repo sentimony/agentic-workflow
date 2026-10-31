@@ -1,7 +1,7 @@
 # Compact Result
 
 The shared presentation for local `cr-request`, `cross-cr`, and CI auto-review
-(`claude-review.yml`). Show verdicts, severity counts, readiness, and the next step;
+(`pr-auto-review.yml`). Show verdicts, severity counts, readiness, and the next step;
 keep the complete evidence available on demand. Local calls link a persistent full
 review archive. CI embeds the full result in one collapsed `<details>` block.
 

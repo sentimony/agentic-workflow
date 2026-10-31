@@ -3,7 +3,7 @@ name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>] [--auto]"
 metadata:
-  version: "0.0.11"
+  version: "0.0.12"
 license: MIT
 ---
 
@@ -266,7 +266,7 @@ instead of `verify`.
 
 When the caller requires a closing line, that line goes right before the `Next step`
 line, in its exact text, and the `Next step` line stays the very last one. The CI
-auto-review (`claude-review.yml`) requires the signature
+auto-review (`pr-auto-review.yml`) requires the signature
 ``Reviewed with: `/cr-request` <version> skill``, backticks included, where `<version>`
 is this skill's `metadata.version`, and requires the `Next step` line after it. In that
 line each skill is inline code with a leading slash, its arguments inside the code

@@ -3,7 +3,7 @@ name: cr-received
 description: You MUST use this when findings from a code review, pull request comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix - a cr-request result, a spec or plan review, or a reviewer's message - in any programming language. Verifies each finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, records the decisions in the plan's execution record or the spec's verification record, commits each round's fixes locally, and routes back to verify. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.8"
+  version: "0.0.9"
 license: MIT
 ---
 
@@ -27,21 +27,22 @@ with or without `cr-request`. From the chain it also takes the spec and the plan
 `## Execution record` (without a plan, the spec's `## Verification record`), whose lines
 are signals, not proof.
 
-Under `--auto`, the host may perform already authorized defer issue and thread reply
-actions, and the bounded REJECT reply through `scripts/reply_disposition.py` as described
-in [return.md](references/return.md), without
-asking again. This grants no reviewer write token or general outward permission; all
-other outward actions and merge, release, and publication retain their approval gates.
-
-With `--auto` in the arguments, a `Next step` that names a local skill (`verify`,
-`plan-craft`) is not handed back: start that skill in the same turn and pass `--auto` on.
-The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
-`ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
-`BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
-nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
-`--auto` is never written into a plan, spec, or record, and a `Next step` line never
-carries it; a new session or a manual call runs without it.
+1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+   Without `--auto`, finish this meaningful stage and request its next transition;
+   internal commands and tasks of the current authorized plan need no extra approval.
+2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
+   skill. When invoked by `resolve-issue`, return the result, next action and evidence to
+   that orchestrator; do not also launch the next stage yourself. A standalone invocation
+   owns its permitted next step. Saved mode is history, never authority in a new session.
+3. Critical clarification, product/public-contract changes and conflicting permissions
+   still require the user. Under auto the workflow host first consults all configured
+   other agent families; delegated executors return a consultation handoff to their host.
+   Quality gates, Round rule, budgets and explicit project/session prohibitions remain.
+4. Auto may cover push/PR/squash, the project's verified deployment, production checks
+   and cleanup of task-created resources only within the current verified project contract
+   and permissions. Tags, releases, infrastructure/data changes and force operations need
+   their own applicable authority. Delivery requires the installed G3 helpers,
+   current host action authority and verified project-specific contracts. `finalize --auto` without a chosen action must ask for that choice.
 
 Under `--auto`, a chain returns to the workflow owner of the invoking step:
 `finalize` while healing its gate, the external-review owner after a requested

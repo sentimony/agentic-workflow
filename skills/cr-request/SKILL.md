@@ -3,7 +3,7 @@ name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>] [--auto]"
 metadata:
-  version: "0.0.12"
+  version: "0.0.13"
 license: MIT
 ---
 
@@ -248,23 +248,22 @@ The last line of the result is the next step:
 | Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |
 
-Under `--auto`, the host may perform already authorized defer issue and thread reply
-actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
-asking again. This grants no reviewer write token or general outward permission; all
-other outward actions and merge, release, and publication retain their approval gates.
-
-```text
-With `--auto` in the arguments, a `Next step` that names a local skill (`cr-received`,
-`verify`, and after a clean document review `implement` or `plan-craft`) is not handed
-back: start that skill in the same turn and pass `--auto` on.
-The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
-`ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
-`BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
-nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
-`--auto` is never written into a plan, spec, or record, and a `Next step` line never
-carries it; a new session or a manual call runs without it.
-```
+1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+   Without `--auto`, finish this meaningful stage and request its next transition;
+   internal commands and tasks of the current authorized plan need no extra approval.
+2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
+   skill. When invoked by `resolve-issue`, return the result, next action and evidence to
+   that orchestrator; do not also launch the next stage yourself. A standalone invocation
+   owns its permitted next step. Saved mode is history, never authority in a new session.
+3. Critical clarification, product/public-contract changes and conflicting permissions
+   still require the user. Under auto the workflow host first consults all configured
+   other agent families; delegated executors return a consultation handoff to their host.
+   Quality gates, Round rule, budgets and explicit project/session prohibitions remain.
+4. Auto may cover push/PR/squash, the project's verified deployment, production checks
+   and cleanup of task-created resources only within the current verified project contract
+   and permissions. Tags, releases, infrastructure/data changes and force operations need
+   their own applicable authority. Delivery requires the installed G3 helpers,
+   current host action authority and verified project-specific contracts. `finalize --auto` without a chosen action must ask for that choice.
 
 Under `--auto`, a chain returns to the workflow owner of the invoking step:
 `finalize` while healing its gate, the external-review owner after a requested
@@ -348,7 +347,9 @@ The skill does not edit code, commit, push, or publish. CI publish is a separate
 host capability, described in [review-actions.md](references/review-actions.md). Its
 separate API-only resolver alone gets the short-lived write GITHUB_TOKEN; model-output
 parsers never receive that token, and the reviewer never receives the yngwald PAT.
-`--auto` starts only the local next skill; it never pushes or publishes by itself.
+`--auto` follows the shared current-invocation transition contract. It grants no
+reviewer write capability; orchestrated results return to their owner, which checks
+the actual authority and delivery gates before any external action.
 
 Archive context: snapshots and briefs omit `.cross-review/`, including the host-written
 `.cross-review/local/` archive. Read-only access does not prevent reading that archive:

@@ -38,6 +38,7 @@ jobs:
               ("skills/finalize/scripts", "test_cleanup_guard.py"),
               ("skills/implement/scripts", "test_post_merge_evidence.py"),
               ("scripts", "test_delivery_integration.py"),
+              ("skills/resolve-issue/scripts", "test_*.py"),
           )
           for directory, pattern in suites:
               suite = unittest.TestLoader().discover(directory, pattern=pattern)

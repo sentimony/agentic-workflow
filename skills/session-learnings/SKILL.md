@@ -1,9 +1,9 @@
 ---
 name: session-learnings
 description: You MUST use this when lasting learnings from the current session should be recorded for future agents - pitfalls hit, mistakes the user corrected, conventions found, or commands that finally worked, whatever the conversation language - including when the user asks to write down what the session taught and at the end of the agentflow chain after finalize. Records them without asking in the project's gitignored docs/session-learnings/AGENTS.md; on a separate request, triages the accumulated notes into AGENTS.md, CLAUDE.md, the user's global instructions, or a stronger enforcement such as a check or a test, applying only the approved edits. Not for auditing or restructuring instruction files (maintaining-agent-context). Not for general memory or improvement requests for skills.
-argument-hint: "[triage]"
+argument-hint: "[triage] [--auto]"
 metadata:
-  version: "0.0.6"
+  version: "0.0.7"
 license: MIT
 ---
 
@@ -24,6 +24,27 @@ already squashed into the base branch, or on its own at any point the user asks;
 session; it needs no artifact from an earlier skill. Recording asks no questions and
 edits only gitignored notes plus a one-time setup. The argument `triage` (or the user
 asking to sort the accumulated learnings) runs the triage mode instead.
+
+1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+   Without `--auto`, finish this meaningful stage and request its next transition;
+   internal commands and tasks of the current authorized plan need no extra approval.
+2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
+   skill. When invoked by `resolve-issue`, return the result, next action and evidence to
+   that orchestrator; do not also launch the next stage yourself. A standalone invocation
+   owns its permitted next step. Saved mode is history, never authority in a new session.
+3. Critical clarification, product/public-contract changes and conflicting permissions
+   still require the user. Under auto the workflow host first consults all configured
+   other agent families; delegated executors return a consultation handoff to their host.
+   Quality gates, Round rule, budgets and explicit project/session prohibitions remain.
+4. Auto may cover push/PR/squash, the project's verified deployment, production checks
+   and cleanup of task-created resources only within the current verified project contract
+   and permissions. Tags, releases, infrastructure/data changes and force operations need
+   their own applicable authority. Delivery requires the installed G3 helpers,
+   current host action authority and verified project-specific contracts. `finalize --auto` without a chosen action must ask for that choice.
+
+`--auto` supports recording only. `triage --auto` is outside this contract and must
+not apply instruction changes automatically. An orchestrated recording returns its
+notes/result to the caller; it does not launch another workflow.
 
 ## 1. Collect
 

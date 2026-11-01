@@ -3,49 +3,50 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.
 
-Version: `v0.0.17`
+Version: `v0.0.18`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [agentflow](.) | 0.0.17 | specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
+| [agentflow](.) | 0.0.18 | resolve-issue, specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
 
 ## Skills
 
 | Skill | Version | Command | Description |
 | --- | --- | --- | --- |
-| [specify](skills/specify/SKILL.md) | 0.0.6 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
-| [plan-craft](skills/plan-craft/SKILL.md) | 0.0.7 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
-| [implement](skills/implement/SKILL.md) | 0.0.7 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
-| [verify](skills/verify/SKILL.md) | 0.0.8 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
-| [cr-request](skills/cr-request/SKILL.md) | 0.0.12 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; show compact verdicts with a persistent full report and structured action identities. |
-| [cr-received](skills/cr-received/SKILL.md) | 0.0.8 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
-| [finalize](skills/finalize/SKILL.md) | 0.0.8 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
-| [session-learnings](skills/session-learnings/SKILL.md) | 0.0.6 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
+| [specify](skills/specify/SKILL.md) | 0.0.7 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
+| [plan-craft](skills/plan-craft/SKILL.md) | 0.0.8 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
+| [implement](skills/implement/SKILL.md) | 0.0.8 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
+| [verify](skills/verify/SKILL.md) | 0.0.9 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
+| [cr-request](skills/cr-request/SKILL.md) | 0.0.13 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; show compact verdicts with a persistent full report and structured action identities. |
+| [cr-received](skills/cr-received/SKILL.md) | 0.0.9 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
+| [finalize](skills/finalize/SKILL.md) | 0.0.9 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
+| [resolve-issue](skills/resolve-issue/SKILL.md) | 0.0.1 | `/resolve-issue` | Run issue intake through configured delivery with durable recovery and fresh host authority. |
+| [session-learnings](skills/session-learnings/SKILL.md) | 0.0.7 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 
 ## Workflow
 
-The skills form one chain. Each hands the next a file (spec, plan with its execution
-record), runs standalone as well, and ends with a `Next step` line; there is no
-orchestrator skill.
+`resolve-issue <issue-url|#number> [--auto]` owns issue orchestration. Without auto,
+finish a meaningful stage and request its next transition. With auto, pass the flag
+to every stage and continue only within current verified project/invocation authority.
+Orchestrated stages return evidence to their owner; historical mode grants no later
+permission. Critical product decisions and explicit project/session prohibitions remain.
 
 ```text
-specify -> plan-craft -> implement -> [verify -> cr-request -> cr-received]* -> verify -> finalize -> session-learnings
+resolve-issue -> intake -> [specify] -> plan-craft -> plan review -> implement
+             -> verify -> code review -> cr-received -> verify -> PR/ready/wait/merge
+             -> deploy/health or verified nonproduction -> evidence -> cleanup -> learnings
 ```
 
-The bracketed loop repeats once per review round. `finalize` always follows a fresh `verify`
-on the final tree.
-
-With `--auto` in the arguments, a skill starts its local next step in the same turn and
-passes the flag on. It still stops on decisions that belong to the user (spec approval, an
-escalation, the round limit, an outward action) and before the `finalize` choice, so nothing
-is pushed, merged, or published without it; after a successful `merge`, `squash`, `pr`,
-`keep`, or `discard`, `finalize` starts `session-learnings`. Each skill commits its own
-paths locally at its checkpoint and never pushes.
-
-Already authorized defer issue/reply actions and the bounded REJECT reply in
-`cr-received` may proceed under `--auto`; other outward gates remain in force.
+Configured resolve-issue runs can complete delivery through the installed G3 host
+bridge with current project authority, bound receipts and independent readback. Unknown
+project contracts block their actions. Native host and full production acceptance remain
+unverified; track the limits in [issue 29](https://github.com/sentimony/agentic-workflow/issues/29),
+[issue 30](https://github.com/sentimony/agentic-workflow/issues/30) and
+[issue 31](https://github.com/sentimony/agentic-workflow/issues/31). See the
+[run contract](skills/resolve-issue/references/run-contract.md). Each stage keeps its
+local checkpoint boundary; saved state grants no new permission.
 
 Standalone `cross-agent` is a separate experimental plugin, released as `0.0.1`.
 The installed [workflow owner adapter](skills/cr-request/references/cross-agent-adapter.md)

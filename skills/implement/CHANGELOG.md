@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.8] - 2026-11-01
+
+1. Use the shared manual/auto stage transition contract and return orchestrated results
+   to resolve-issue; preserve current permissions, critical user decisions and delivery gates.
+
 ## [0.0.7] - 2026-11-01 - [0.0.16](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.16)
 
 1. Record post-merge task evidence in an authorized own PR comment with canonical
@@ -113,3 +118,5 @@
 - Standalone use: a plan-journal for one or two obvious edits, otherwise
   `Next step: plan-craft`.
 - Every result ends with a `Next step` line.
+
+[0.0.8]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

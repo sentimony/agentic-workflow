@@ -3,6 +3,15 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.18] - 2026-11-01
+
+1. Add resolve-issue 0.0.1 with durable issue orchestration, current host authority,
+   configured G3 delivery, canonical evidence and post-deletion recovery.
+2. Unify manual/auto stage transitions while preserving product decisions, review
+   policy, fresh verification and the published G3 delivery and cleanup guards.
+3. Keep native hosts, real adapters and full production acceptance unverified
+   under issues 29, 30 and 31; local fixtures prove their bounded contracts.
+
 ## [0.0.17] - 2026-11-01
 
 1. Retire embedded cross-cr and integrate the separately installed cross-agent 0.0.1
@@ -157,3 +166,5 @@ Release tag: `v0.0.2` (`006400f88d768452a9aa07c6736bbbb7bb5d55c3`).
 Release tag: `v0.0.1` (`39626fcce7cadd6a77b1cf5ebc6b0ce922f37960`).
 
 1. Add awf plugin with cr-request skill 0.0.1 (#1).
+
+[0.0.18]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

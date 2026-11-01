@@ -148,21 +148,16 @@
   review.
 - Renaming a released skill: the new name starts at `0.0.1`, its CHANGELOG names the old one,
   and README Install says to remove the old skill or reinstall.
-- Skills form one chain: specify -> plan-craft -> implement -> verify -> cr-request ->
-  cr-received -> verify -> finalize -> session-learnings. Each runs standalone: it takes the
-  previous skill's file artifact or builds a minimal one, and ends with a `Next step` line;
-  no orchestrator skill. One exception: on the user's explicit yes to a spec, `specify`
-  gives its result without a `Next step` line and starts `plan-craft` in the same turn,
-  whose result ends the turn. With `--auto` each skill starts its local next step in the
-  same turn and passes the flag on; it still stops on the user's decisions, the Round rule,
-  an `Outward` action, and before the `finalize` choice, so nothing is pushed without it.
-  Already authorized defer issue/reply actions and the bounded REJECT reply in
-  `cr-received` may proceed under `--auto`; other outward gates remain in force.
-  Each skill with a checkpoint (spec approval, plan, task, review round, record) commits its
-  own paths locally there as part of the chain. Standalone `cross-agent` is a separate
-  package; explicit review/intake delegation uses the installed owner adapter in
-  `skills/cr-request/scripts/cross_agent_adapter.py`. Ordinary consultations omit that
-  review binding. No duplicate launcher skill belongs in this workflow package.
+1. `resolve-issue` owns issue orchestration. Stage skills remain usable standalone.
+   Without auto, finish a meaningful stage and ask for the next transition. With auto,
+   continue within current verified authority and pass the flag to every invoked skill.
+   An orchestrated stage returns evidence/next action to its owner rather than launching
+   another stage itself. Historical mode never restores permission in a new session.
+   Critical product decisions, Round rule, quality gates and explicit bans remain.
+   Configured delivery uses the installed G3 host bridge, fresh action authority and
+   verified project contracts; unknown contracts block their actions. Native/full
+   production acceptance remains unverified by synthetic tests. The installed review
+   adapter remains owner of review policy; ordinary consultations use the generic core.
 - agentflow skills replace their sentimony/skills devflow counterparts (scope-triage,
   plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
   review-request, review-resolution, cross-review): a description opens with

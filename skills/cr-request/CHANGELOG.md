@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.13] - 2026-11-01
+
+1. Use the shared manual/auto stage transition contract and return orchestrated results
+   to resolve-issue; preserve current permissions, critical user decisions and delivery gates.
+
 ## [0.0.12] - 2026-11-01 - [0.0.17](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.17)
 
 1. Keep HEAD provenance separate from content freshness, preserving review validity
@@ -195,3 +200,5 @@
 
 - Initial release: target pinning, intent gathering, risk-sized depth, a reviewer brief
   with Intent, System, and Craft verdicts, and evidence-backed findings with confidence.
+
+[0.0.13]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

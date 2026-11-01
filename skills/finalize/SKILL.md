@@ -3,7 +3,7 @@ name: finalize
 description: You MUST use this when verified work awaits a decision on how it leaves the branch - merging it, pushing it, opening a pull request (PR), keeping the branch, discarding the branch, or cleaning up a worktree or workspace - in any repository. Not for work that is not verified yet (verify), open review findings (cr-received), a plain commit with no integration decision, or release work with its own checklist. Replaces devflow branch-finish.
 argument-hint: "[merge|pr|squash|keep|discard|pause] [--draft] [--auto]"
 metadata:
-  version: "0.0.8"
+  version: "0.0.9"
 license: MIT
 ---
 
@@ -22,35 +22,38 @@ The optional argument names the option: `merge`, `pr` (with `--draft` for a draf
 instruction the user already gave in the conversation counts as the choice; do not ask
 again.
 
-Under `--auto`, the host may perform already authorized defer issue and thread reply
-actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
-asking again. This grants no reviewer write token or general outward permission; all
-other outward actions and merge, release, and publication retain their approval gates.
-
-With `--auto` in the arguments, a `Next step` that names a local skill (`verify`,
-`cr-request`) is not handed back: start that skill in the same turn and pass `--auto` on.
-The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
-`ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
-`BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
-nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
-`--auto` is never written into a plan, spec, or record, and a `Next step` line never
-carries it; a new session or a manual call runs without it.
+1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+   Without `--auto`, finish this meaningful stage and request its next transition;
+   internal commands and tasks of the current authorized plan need no extra approval.
+2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
+   skill. When invoked by `resolve-issue`, return the result, next action and evidence to
+   that orchestrator; do not also launch the next stage yourself. A standalone invocation
+   owns its permitted next step. Saved mode is history, never authority in a new session.
+3. Critical clarification, product/public-contract changes and conflicting permissions
+   still require the user. Under auto the workflow host first consults all configured
+   other agent families; delegated executors return a consultation handoff to their host.
+   Quality gates, Round rule, budgets and explicit project/session prohibitions remain.
+4. Auto may cover push/PR/squash, the project's verified deployment, production checks
+   and cleanup of task-created resources only within the current verified project contract
+   and permissions. Tags, releases, infrastructure/data changes and force operations need
+   their own applicable authority. Delivery requires the installed G3 helpers,
+   current host action authority and verified project-specific contracts. `finalize --auto` without a chosen action must ask for that choice.
 
 Under `--auto`, a gate failure that a local step heals (`verify`, `cr-request`, or
 `verify` after this run merged the base into the branch) runs that step in the same turn
 and comes back to the option already chosen: the chain started from here returns to
 `finalize` when its `Next step` is `finalize`, instead of ending the turn there; any other
 result stops. Choosing the option confirms its integration and its push; deleting a
-branch or a workspace and the `--force` in step 6 still need their own confirmation.
+branch or a workspace outside verified task-created cleanup scope and the `--force`
+operation in step 6 still need their own applicable authorization.
 
 After a successful `merge`, `squash`, `pr`, `keep`, or `discard` under `--auto`, start
-`session-learnings` in its recording mode in the same turn (it takes no `--auto`), once
-no confirmation of step 6 is pending; with one pending, the turn ends on it, and
-`session-learnings` follows the user's answer.
-Post-merge `evidence-pending` also keeps the cycle incomplete; preserve its artifact
-and follow [post-merge.md](../implement/references/post-merge.md) without editing the
-tracked host on the base.
+`session-learnings --auto` in recording mode, or return that next action to the
+orchestrator, once no confirmation of step 6 is pending; with one pending, the turn ends
+on it, and `session-learnings` follows the user's answer. Post-merge `evidence-pending`
+also keeps the cycle incomplete; preserve its artifact and follow
+[post-merge.md](../implement/references/post-merge.md) without editing the tracked host
+on the base.
 
 ## 1. Read the state
 

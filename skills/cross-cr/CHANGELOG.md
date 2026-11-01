@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.5] - 2026-11-01 - [0.0.15](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.15)
+
+1. Use the agentflow plugin identity in current references while preserving skill
+   behavior and historical state.
+
 ## [0.0.4](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.13) - 2026-11-01
 
 1. Move complete workflow and anti-pattern details into a linked reference, retaining

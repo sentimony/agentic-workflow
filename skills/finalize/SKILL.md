@@ -3,7 +3,7 @@ name: finalize
 description: You MUST use this when verified work awaits a decision on how it leaves the branch - merging it, pushing it, opening a pull request (PR), keeping the branch, discarding the branch, or cleaning up a worktree or workspace - in any repository. Not for work that is not verified yet (verify), open review findings (cr-received), a plain commit with no integration decision, or release work with its own checklist. Replaces devflow branch-finish.
 argument-hint: "[merge|pr|squash|keep|discard|pause] [--draft] [--auto]"
 metadata:
-  version: "0.0.6"
+  version: "0.0.7"
 license: MIT
 ---
 
@@ -303,14 +303,14 @@ record host and checked against a fingerprint computed in this run.
 
 Capabilities: the skill runs Git commands and a forge CLI. Locally it commits the record
 host (`Record <topic>`) and, for work on the base branch, the work itself, never with
-content someone else staged. It is the only aw skill with network actions: `git push`,
-`git fetch`, `git pull`, creating, editing, and merging a PR (after a refused squash, also
-the same merge through the forge's REST API, pinned to the verified head), and deleting a
-remote branch; it may read the CLI token's scopes but never prints the token. Each of
-them, and every local merge or deletion, runs only on the user's instruction; under
-`--auto` the option choice is that instruction for integration and push only. It runs
-`git worktree remove --force` only as step 6 allows, never runs the other commands listed
-under Prohibitions, and never prints credentials.
+content someone else staged. It is the only agentflow skill with network actions:
+`git push`, `git fetch`, `git pull`, creating, editing, and merging a PR (after a
+refused squash, also the same merge through the forge's REST API, pinned to the verified
+head), and deleting a remote branch; it may read the CLI token's scopes but never prints
+the token. Each of them, and every local merge or deletion, runs only on the user's
+instruction; under `--auto` the option choice is that instruction for integration and
+push only. It runs `git worktree remove --force` only as step 6 allows, never runs the
+other commands listed under Prohibitions, and never prints credentials.
 
 ## References
 

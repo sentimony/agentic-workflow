@@ -24,7 +24,7 @@ class LayoutTests(unittest.TestCase):
             '.antigravity-plugin/plugin.json': {'$schema': 'https://antigravity.google/schemas/v1/plugin.json'},
         }
         for path, data in self.manifests.items():
-            data.update(name='aw', version='1.2.3', description='Fixture')
+            data.update(name='agentflow', version='1.2.3', description='Fixture')
             self.write(path, data)
         (self.root / 'CHANGELOG.md').write_text('## [1.2.3] - 2026-10-31\n')
 
@@ -38,6 +38,12 @@ class LayoutTests(unittest.TestCase):
 
     def test_root_layout_passes(self):
         self.assertEqual(check_layout(self.root), [])
+
+    def test_previous_plugin_identity_rejected(self):
+        for path, data in self.manifests.items():
+            data['name'] = 'aw'
+            self.write(path, data)
+        self.fails('root identity')
 
     def test_empty_discovery_rejected(self):
         for p in self.root.glob('skills/*/SKILL.md'):

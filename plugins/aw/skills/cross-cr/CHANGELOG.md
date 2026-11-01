@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.0.4] - 2026-11-01
+## [0.0.4](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.13) - 2026-11-01
 
 1. Move complete workflow and anti-pattern details into a linked reference, retaining
    reviewer routing and the full Security Model in the entrypoint. Read each detailed

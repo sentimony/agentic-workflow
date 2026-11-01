@@ -7,11 +7,11 @@
 2. Bind receiver intake before launch; preserve immutable original evidence and
    report post-fix committed/working/document identities after accepted fixes.
 
-1. Add the installed owner adapter for standalone cross-agent protocol 1; retain
+3. Add the installed owner adapter for standalone cross-agent protocol 1; retain
    target freshness, complete review grammar, qualified IDs and intake in this workflow.
-2. Reject partial domain results and persist only host-allowlisted review artifacts.
+4. Reject partial domain results and persist only host-allowlisted review artifacts.
 
-3. Retire active cross-cr routes in favor of standalone cross-agent and its
+5. Retire active cross-cr routes in favor of standalone cross-agent and its
    workflow owner, preserving review round and reviewer continuity.
 
 ## [0.0.11] - 2026-10-30

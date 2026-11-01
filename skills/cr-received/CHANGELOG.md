@@ -6,11 +6,11 @@
 2. Validate accepted fixes/commits against original evidence and capture post-fix
    identity separately; require fresh verification for the resulting tree.
 
-1. Route explicit standalone delegation through the installed workflow owner adapter.
-2. Require one current-task review with matching identity, original finding decisions
+3. Route explicit standalone delegation through the installed workflow owner adapter.
+4. Require one current-task review with matching identity, original finding decisions
    and the return block; ask before ambiguous intake or block stale evidence.
 
-3. Retire active cross-cr routes in favor of standalone cross-agent and its
+5. Retire active cross-cr routes in favor of standalone cross-agent and its
    workflow owner, preserving review round and reviewer continuity.
 
 ## [0.0.7] - 2026-10-30

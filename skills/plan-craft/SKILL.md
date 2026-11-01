@@ -325,4 +325,4 @@ and `implement`, and otherwise does not start execution.
 2. Spec input: `specify`
 3. Execution: `implement`
 4. Plan review: `cr-request` in document mode (run under `--auto`); standalone
-  `cross-agent [cr-request]` for an explicit document target only when requested
+   `cross-agent [cr-request]` for an explicit document target only when requested

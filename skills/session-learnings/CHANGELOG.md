@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.7] - 2026-11-01
+
+1. Use the shared manual/auto stage transition contract and return orchestrated results
+   to resolve-issue; preserve current permissions, critical user decisions and delivery gates.
+
 ## [0.0.6] - 2026-11-01 - [0.0.15](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.15)
 
 1. Use the agentflow plugin identity in current references while preserving skill
@@ -91,3 +96,5 @@
   by the narrowest scope including the user's global files and other repositories,
   deduplication against instructions, code, and configuration, drafts matched to the
   target file and its size limit, approval before any edit, and commits only on request.
+
+[0.0.7]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

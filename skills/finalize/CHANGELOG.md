@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.9] - 2026-11-01
+
+1. Use the shared manual/auto stage transition contract and return orchestrated results
+   to resolve-issue; preserve current permissions, critical user decisions and delivery gates.
+
 ## [0.0.8] - 2026-11-01 - [0.0.16](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.16)
 
 1. Evaluate effective required policy as known-required, known-none or unknown;
@@ -112,3 +117,5 @@
 - Squash merge recipe pinned to the verified head, PR title and body template with
   rulings and deferred items from the execution record, and cleanup behind a workspace
   barrier and a branch barrier.
+
+[0.0.9]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

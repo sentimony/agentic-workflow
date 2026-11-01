@@ -3,7 +3,7 @@ name: implement
 description: You MUST use this when an existing implementation plan is to be executed, either directly in the current session or through subagents, including resuming an interrupted execution from the plan's execution record, or when one or two edits with an obvious approach need doing without a plan. Covers task-by-task execution with evidence, drift handling and blockers, and a resumable execution record. Replaces devflow inline-plan-dev and subagent-plan-dev. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize).
 argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents] [--auto]"
 metadata:
-  version: "0.0.7"
+  version: "0.0.8"
 license: MIT
 ---
 
@@ -21,20 +21,22 @@ plan -> mode -> isolation -> clean start -> task loop -> drift and blockers -> r
 Arguments are optional: a path to the plan or to a spec, `--inline` or `--subagents`
 to choose the mode, and `--auto`.
 
-Under `--auto`, the host may perform already authorized defer issue and thread reply
-actions, and the bounded REJECT reply in `cr-received` `references/return.md`, without
-asking again. This grants no reviewer write token or general outward permission; all
-other outward actions and merge, release, and publication retain their approval gates.
-
-With `--auto` in the arguments, a `Next step` that names a local skill (`verify`,
-`plan-craft`) is not handed back: start that skill in the same turn and pass `--auto` on.
-The turn still ends on a decision that belongs to the user (spec approval, `NEEDS RULING`,
-`ESCALATE`, an open question, the commit-policy question, a choice that changes the spec or
-a public contract), on the Round rule, before any other `Outward` action, on `INCOMPLETE` or
-`BLOCKED`, and before the `finalize` option choice, which is the one final confirmation:
-nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` without it.
-`--auto` is never written into a plan, spec, or record, and a `Next step` line never
-carries it; a new session or a manual call runs without it.
+1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+   Without `--auto`, finish this meaningful stage and request its next transition;
+   internal commands and tasks of the current authorized plan need no extra approval.
+2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
+   skill. When invoked by `resolve-issue`, return the result, next action and evidence to
+   that orchestrator; do not also launch the next stage yourself. A standalone invocation
+   owns its permitted next step. Saved mode is history, never authority in a new session.
+3. Critical clarification, product/public-contract changes and conflicting permissions
+   still require the user. Under auto the workflow host first consults all configured
+   other agent families; delegated executors return a consultation handoff to their host.
+   Quality gates, Round rule, budgets and explicit project/session prohibitions remain.
+4. Auto may cover push/PR/squash, the project's verified deployment, production checks
+   and cleanup of task-created resources only within the current verified project contract
+   and permissions. Tags, releases, infrastructure/data changes and force operations need
+   their own applicable authority. Delivery requires the installed G3 helpers,
+   current host action authority and verified project-specific contracts. `finalize --auto` without a chosen action must ask for that choice.
 
 ## Step 1. Find the plan
 
@@ -159,9 +161,10 @@ task `in progress` in the journal.
 A task with an `Outward: <what and where>` field (a deploy, production, a publication, an
 external service; pushing or merging the work branch belongs to `finalize`, not to
 `Outward`) waits until the last `Verify` is a full `PASS` with the review closed, and runs
-only after the user confirms that action in the session, under `--auto` too. Until then
-the other tasks go ahead and `verify` marks the criteria it alone covers
-`deferred to Task <n>`.
+only within current explicit authority or a verified project contract covered by the
+orchestrated auto invocation. Without that authority it waits; explicit session/project
+prohibitions always win. Other tasks may proceed, and `verify` marks its criteria
+`deferred to Task <n>`. Missing delivery helpers or unknown project contracts block their actions.
 
 ## Step 5. Do the task
 

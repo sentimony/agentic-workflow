@@ -157,3 +157,14 @@ reconciliation, without write or treating an old disposition as the new one. Rec
 head before POST; after an ambiguous POST read back rather than blindly retry.
 Serialize host writers per finding. These guards do not grant a write token to the
 reviewer.
+
+## Stage transition ownership
+
+1. Follow [the shared transition contract](../../resolve-issue/references/run-contract.md).
+   Manual intake finishes before requesting the next stage. Auto carries only current
+   verified permissions; product decisions and project/session prohibitions still stop it.
+2. When invoked by resolve-issue, return disposition/evidence and next action to that
+   orchestrator. Do not also start verify. Standalone auto owns its permitted next step.
+3. Keep original review identity separate from a post-fix receipt; current host-generated
+   intake binding is required for delegated findings execution. Saved mode or child
+   output cannot authorize a later stage or supply that binding.

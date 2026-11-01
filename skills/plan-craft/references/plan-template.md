@@ -109,8 +109,9 @@ placeholders, and when a record is unfinished are rules of SKILL.md steps 1-5.
 - A task is self-contained for a fresh agent: files, context, when it is done, check
   commands, and what not to touch; its dependencies are explicit in `Depends on`.
 - `Outward: <what and where>` marks a task that acts outside the repository. It runs
-  only after a full `PASS` and a closed review, with its own confirmation, also under
-  `--auto`; a `Check` that acts outward moves into such a task. A criterion only such
+  only after a full `PASS` and closed review with current explicit authority or a
+  verified project contract covered by orchestrated auto. Otherwise it waits; explicit
+  prohibitions always win. A `Check` that acts outward moves into such a task. A criterion only such
   tasks cover is `deferred to Task <n>` in the `verify` report and does not block `PASS`.
   Already authorized defer issue/reply actions and the bounded REJECT reply in
   `cr-received` may proceed under `--auto`; other outward gates remain in force.

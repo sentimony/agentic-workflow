@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.9] - 2026-11-01
+
+1. Use the shared manual/auto stage transition contract and return orchestrated results
+   to resolve-issue; preserve current permissions, critical user decisions and delivery gates.
+
 ## [0.0.8] - 2026-11-01 - [0.0.17](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.17)
 
 1. Replace active legacy cross-cr routing with standalone cross-agent delegation
@@ -103,3 +108,5 @@
   suspiciously easy success; four verdicts with review blockers read from the journal;
   full and compact reports; the `Verify` journal line; the shared Round rule; a
   standalone mode that creates a plan-journal; and a `Next step` line.
+
+[0.0.9]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.7] - 2026-11-01
+
+1. Use the shared manual/auto stage transition contract and return orchestrated results
+   to resolve-issue; preserve current permissions, critical user decisions and delivery gates.
+
 ## [0.0.6] - 2026-10-30
 
 - Align review intake, gate evidence, and the narrow authorized automatic review replies.
@@ -87,3 +92,5 @@
   secrets appear only as placeholder names.
 - Calls `scope-check` after each save when it is installed.
 - Ends every result with a `Next step` line.
+
+[0.0.7]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

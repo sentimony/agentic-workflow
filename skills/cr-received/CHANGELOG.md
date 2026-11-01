@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.9] - 2026-11-01
+
+1. Use the shared manual/auto stage transition contract and return orchestrated results
+   to resolve-issue; preserve current permissions, critical user decisions and delivery gates.
+
 ## [0.0.8] - 2026-11-01 - [0.0.17](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.17)
 
 1. Preserve strict pre-execution review selection through a durable invocation binding.
@@ -103,3 +108,5 @@
   the reviewed target, one record per finding, separate verification of claim and remedy,
   five dispositions, dependency-ordered minimal fixes with per-finding evidence, a bounded
   re-review loop, and factual replies.
+
+[0.0.9]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

@@ -66,7 +66,10 @@ Filling rules:
   that was not run does not appear. A draft (`pr --draft`) writes
   `not verified on this tree` instead. With no record host, quote the `Verify` line
   printed in this session's report, or write `not verified on this tree` when there is
-  none.
+  none; that alternative is permitted for a draft only. A hostless ready PR needs
+  freshly executed project checks on the current full committed head and fingerprint,
+  with the exact commands, results, and target in both this body and the handoff.
+  Undefined or unavailable project checks require a draft or clarification.
 - **Rulings** and **Deferred** copy the lines from the record host: the plan's
   `## Execution record` or the spec's `## Verification record`, including those written
   by `cr-received`. **Deferred** also lists every unfinished plan task with an
@@ -89,7 +92,15 @@ each push:
    gh pr edit <pr> --title "<title>" --body-file <file>
    ```
 
-A pushed tree that differs from the verified one also needs a new `Verify` line before
-any merge; the body then quotes the new line. Turning a draft into a ready PR
-(`gh pr ready <pr>`) passes the gate of a ready `pr` first, and the body then replaces
-`not verified on this tree` with the accepted `Verify` line.
+A changed head or base invalidates applicable readiness, verification, and review
+evidence, even if the fingerprint happens to match. Reread full head/base and
+mergeability before expensive checks, ready, waiting, and merge; changed content needs
+a new `Verify` line. The body quotes only evidence valid for that target. Turning a
+draft into a ready PR (`gh pr ready <pr>`) requires fresh local project checks on the
+committed target, including hostless work. Remote jobs may remain missing/pending and
+start after ready; list them as outstanding rather than successful. DRAFT or a
+check-related BLOCKED/UNSTABLE state can permit readiness; actual conflicts, stale
+identity, red checks and incomplete observations still block. Unknown policy remains
+unknown and requires its merge-time resolution. The body replaces `not verified on
+this tree` with the local accepted `Verify` line and keeps remote merge-gate status
+separate. Ready never claims that outstanding jobs passed.

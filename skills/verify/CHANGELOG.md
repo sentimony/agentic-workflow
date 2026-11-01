@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.7] - 2026-11-01 - [0.0.16](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.16)
+
+1. Prepare private mutable dependency paths for committed-tree checks; shared writable
+   dependencies need a proven write-free contract across the full subprocess tree.
+   The environment recipe is cooperative and provides no OS containment.
+2. Check current PR head/base before expensive verification and invalidate applicable
+   evidence after target changes. A hostless ready PR requires fresh project checks
+   on its committed target, with commands and results in the report and PR body.
+3. Keep undefined or unavailable checks explicitly not verified; offer draft or
+   clarification without creating a tracked record host solely for a gate.
+
 ## [0.0.6] - 2026-10-30
 
 - Align review intake, gate evidence, and the narrow authorized automatic review replies.

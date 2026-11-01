@@ -3,7 +3,7 @@ name: finalize
 description: You MUST use this when verified work awaits a decision on how it leaves the branch - merging it, pushing it, opening a pull request (PR), keeping the branch, discarding the branch, or cleaning up a worktree or workspace - in any repository. Not for work that is not verified yet (verify), open review findings (cr-received), a plain commit with no integration decision, or release work with its own checklist. Replaces devflow branch-finish.
 argument-hint: "[merge|pr|squash|keep|discard|pause] [--draft] [--auto]"
 metadata:
-  version: "0.0.7"
+  version: "0.0.8"
 license: MIT
 ---
 
@@ -46,8 +46,11 @@ branch or a workspace and the `--force` in step 6 still need their own confirmat
 
 After a successful `merge`, `squash`, `pr`, `keep`, or `discard` under `--auto`, start
 `session-learnings` in its recording mode in the same turn (it takes no `--auto`), once
-no confirmation of step 6 and no question about uncommitted record lines is pending; with
-one pending, the turn ends on it, and `session-learnings` follows the user's answer.
+no confirmation of step 6 is pending; with one pending, the turn ends on it, and
+`session-learnings` follows the user's answer.
+Post-merge `evidence-pending` also keeps the cycle incomplete; preserve its artifact
+and follow [post-merge.md](../implement/references/post-merge.md) without editing the
+tracked host on the base.
 
 ## 1. Read the state
 
@@ -101,10 +104,14 @@ The gate guards the integrating options `merge`, `squash`, and a ready `pr`; `pr
 1. Find the record host. Record host: the plan when there is one (argument,
    conversation, or `Branch:` of its record); otherwise the spec (argument, conversation,
    or `Branch:` of its `## Verification record`; before the first write there, only the
-   argument or the conversation); otherwise none. With no host there is no verdict file:
-   the `Verify:` line is printed in the report only, and the `finalize` gate does not
-   apply. That is by design, an accepted trade-off: work with neither a plan nor a spec
-   has no file to hold a verdict, and the option choice stays the user's confirmation.
+   argument or the conversation); otherwise none. With no host the `Verify:` line
+   comes from the session report. A ready PR requires fresh project checks on the
+   current committed head and fingerprint, recorded in that report and the PR body.
+   Undefined or unavailable checks require a draft or clarification; they give no PASS.
+   Do not create a tracked host merely for this gate. This revises the accepted
+   trade-off for hostless ready PRs; other hostless integration semantics remain.
+   Items 2-4 apply to a hostless ready PR using its report evidence; host-only review
+   and record checkpoint requirements apply only when a host exists.
 2. Compute the current fingerprint with the recipe `## Committed tree` in
    [tree-fingerprint.md](references/tree-fingerprint.md), leaving the host out. A failed
    recipe prints no ID and fails the gate.
@@ -150,6 +157,23 @@ integrated. When only the review is missing, end with
 `Next step: cr-request - no code review on this tree`; when only the re-review is missing,
 with `Next step: cr-request - re-review still needed on this tree`.
 
+Before expensive checks, ready creation or draft promotion, waiting for CI, and merge,
+read full current PR head/base SHAs and mergeability from the forge. Pin these to the
+verified target; a changed head or base returns to applicable verify/review gates, even
+when the content fingerprint is unchanged. Detect conflicts or a stale base before
+spending on checks; merge the base only within current authority, without force push.
+Bound UNKNOWN polling with the finite gate deadline; expiration blocks the action.
+Ready requires fresh local verification of the current committed head/tree, including
+hostless work, and a fresh conflict/target check. Missing or pending remote jobs may
+start after ready; DRAFT or a check-related BLOCKED/UNSTABLE state can therefore permit
+ready while merge remains blocked. Unknown policy stays unknown and grants no merge
+permission. Explicit red checks, actual conflicts, stale targets and incomplete or
+invalid observations still block ready. Merge requires all applicable remote jobs to
+satisfy their policy; ready never records a merge PASS. Use the callable guards in
+[squash.md](references/squash.md#local-gate-contract) at each boundary. For a local
+`merge`, reread the local branch/base refs instead; changed refs require rechecking the
+applicable evidence before the fast-forward.
+
 The gate holds through the whole run. A merge of the base into the branch, a rebase, a
 conflict resolution, or a regenerated lock file that changes the content gives a new
 fingerprint; stop and send the work back to `verify` before integrating it. An
@@ -157,7 +181,10 @@ operation that leaves the content identical keeps the verdict.
 
 Unfinished plan tasks with an `Outward: <what and where>` field do not block
 integration: the report and the PR body's `Deferred` list them, and this skill never runs
-them.
+them. Before integration, the tracked host also identifies repo/PR, stable task IDs,
+and the PR completion destination for post-merge tasks. Their completion goes to
+[post-merge evidence](../implement/references/post-merge.md), with a local pending
+copy first; do not append or checkpoint their results in the tracked host on the base.
 
 ## 4. Offer the options
 
@@ -168,7 +195,7 @@ line (no remote, no forge CLI, detached HEAD, nothing to merge).
 | --- | --- | --- |
 | `merge` | fast-forward the base locally to the verified branch, then clean up | the base exists locally, the worktree that fast-forwards it is clean, and the work is not on the base itself |
 | `pr` | push the branch and open or update a PR with the body from [pr-body.md](references/pr-body.md); `pr --draft` opens a draft without a verdict | a remote and a forge CLI exist |
-| `squash` | squash merge an open PR on the forge by the recipe in [squash.md](references/squash.md) | an open PR exists and its checks can be read |
+| `squash` | squash merge an open PR on the forge by the recipe in [squash.md](references/squash.md) | an open PR exists and current target/policy evidence satisfies its gate |
 | `keep` | leave the branch and the workspace as they are and report where they live | always |
 | `discard` | delete the branch and its workspace | only on an explicit request |
 | `pause` | write a wip commit and a continuation note | uncommitted work exists or the user stops mid-task |
@@ -197,7 +224,10 @@ to the branch (`git merge --ff-only <branch>`).
 
 **`pr`.** A draft (`pr --draft`) needs no verdict, and its body says
 `not verified on this tree`. Turning a draft into a ready PR (`gh pr ready <pr>`) passes
-the same gate as a ready `pr`.
+the same readiness gate as a ready `pr`, including current head/base, successful local
+project checks for all work, and fresh readiness observations. Remote jobs may remain
+missing/pending until ready starts them; merge eligibility remains separate. Record the real commands and results in
+the body and handoff. A draft records what remains unverified.
 
 **Work on the base branch.** When the verified work sits on the base itself, `merge` is
 hidden: there is nothing to fast-forward. `pr` then creates a branch from `HEAD` named by
@@ -210,7 +240,10 @@ The local base stays as it is; the report says how many commits it is ahead of
 
 For the chosen option:
 
-1. Re-read the state from step 1.
+1. Re-read the state from step 1 and the applicable target observations immediately
+   before the action. Ready, CI waiting, and merge use the fresh boundary guard; the
+   merge transport receives the previously verified full SHA. Rejection is reported
+   without an admin or force retry.
 2. For `merge`, `squash`, and `pr`, make the `Record <topic>` commit of step 3, item 6.
    Then run the action. On the work-on-base path (step 4) the record commit comes after
    the new branch exists, the work is committed, and `verify` has run (`pr --draft` runs
@@ -225,20 +258,36 @@ every push to a branch with an open PR.
 ## 6. Clean up behind two barriers
 
 Cleanup runs only after a successful `merge`, `squash`, or confirmed `discard`.
+Before transferring own uncommitted hunks, capture the source HEAD, exact raw patches
+and index/worktree state through [cleanup.md](references/cleanup.md). Before removing
+a duplicate, repeat its fresh authority, integration and saved-evidence guard inside
+the mutation call. Already integrated HEAD never gets a reverse patch. Changed or
+unsupported state stays in place; partial retries use durable preimages/postimages.
 
-- **Workspace barrier.** Remove a worktree or clone only if this run or an earlier step
-  of the chain in this session created it. A workspace the user, the harness, or an
-  earlier session made is reported, not removed.
-  Before `git worktree remove`, show its modified, untracked, and ignored files: ignored
-  files such as local env files are lost with it. When `git worktree remove` refuses a
-  worktree this session created, list those files and ask for a confirmation that names
-  the worktree and the paths; only after it, run `git worktree remove --force <path>` for
-  that worktree. Without the confirmation it stays, and the report names it.
-- **Branch barrier.** Delete a branch only when its content is safe elsewhere: the base
-  contains it, the forge merged it, or the user confirmed `discard`. After a squash
-  merge, the tree comparison in [squash.md](references/squash.md) decides a local delete.
+1. **Workspace barrier.** Remove a worktree or clone only if this run or an earlier
+   step of the chain in this session created it. A workspace the user, harness or an
+   earlier session made is reported, not removed. Independently prove the current
+   workspace HEAD integrated or retained, even when the named branch is integrated.
+   Inspect both staged and unstaged changes plus unmerged, untracked and ignored
+   paths; unsaved data or pending task evidence keeps the workspace. List preserved paths
+   without printing their contents. A refused removal stays refused under `--auto`;
+   any separately requested force removal requires confirmation naming the workspace
+   and paths, under the existing prohibition exception.
+2. **Branch barrier.** Delete a branch only after the user's instruction and fresh
+   proof that its current local tip is integrated, or separately confirmed `discard`.
+   The forge's merged PR head alone does not prove a later local tip safe. Delivery
+   cleanup uses [cleanup.md](references/cleanup.md) and the tree comparison in
+   [squash.md](references/squash.md), with actual task evidence and preserved data
+   checked before disposal. Never reset a divergent local base to finish cleanup.
 
-Each cleanup step checks first whether there is still something to clean.
+For committed-only work and local merges, read the standalone disposal path in
+[cleanup.md](references/cleanup.md): no transfer patch or fabricated PR evidence;
+explicit trusted task inventory, evidence when applicable, and independent branch/
+workspace guards are required. Unknown inventory blocks. Duplicate-hunk removal keeps
+its stronger bound-journal guard.
+
+Each cleanup step rereads whether anything remains and whether its previous proof
+still holds. Report retained resources, blocked reasons and any partial journal.
 
 ## 7. Report
 
@@ -247,15 +296,19 @@ the `Record <topic>` commit or why there was none, what was integrated, pushed, 
 deleted, the uncommitted paths that were not integrated, the unfinished `Outward` tasks,
 and what was kept. Workspaces are reported as removed, kept awaiting confirmation, or not
 this session's and left alone. For work on the base branch, also say how many commits the
-local base is ahead of `origin/<base>`. After a `squash`, also report which checks were
-read (required, or all when the branch has none required), the merge refusal reason when
+local base is ahead of `origin/<base>`. After a `squash`, also report policy state/source
+and the required, declared, and observed checks, the merge refusal reason when
 there was one, a missing `workflow` scope even when the merge went through, the branch
 and `HEAD` the worktree ended on and whether `HEAD` equals `origin/<base>`, and the fate
-of the record host: merged with the change, or left uncommitted on the base with the
-question whether to commit it. The last line follows the table below.
+of the record host: merged with the change or existing local changes preserved in
+place. Report post-merge production status separately from evidence status, with
+repo/PR/task/attempt, merge/deployment identity, and canonical URL or local pending
+path. Do not copy completion lines back to the tracked host on the base. The last line
+follows the table below; `evidence-pending` takes precedence over ordinary completion.
 
 | Outcome | Next step |
 | --- | --- |
+| post-merge evidence is pending | `Next step: none - evidence-pending, preserve the local artifact and retry authorized publication` |
 | integrated (`merge`, `squash`), PR opened or updated, kept, paused, or discarded on request | `Next step: session-learnings - record what this change taught` |
 | no full `PASS` on the current tree, or the tree changed during the run | `Next step: verify - no full PASS on the current tree` |
 | full `PASS` judged on the working tree (`working`) | `Next step: none - commit the work for a verdict on a commit, or choose pr --draft` |
@@ -303,19 +356,22 @@ record host and checked against a fingerprint computed in this run.
 
 Capabilities: the skill runs Git commands and a forge CLI. Locally it commits the record
 host (`Record <topic>`) and, for work on the base branch, the work itself, never with
-content someone else staged. It is the only agentflow skill with network actions:
+content someone else staged. It owns network actions for branch integration:
 `git push`, `git fetch`, `git pull`, creating, editing, and merging a PR (after a
 refused squash, also the same merge through the forge's REST API, pinned to the verified
 head), and deleting a remote branch; it may read the CLI token's scopes but never prints
 the token. Each of them, and every local merge or deletion, runs only on the user's
 instruction; under `--auto` the option choice is that instruction for integration and
 push only. It runs `git worktree remove --force` only as step 6 allows, never runs the
-other commands listed under Prohibitions, and never prints credentials.
+other commands listed under Prohibitions, and never prints credentials. Post-merge
+evidence publication belongs to `implement` under its separate explicit authority;
+this option choice grants no evidence-comment or production permission.
 
 ## References
 
 - [Tree fingerprint](references/tree-fingerprint.md)
 - [Squash merge on the forge](references/squash.md)
 - [PR title and body](references/pr-body.md)
+- [Post-merge evidence and recovery](../implement/references/post-merge.md)
 - Next step: `session-learnings`, `verify` when the gate fails, or `cr-request` when a
   review or a re-review is still needed

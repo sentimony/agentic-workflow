@@ -1,8 +1,9 @@
 # Execution record, spec record, and resume
 
-The plan is the single state file of a change. Its last section, `## Execution record`,
-is the journal every skill in the chain reads and extends. Without a plan, the spec's
-`## Verification record` takes the same lines.
+Before integration, the plan is the state file of a change. Its last section,
+`## Execution record`, is the journal every skill in the chain reads and extends.
+Without a plan, the spec's `## Verification record` takes the same lines. Post-merge
+completion uses [post-merge.md](post-merge.md), leaving both tracked hosts unchanged.
 
 Contents: line format, lines this skill writes, record in the spec, resume.
 
@@ -123,6 +124,11 @@ is finished once `Base` is set and its evidence (a `Task` line or a `Ruling`) is
 ## Resume
 
 When `Base` is already set, execution is being resumed:
+
+For an already integrated task, first read its canonical repo/PR/task/attempt evidence
+and local pending artifact by [post-merge.md](post-merge.md). The integrated journal's
+pending post-merge task is a pointer to that evidence, not a reason to rewrite its
+tracked state on the base. The steps below apply to work still before integration.
 
 1. Read the whole record, the plan, and `git log <Base>..HEAD` with `git status`.
 2. For every task marked `done`, look for its trace: a commit in that range touching the

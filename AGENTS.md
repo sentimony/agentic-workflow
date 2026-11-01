@@ -108,9 +108,38 @@
   rejected findings; DECLINED defer does not. Later structured evidence determines each
   finding's bucket; missing legacy evidence or duration stays unknown. Closed unmerged PRs
   and PRs without yngwald reviews produce no summary. Its concurrency is separate from review.
-- `finalize` has no gate for work with neither a plan nor a spec: such work has no record
-  host to hold a `Verify` line, and the option choice is the user's own confirmation. This
-  is an accepted trade-off, not a defect for review.
+1. A hostless ready PR requires fresh project checks on its current committed target,
+   with commands/results in the report and PR body; undefined or unavailable checks
+   require draft/clarification. Ready uses fresh local verification; remote jobs may
+   start after ready. Unknown merge policy remains unknown, and merge still requires
+   every applicable check. No tracked host is created solely for this gate.
+   This supersedes the old exemption for ready PRs only. Other hostless integration
+   semantics remain an accepted trade-off, not a defect for review, because the
+   approved delivery scope revises ready verification without redesigning those routes.
+2. Delivery contracts live in `skills/finalize/references/squash.md`,
+   `skills/implement/references/post-merge.md` and
+   `skills/finalize/references/cleanup.md`. Read the applicable contract before ready,
+   merge, post-merge evidence or cleanup. Canonical completion uses an authorized own
+   PR comment with readback; unavailable publication remains evidence-pending in an
+   ignored store. Post-merge tasks leave tracked plan/spec files on the base unchanged.
+   Removing transferred duplicate hunks requires the captured ownership journal and
+   canonical evidence. Branch/workspace disposal is separate: require current user
+   authority, current branch/workspace integration or retention and data guards, plus
+   an explicit trusted inventory of post-merge tasks. An explicit no-task inventory
+   makes evidence not applicable; committed-only/local merges need no fabricated
+   patch, PR or deployment. Unknown inventory or actual tasks with pending evidence
+   block disposal. Preserve foreign staging and all local data; auto supplies no force.
+   The helper conservatively blocks whole-clone removal when its common Git storage
+   is inside the removal root. Linked-worktree removal requires proof that common Git
+   storage and retaining refs survive outside that root; a local ref alone is no proof.
+3. After delivery changes run the nonempty suites in CI's `Test delivery helpers`:
+   `python3 -m unittest discover -s skills/verify/scripts -p test_dependency_isolation.py`,
+   `python3 -m unittest discover -s skills/finalize/scripts -p test_delivery_gate.py`,
+   `python3 -m unittest discover -s skills/finalize/scripts -p test_cleanup_guard.py`,
+   `python3 -m unittest discover -s skills/implement/scripts -p test_post_merge_evidence.py`,
+   and `python3 -m unittest discover -s scripts -p test_delivery_integration.py`.
+   The actual CI step rejects zero discovered tests for each suite. Offline fixtures
+   do not prove production adapters, live forge actions, deployment or native evals.
 - `finalize` advises `pr --draft` for a `working` verdict although a draft carries only
   committed work: the uncommitted paths are listed as not integrated, and committing them is
   the user's call under the commit policy. This is an accepted trade-off, not a defect for

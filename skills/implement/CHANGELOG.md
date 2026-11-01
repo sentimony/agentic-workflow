@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.7] - 2026-11-01 - [0.0.16](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.16)
+
+1. Record post-merge task evidence in an authorized own PR comment with canonical
+   readback; preserve the integrated commit, deployment identity and task/attempt.
+   Post-merge tasks leave tracked plan/spec content on the base unchanged.
+2. Persist evidence in an ignored, atomic local store before publication; unknown
+   write outcomes recover through lookup/readback without duplicating an attempt.
+   Report production success separately from evidence-pending publication.
+3. Clarify that hostless ready PRs still require fresh project checks. The evidence
+   helper has an injected transport contract; no production forge adapter is supplied.
+
 ## [0.0.6] - 2026-10-30
 
 - Align review intake, gate evidence, and the narrow authorized automatic review replies.

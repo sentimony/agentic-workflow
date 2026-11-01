@@ -3,7 +3,7 @@ name: cr-received
 description: You MUST use this when findings from a code review, pull request comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix - a cr-request result, a spec or plan review, or a reviewer's message - in any programming language. Verifies each finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, records the decisions in the plan's execution record or the spec's verification record, commits each round's fixes locally, and routes back to verify. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.7"
+  version: "0.0.8"
 license: MIT
 ---
 
@@ -17,7 +17,8 @@ repeat? -> intake -> anchor -> records -> verify -> decide -> fix -> prove -> re
 ```
 
 The optional argument is one or more paths to saved reviews (files the user, CI, or
-`cross-cr` wrote; `cross-cr` lists one per reviewer, separated by `, `), or `PR #<n>`
+a standalone `cross-agent` owner archived; it lists one per reviewer, separated by
+`, `), or `PR #<n>`
 (the form the CI review's `Next step` line passes): the latest review on that pull
 request, the CI auto-review by default, read through a tool the user already configured;
 else take it from the conversation, the plan's `Review` and `Finding` lines, or the
@@ -42,11 +43,23 @@ nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` w
 `--auto` is never written into a plan, spec, or record, and a `Next step` line never
 carries it; a new session or a manual call runs without it.
 
-Under `--auto`, a chain that another skill started for a step it owns returns to that
-skill: `finalize` (healing its gate) at a `finalize` row, `cross-cr` at a re-review (its
-next round, never a same-host `cr-request`), and `plan-craft` after a clean document
-review of its plan or `REVIEWER UNAVAILABLE` on it, which then starts `implement`
-instead of `verify`.
+Under `--auto`, a chain returns to the workflow owner of the invoking step:
+`finalize` while healing its gate, the external-review owner after a requested
+standalone `cross-agent` round, and `plan-craft` after a clean document review or
+`REVIEWER UNAVAILABLE` on its plan. The external-review owner retains its round and
+reviewer continuity; `plan-craft` then starts `implement` instead of `verify`.
+
+## Standalone delegation
+
+1. For an explicit standalone `cross-agent` invocation, the installed workflow owner
+   selects one current-task unresolved review by path and identity before delegation;
+   see [the owner adapter](../cr-request/references/cross-agent-adapter.md).
+2. Ambiguous intake asks for input before model or registry mutation. Stale or unknown
+   reviews stay blocked before execution. The owner binds the selected review and
+   immutable evidence before launch; the generic launcher never chooses a random result.
+3. Preserve original qualified IDs and the return block. After accepted fixes or commits,
+   the owner validates against that binding and records a separate post-fix identity.
+   Original review evidence remains unchanged; the resulting tree needs fresh verify.
 
 ## 0. Repeat call
 

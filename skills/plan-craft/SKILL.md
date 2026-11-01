@@ -3,7 +3,7 @@ name: plan-craft
 description: You MUST use this when a spec the user approved, an accepted design, or requirements already agreed in the conversation have to be turned into an ordered, multi-step implementation plan before any code is written - including a spec from specify, work with no spec yet, and a plan revision after a document review. Replaces devflow plan-crafting. Covers whether a plan is needed, task order, acceptance-criteria coverage, and the execution choice. Not for open design (specify) or executing a plan (implement).
 argument-hint: "[<spec-path>] [<plan-path>] [--auto]"
 metadata:
-  version: "0.0.6"
+  version: "0.0.7"
 license: MIT
 ---
 
@@ -267,8 +267,8 @@ findings by section. Without `--auto`, offer it for plans with high-risk tasks a
 run it unasked. Under `--auto`, run it after the `Plan <topic>` commit, with up to three
 automatic rounds through `cr-received` and the plan revisions it routes here; the review
 chain returns here instead of starting `verify`, and after a clean round start `implement`.
-`cross-cr plan` runs only when the user names it. When the reviewer is unavailable, say so
-in one line of the report and go on to `implement`.
+Standalone `cross-agent [cr-request]` for an explicit document target runs only when
+requested. When the reviewer is unavailable, say so in one line and go on to `implement`.
 
 ## 8. Report
 
@@ -321,8 +321,8 @@ and `implement`, and otherwise does not start execution.
 
 ## References
 
-- [Plan template, field notes, and execution record format](references/plan-template.md)
-- Spec input: `specify`
-- Execution: `implement`
-- Plan review: `cr-request` in document mode (run under `--auto`); `cross-cr plan` only
-  when the user names it
+1. [Plan template, field notes, and execution record format](references/plan-template.md)
+2. Spec input: `specify`
+3. Execution: `implement`
+4. Plan review: `cr-request` in document mode (run under `--auto`); standalone
+   `cross-agent [cr-request]` for an explicit document target only when requested

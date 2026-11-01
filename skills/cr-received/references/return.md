@@ -1,5 +1,11 @@
 # Return Block, Journal Lines, and the Repeat Call
 
+For explicit standalone delegation, the workflow owner checks target freshness and
+durably binds the host-selected review path/identity before execution. After accepted
+fixes or commits it checks immutable original evidence, finding dispositions and return
+fields against that binding, and reports a separate post-fix identity for fresh verify.
+Ambiguous intake requests input before launch. The adapter grants no new permissions.
+
 ## Repeat call
 
 Check this before step 1. A review counts as already resolved when all of these hold:

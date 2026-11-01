@@ -69,7 +69,9 @@
   `python3 -m unittest discover -s scripts -p 'test_claude_review.py'` after changes;
   direct execution and unittest discovery both collect all test classes. CI also runs
   `python3 -m unittest discover -s skills/cr-received/scripts -p 'test_*.py'`
-  and `python3 -m unittest discover -s skills/cross-cr/scripts -p 'test_*.py'`.
+  and `python3 -m unittest discover -s skills/cr-request/scripts -p 'test_*.py'`.
+  Paired owner/core tests require an explicit `CROSS_AGENT_TEST_SOURCE`; without one
+  CI reports that case skipped and makes no compatibility-pair claim.
 - The reviewer writes `review-actions.json` without a write PAT. Trusted publish
   validates its schema, identities, current PR head, and yngwald token ownership, then
   persists a `claude-review-ledger:v1` envelope in the review body with PUT/GET readback
@@ -157,26 +159,22 @@
   Already authorized defer issue/reply actions and the bounded REJECT reply in
   `cr-received` may proceed under `--auto`; other outward gates remain in force.
   Each skill with a checkpoint (spec approval, plan, task, review round, record) commits its
-  own paths locally there as part of the chain. `cross-cr` stays outside the chain: it runs
-  only on request, next to or in place of the cr-request step, and hands findings to
-  cr-received.
+  own paths locally there as part of the chain. Standalone `cross-agent` is a separate
+  package; explicit review/intake delegation uses the installed owner adapter in
+  `skills/cr-request/scripts/cross_agent_adapter.py`. Ordinary consultations omit that
+  review binding. No duplicate launcher skill belongs in this workflow package.
 - agentflow skills replace their sentimony/skills devflow counterparts (scope-triage,
   plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
   review-request, review-resolution, cross-review): a description opens with
   `You MUST use this when`, as devflow's do, and names the skill it replaces.
-- `cross-cr` reads `cr-request` references (`brief.md`, `target.md`, `tree-fingerprint.md`,
-  `lenses.md`) by name, and its runner extracts the `Reviewer instructions`,
-  `Result contract`, and `Severity` sections of `brief.md` and the `Intent`, `System`, and
-  `Craft` sections of `lenses.md` by heading: renaming one breaks its briefs.
-  The runner keeps `Result contract` only up to the paragraph that starts with `` `Not
-  checkable ``: text after it stays host-only. After a `brief.md` edit run
-  `python3 -m unittest discover -s skills/cross-cr/scripts -p 'test_*.py'`.
-  In `RunnerTestCase` tests do not remove a file in the temporary directory with
-  `self.addCleanup(...)`: `tearDown` deletes the directory first and the cleanup fails with
-  `FileNotFoundError`.
-- A `cross-cr` CLI reviewer and a same-host `cr-request` subagent can read local review
-  archives despite their exclusion from snapshots and briefs: an accepted trade-off, not
-  a defect for review, because stronger isolation is a separate future design outside this work.
+1. The installed cross-agent owner adapter reads its own `brief.md` and `lenses.md`
+   headings. Keep Reviewer instructions, Result contract, Severity, Intent, System
+   and Craft stable; after edits run the owner adapter fixture suite. The host-only
+   closing-line rules after the Not checkable paragraph stay outside reviewer context.
+2. A delegated CLI reviewer and same-host subagent can read local review archives
+   despite snapshot exclusion: an accepted trade-off, not a defect for review,
+   because stronger OS containment remains a separate design.
+
 - A change to the cr-request output contract (closing lines, footer order, separators) goes
   into `SKILL.md`, `references/brief.md` (the `Result contract` paragraph and
   `### CI footer grammar`), the `claude-review.yml` prompt and `next_re`, and the top

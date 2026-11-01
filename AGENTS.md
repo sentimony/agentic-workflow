@@ -157,3 +157,7 @@
 - License: MIT, Ihor Orlovskyi.
 - Branches: `YYMMDD-dev-session`, squash-merged into `main` via PR.
 - English only, plain hyphen.
+
+## ADR
+
+1. Before an architectural change, read relevant current decisions (`docs/adr`), the [ADR policy](docs/adr-adoption/policy.md), and [template](docs/adr-adoption/templates/adr.md); show conflicts to the owner and record important approved choices under that policy.

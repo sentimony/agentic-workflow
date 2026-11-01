@@ -27,6 +27,28 @@ jobs:
           python3 -m unittest discover -s skills/cr-received/scripts -p 'test_*.py'
           python3 -m unittest discover -s skills/cross-cr/scripts -p 'test_*.py'
 
+      - name: Test delivery helpers
+        run: |
+          python3 - <<'PY'
+          import sys, unittest
+
+          suites = (
+              ("skills/verify/scripts", "test_dependency_isolation.py"),
+              ("skills/finalize/scripts", "test_delivery_gate.py"),
+              ("skills/finalize/scripts", "test_cleanup_guard.py"),
+              ("skills/implement/scripts", "test_post_merge_evidence.py"),
+              ("scripts", "test_delivery_integration.py"),
+          )
+          for directory, pattern in suites:
+              suite = unittest.TestLoader().discover(directory, pattern=pattern)
+              count = suite.countTestCases()
+              if count == 0:
+                  sys.exit(f"No tests discovered: {directory}/{pattern}")
+              print(f"Delivery suite: {directory}/{pattern}: {count} tests", flush=True)
+              if not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful():
+                  sys.exit(1)
+          PY
+
       - name: Validate SKILL.md frontmatter
         run: |
           python3 - <<'PY'

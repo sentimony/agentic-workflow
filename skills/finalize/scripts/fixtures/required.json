@@ -1,0 +1,29 @@
+{
+  "schema": "gate-observation-v1",
+  "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "base": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "observed_at": 100,
+  "deadline": 200,
+  "policy": {
+    "source": "forge:repo/base/policy/revision-1",
+    "retrieval": "ok",
+    "coverage": "complete",
+    "coverage_evidence": "effective branch protection and all applicable rulesets enumerated",
+    "absence_proof": null,
+    "required": [{"id": "app:1/validate", "accepted": ["success"], "semantics_source": "forge:check-conclusions/v1"}]
+  },
+  "project_checks": [],
+  "checks": {
+    "source": "forge:repo/head/checks/snapshot-1",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "complete": true,
+    "items": [{"id": "app:1/validate", "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "status": "completed", "conclusion": "success"}]
+  },
+  "mergeability": {
+    "source": "forge:repo/pr/mergeability/snapshot-1",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "base": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "state": "CLEAN"
+  },
+  "native_gate": null
+}

@@ -3,7 +3,7 @@ name: verify
 description: You MUST use this when anyone - you, a subagent, or the user - is about to state that work is done, fixed, ready, or mergeable, and before a merge, opening a pull request, or a handoff report, including work that has no plan. Covers every promise behind the claim - spec criteria, plan tasks, record entries, accepted review fixes, and the caller's words - proven with fresh checks on the committed tree and given one verdict, without editing code. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-or-spec-path>] [--auto]"
 metadata:
-  version: "0.0.6"
+  version: "0.0.7"
 license: MIT
 ---
 
@@ -24,8 +24,10 @@ record host takes the `Verify` line:
 Record host: the plan when there is one (argument, conversation, or `Branch:` of its record);
 otherwise the spec (argument, conversation, or `Branch:` of its `## Verification record`;
 before the first write there, only the argument or the conversation); otherwise none. With
-no host there is no verdict file: the `Verify:` line is printed in the report only, and the
-`finalize` gate does not apply.
+no host there is no verdict file: the `Verify:` line is printed in the report only.
+A ready PR still requires fresh project checks on the current committed target under
+`finalize`; no tracked plan or spec is created merely to hold that evidence. Other
+hostless integration semantics remain unchanged.
 ```
 
 ## 1. Pin the tree
@@ -47,6 +49,15 @@ line then ends with `working`, and the report says the verdict is bound to no co
 A recipe that exits non-zero or prints no ID gives
 `BLOCKED (fingerprint failed: <step>)`; there is no fallback. The real index is never
 touched.
+
+Before long checks for a PR delivery target, read its full head/base and mergeability.
+Conflicts or an outdated base stop the expensive run; UNKNOWN has a finite deadline.
+Use `finalize`
+[boundary guards](../finalize/references/squash.md#local-gate-contract) for current
+observations. After a head/base change, rerun applicable verification and review for
+that target. Re-pin both identities after checks; a changed target invalidates the run
+even when the content fingerprint stays equal. A standalone local verification with
+no PR keeps its local fingerprint contract and does not invent a forge requirement.
 
 ## 2. Claims before checks
 
@@ -92,6 +103,12 @@ checkout. These are not evidence:
 - a run from before the last edit, or CI on another commit or tree;
 - a report by the implementer, a subagent, or a reviewer;
 - a `Verify:` line recorded on a different tree.
+
+For a hostless ready PR, identify project checks from the actual project contract and
+run them freshly against the current committed head/fingerprint with isolated mutable
+dependencies. Include commands, results, head/base, and fingerprint in the report for
+the PR body. Undefined or unavailable checks require draft/clarification and cannot
+produce a PASS. A tracked host is unnecessary.
 
 When a tool, access, or credential is missing, the row is `not verified: <reason>`,
 never `n/a`. Do not guess the output of a command that did not run.

@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.0.8] - 2026-11-01 - [0.0.16](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.16)
+
+1. Evaluate effective required policy as known-required, known-none or unknown;
+   positively prove absence and wait for delayed checks within a finite deadline.
+   Fresh target guards precede checks, ready, waiting and pinned native merge.
+2. Require fresh local verification for every ready transition, including hostless
+   PRs. Ready may start missing/pending remote jobs; actual conflicts, red checks and
+   stale or invalid evidence still block it. Unknown merge policy stays unknown, and
+   merge waits for all applicable checks. Other hostless integration semantics remain.
+3. Preserve post-squash evidence through the implement evidence contract instead of
+   restoring new tracked record lines onto the base. Removing transferred duplicate
+   hunks requires canonical evidence and the captured ownership journal.
+4. Guard branch/workspace disposal separately with current authority, current branch
+   and workspace integration or retention, data checks and explicit trusted post-merge
+   task inventory. No actual tasks makes evidence not applicable; committed-only/local
+   merges need no fabricated patch, PR or deployment. Unknown inventory or actual
+   pending evidence blocks disposal. Preserve foreign staging and local artifacts;
+   automatic mode supplies no force-cleanup permission.
+5. Block whole-clone removal when common Git storage is inside the removal root.
+   Linked-worktree eligibility requires surviving common data and retaining refs
+   outside that root; no external-retention framework is implied.
+
 ## [0.0.7] - 2026-11-01 - [0.0.15](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.15)
 
 1. Use the agentflow plugin identity in current references while preserving skill

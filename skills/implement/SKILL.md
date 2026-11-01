@@ -3,7 +3,7 @@ name: implement
 description: You MUST use this when an existing implementation plan is to be executed, either directly in the current session or through subagents, including resuming an interrupted execution from the plan's execution record, or when one or two edits with an obvious approach need doing without a plan. Covers task-by-task execution with evidence, drift handling and blockers, and a resumable execution record. Replaces devflow inline-plan-dev and subagent-plan-dev. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize).
 argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents] [--auto]"
 metadata:
-  version: "0.0.6"
+  version: "0.0.7"
 license: MIT
 ---
 
@@ -11,6 +11,8 @@ license: MIT
 
 Carry a plan from its first pending task to its last, leaving evidence in the plan
 itself so that any later session can pick the work up from the files and Git alone.
+After integration, task completion goes to canonical PR evidence with a local pending
+copy, following [post-merge.md](references/post-merge.md); the tracked host stays unchanged.
 
 ```text
 plan -> mode -> isolation -> clean start -> task loop -> drift and blockers -> record -> next step
@@ -83,8 +85,16 @@ the last ` - spec ` (`<the edit>` may itself contain ` - `). A spec that is not
 Record host: the plan when there is one (argument, conversation, or `Branch:` of its record);
 otherwise the spec (argument, conversation, or `Branch:` of its `## Verification record`;
 before the first write there, only the argument or the conversation); otherwise none. With
-no host there is no verdict file: the `Verify:` line is printed in the report only, and the
-`finalize` gate does not apply.
+no host there is no verdict file: the `Verify:` line is printed in the report only.
+A ready PR still requires fresh project checks on the current committed target under
+`finalize`; no tracked plan or spec is created merely to hold that evidence. Other
+hostless integration semantics remain unchanged.
+
+Before integration, record repo/PR, stable task IDs, remaining post-merge tasks, and
+their PR completion destination in the host. When resuming an already merged task,
+read that destination and [post-merge.md](references/post-merge.md) before applying
+the tracked journal rules below. After merge, do not append completion lines or
+checkpoint commits to the tracked host on the base.
 
 Work without a plan creates no file of its own. With a spec, the record lines of the edit
 go into the spec's `## Verification record`, created by this skill when it is the first
@@ -199,7 +209,10 @@ comes later, append a new `Commits` line with it; the latest one counts. With
 evidence, the work stays uncommitted, and `verify` judges the working tree.
 
 A task is `done` only with evidence: a command run on this tree and its result, written
-into the `Task` line.
+into the `Task` line before integration. For a post-merge task, the corresponding
+evidence goes to its author-bound canonical PR comment with successful readback.
+Persist a gitignored local pending copy first; production success with unpublished
+evidence remains `evidence-pending` and the cycle is incomplete.
 
 ## Step 6. Drift
 
@@ -290,6 +303,12 @@ decision), a spec sent back to `draft` and why, deferred items, checks not run w
 reason, and, when the policy kept the work uncommitted, that fact and the paths. The last
 line follows the table; the first matching row wins:
 
+For post-merge work, report production status separately from evidence status, the
+repo/PR/task/attempt and merge/deployment identity, and canonical URL or local pending
+path. An `evidence-pending` result keeps the cycle incomplete and ends with
+`Next step: none - evidence-pending, preserve the local artifact and retry authorized publication`.
+It takes precedence over the table's ordinary completion row.
+
 | Condition | Last line |
 | --- | --- |
 | a task needs a material change to the approved spec; its `Status` is back to `draft` (step 6) | `Next step: specify - <the decision Task <n> would change>` |
@@ -329,15 +348,20 @@ field, when it sets it back to `draft`, and its `## Verification record`), runs 
 commands (read-only Git, the plan's checks and the project's test and build commands,
 `git worktree add` when isolation needs it, local commits of the task's own paths, through
 a temporary index when needed, and a local cherry-pick or merge of a subagent's commits
-into the controller's branch), and dispatches subagents in subagent mode. It makes no
-network calls of its own and does not push, force, merge, or open pull requests, under
+into the controller's branch), and dispatches subagents in subagent mode. Apart from
+the bounded post-merge evidence action below, it makes no network calls of its own.
+It does not push, force, merge, or open pull requests, under
 `--auto` too; a project command the plan names may reach the network (a package install,
 for example), and runs only because the plan or the user asked for it. An `Outward` task
 acts outside the repository only after a full `PASS` and the user's confirmation of
-that action.
+that action. Post-merge completion uses a gitignored local pending store and, only with
+explicit current-session publication authority, reads or writes its own canonical PR
+evidence comment and validates readback. This bounded evidence action does not grant
+merge, deployment, cleanup, or general commenting permission; `--auto` grants none.
 
 ## References
 
 - [Execution record, spec record, and resume](references/journal.md)
 - [Subagent mode: briefs, statuses, retries](references/subagents.md)
+- [Post-merge evidence and recovery](references/post-merge.md)
 - [Isolation: detection, order, limits](references/isolation.md)

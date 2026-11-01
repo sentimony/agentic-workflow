@@ -3,6 +3,27 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.16] - 2026-11-01
+
+1. Isolate mutable verification dependencies and require fresh project checks for
+   hostless ready PRs, bound to the current committed target.
+2. Separate fresh local readiness from strict merge eligibility: remote jobs can start
+   after ready, unknown policy stays unknown, and merge waits for applicable checks.
+   Add finite deadlines and target guards before checks, ready, waiting and pinned merge.
+3. Preserve post-merge task evidence through authorized own-comment readback and an
+   ignored durable pending store, without editing tracked plan/spec content on base.
+4. Require captured ownership and canonical evidence for transferred duplicate-hunk
+   removal. Guard branch/workspace disposal separately with current authority,
+   integration or retention, local data checks and explicit trusted task inventory.
+   No-task local/committed work needs no fabricated patch, PR or deployment; unknown
+   inventory and actual pending evidence block disposal. Preserve foreign staging.
+   Block whole-clone removal with common Git storage inside its removal root; linked
+   worktrees need surviving common storage and retaining refs outside that root.
+5. Add offline integration coverage and CI discovery-count guards. Live forge and
+   production validation, installation migration and native evals remain unverified;
+   owner-accepted follow-ups: https://github.com/sentimony/agentic-workflow/issues/29
+   and https://github.com/sentimony/agentic-workflow/issues/30.
+
 ## [0.0.15] - 2026-11-01
 
 1. Rename the plugin identity and active command namespaces from aw to agentflow,

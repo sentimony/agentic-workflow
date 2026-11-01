@@ -3,13 +3,13 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.
 
-Version: `v0.0.15`
+Version: `v0.0.16`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [agentflow](.) | 0.0.15 | specify, plan-craft, implement, verify, cr-request, cr-received, cross-cr, finalize, session-learnings |
+| [agentflow](.) | 0.0.16 | specify, plan-craft, implement, verify, cr-request, cr-received, cross-cr, finalize, session-learnings |
 
 ## Skills
 
@@ -17,12 +17,12 @@ Version: `v0.0.15`
 | --- | --- | --- | --- |
 | [specify](skills/specify/SKILL.md) | 0.0.6 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
 | [plan-craft](skills/plan-craft/SKILL.md) | 0.0.6 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
-| [implement](skills/implement/SKILL.md) | 0.0.6 | `/implement` | Execute a plan inline or through subagents, task by task, test first, recording base, task state, and rulings in the execution record. |
-| [verify](skills/verify/SKILL.md) | 0.0.6 | `/verify` | Check every completion claim with fresh evidence bound to the exact tree fingerprint and return PASS, FAIL, INCOMPLETE, or BLOCKED. |
+| [implement](skills/implement/SKILL.md) | 0.0.7 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
+| [verify](skills/verify/SKILL.md) | 0.0.7 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
 | [cr-request](skills/cr-request/SKILL.md) | 0.0.11 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; show compact verdicts with a persistent full report and structured action identities. |
 | [cr-received](skills/cr-received/SKILL.md) | 0.0.7 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
 | [cross-cr](skills/cross-cr/SKILL.md) | 0.0.5 | `/cross-cr` | Hand a plan or a finished change to other agent CLIs (by default the opposite CLI, more by name) for a read-only review in the cr-request contract, then pass the findings to cr-received. |
-| [finalize](skills/finalize/SKILL.md) | 0.0.7 | `/finalize` | Integrate verified work safely: merge, pull request, squash, keep, discard, or pause, with cleanup behind explicit confirmation. |
+| [finalize](skills/finalize/SKILL.md) | 0.0.8 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
 | [session-learnings](skills/session-learnings/SKILL.md) | 0.0.6 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 
 ## Workflow
@@ -50,6 +50,37 @@ Already authorized defer issue/reply actions and the bounded REJECT reply in
 
 `cross-cr` is outside the chain: it runs only on request, next to or in place of the
 `cr-request` step, and hands its findings to `cr-received`.
+
+## Delivery reliability
+
+Version `0.0.16` adds local delivery contracts after the separate root-layout and
+agentflow identity releases. Live acceptance remains unverified under the owner-approved
+release exception: https://github.com/sentimony/agentic-workflow/issues/30.
+
+1. Verification uses private mutable dependency paths and checks current committed
+   targets. Hostless ready PRs require fresh project checks in the handoff and body.
+2. Ready requires fresh local verification and current head/base observations; remote
+   jobs may start after ready. Merge waits for every applicable check, keeps unknown
+   policy unresolved until its gate is satisfied, and receives the verified full SHA.
+3. Post-merge completion belongs in an authorized own PR comment with readback.
+   Publication failure remains evidence-pending in an ignored local store, separate
+   from the result of the external task; tracked plan/spec files stay unchanged.
+4. Removing transferred duplicate hunks requires captured ownership and canonical
+   evidence. Separate branch/workspace disposal requires current authority, integration
+   or retention and data guards, and a trusted post-merge task inventory. Explicitly
+   having no tasks makes evidence not applicable for committed-only/local merges;
+   no patch, PR or deployment is fabricated. Unknown inventory or actual pending
+   evidence blocks disposal. Foreign staging and untracked/ignored data are protected.
+5. Whole-clone removal is blocked when common Git storage lies inside the removal
+   root. Linked-worktree removal needs proof that the common Git data and retaining
+   refs survive outside that root; the helper supplies no external-copy framework.
+
+The Python suites exercise local contracts, real scratch Git operations and injected
+forge fixtures. Production adapters, real forge policy/write/readback, deployments,
+installation migration and native agent evals remain unverified. Environment isolation
+is cooperative; the helpers provide no OS containment. Local fixture results do not
+establish live acceptance or authorize outward actions.
+
 
 ## Install
 

@@ -31,7 +31,7 @@
 - Versions: patch bumps; manifest `version` equals the release tag without `v`; the top
   `CHANGELOG.md` entry matches `metadata.version`. README shows the repository
   version, each plugin version, and each skill version.
-- No marketplace of its own: the `aw` entry lives in sentimony/marketplace (both
+- No marketplace of its own: the `agentflow` entry lives in sentimony/marketplace (both
   `marketplace.json` files), and CI fails if `.claude-plugin/marketplace.json` or
   `.agents/plugins/marketplace.json` comes back. After a release tag, bump that entry's `ref`
   with a sentimony/marketplace patch release.
@@ -131,7 +131,7 @@
   own paths locally there as part of the chain. `cross-cr` stays outside the chain: it runs
   only on request, next to or in place of the cr-request step, and hands findings to
   cr-received.
-- aw skills replace their sentimony/skills devflow counterparts (scope-triage,
+- agentflow skills replace their sentimony/skills devflow counterparts (scope-triage,
   plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
   review-request, review-resolution, cross-review): a description opens with
   `You MUST use this when`, as devflow's do, and names the skill it replaces.

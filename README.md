@@ -1,15 +1,15 @@
-# Agentic Workflow
+# Agentflow
 
-Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the `aw`
-plugin.
+Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
+`agentflow` plugin.
 
-Version: `v0.0.14`
+Version: `v0.0.15`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [aw](.) | 0.0.14 | specify, plan-craft, implement, verify, cr-request, cr-received, cross-cr, finalize, session-learnings |
+| [agentflow](.) | 0.0.15 | specify, plan-craft, implement, verify, cr-request, cr-received, cross-cr, finalize, session-learnings |
 
 ## Skills
 
@@ -21,9 +21,9 @@ Version: `v0.0.14`
 | [verify](skills/verify/SKILL.md) | 0.0.6 | `/verify` | Check every completion claim with fresh evidence bound to the exact tree fingerprint and return PASS, FAIL, INCOMPLETE, or BLOCKED. |
 | [cr-request](skills/cr-request/SKILL.md) | 0.0.11 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; show compact verdicts with a persistent full report and structured action identities. |
 | [cr-received](skills/cr-received/SKILL.md) | 0.0.7 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
-| [cross-cr](skills/cross-cr/SKILL.md) | 0.0.4 | `/cross-cr` | Hand a plan or a finished change to other agent CLIs (by default the opposite CLI, more by name) for a read-only review in the cr-request contract, then pass the findings to cr-received. |
-| [finalize](skills/finalize/SKILL.md) | 0.0.6 | `/finalize` | Integrate verified work safely: merge, pull request, squash, keep, discard, or pause, with cleanup behind explicit confirmation. |
-| [session-learnings](skills/session-learnings/SKILL.md) | 0.0.5 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
+| [cross-cr](skills/cross-cr/SKILL.md) | 0.0.5 | `/cross-cr` | Hand a plan or a finished change to other agent CLIs (by default the opposite CLI, more by name) for a read-only review in the cr-request contract, then pass the findings to cr-received. |
+| [finalize](skills/finalize/SKILL.md) | 0.0.7 | `/finalize` | Integrate verified work safely: merge, pull request, squash, keep, discard, or pause, with cleanup behind explicit confirmation. |
+| [session-learnings](skills/session-learnings/SKILL.md) | 0.0.6 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 
 ## Workflow
 
@@ -53,31 +53,57 @@ Already authorized defer issue/reply actions and the bounded REJECT reply in
 
 ## Install
 
-Since 0.0.9 the plugin installs from [sentimony/marketplace](https://github.com/sentimony/marketplace),
-and this repository has no marketplace of its own: uninstall `aw@agentic-workflow`, remove the
-`agentic-workflow` marketplace, then add `sentimony/marketplace` and install `aw@sentimony`.
+Version `0.0.15` renames the plugin from `aw` to `agentflow` after the separate
+root-layout release. The repository remains `sentimony/agentic-workflow`. Native
+installation, upgrade and rollback evidence remains unverified under the owner-approved
+release exception: https://github.com/sentimony/agentic-workflow/issues/29.
+Use the commands below after the matching marketplace update.
+
+### Migrate an existing aw installation
+
+1. Record the existing host version, pinned source tag, plugin name/path and local
+   settings before changing the installation. Test the transition in a scratch
+   configuration first; keep credentials in their existing approved stores.
+2. Use the host's supported uninstall operation to remove `aw`, then install
+   `agentflow` from the updated marketplace. Installing both identities together is a
+   conflict because they expose the same skill names; no alias plugin is provided.
+3. Check the available commands and restore only compatible settings after the new
+   installation is verified. Local symlinks require an explicit target/owner check;
+   this package does not remove real installations or rewrite user configurations.
+4. For rollback, remove `agentflow` with the host's supported operation and restore the
+   recorded immutable tag with its matching old `aw` name/path and saved settings.
+   Update marketplace metadata through a normal follow-up commit; keep existing tags.
+
+### Fresh installation
+
+Since 0.0.9 the plugin installs from
+[sentimony/marketplace](https://github.com/sentimony/marketplace), and this repository
+has no marketplace of its own: uninstall `aw@agentic-workflow`, remove the
+`agentic-workflow` marketplace, then add `sentimony/marketplace` and install the current
+plugin as shown below.
 
 0.0.8 renames the plugin to `aw`: uninstall the old plugin, then install `aw`.
 
 0.0.3 renames `cr-receive` to `cr-received`: remove the old skill or reinstall.
 
-aw replaces these sentimony/skills devflow skills; remove them from a workspace that
-installs aw, or they intercept the same requests: `scope-triage`, `plan-crafting`,
-`inline-plan-dev`, `subagent-plan-dev`, `verification-gate`, `branch-finish`,
-`review-request`, `review-resolution`, and `cross-review`, which `cross-cr` replaces.
+agentflow replaces these sentimony/skills devflow skills; remove them from a workspace
+that installs agentflow, or they intercept the same requests: `scope-triage`,
+`plan-crafting`, `inline-plan-dev`, `subagent-plan-dev`, `verification-gate`,
+`branch-finish`, `review-request`, `review-resolution`, and `cross-review`, which
+`cross-cr` replaces.
 
 Claude Code:
 
 ```bash
 claude plugin marketplace add sentimony/marketplace
-claude plugin install aw@sentimony
+claude plugin install agentflow@sentimony
 ```
 
 Codex:
 
 ```bash
 codex plugin marketplace add sentimony/marketplace
-codex plugin add aw@sentimony
+codex plugin add agentflow@sentimony
 ```
 
 Any agent through [skills](https://github.com/vercel-labs/skills):

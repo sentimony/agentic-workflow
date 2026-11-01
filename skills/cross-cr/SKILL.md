@@ -2,7 +2,7 @@
 name: cross-cr
 description: You MUST use this when an implementation plan or a finished implementation needs an independent review by other agent CLIs - by default the opposite CLI (Codex for work done in Claude Code, Claude Code for work done in Codex), plus any reviewer the user names, Antigravity (Gemini) included - whether the user asks for a cross-review, a cross-cr, or a second opinion from the other agent. Replaces devflow cross-review. Same-host review belongs to cr-request and deciding on findings to cr-received; spec review and per-task review are outside this skill.
 metadata:
-  version: "0.0.4"
+  version: "0.0.5"
 license: MIT
 compatibility: Requires Python 3.9 or newer and the reviewer agent CLI (codex, claude, or agy) installed and logged in; reads the brief, target, and fingerprint references of the installed cr-request skill.
 argument-hint: "[--auto] [<claude|codex|gemini> [model] [low|medium|high|xhigh|max]]..."
@@ -50,9 +50,9 @@ contract; both go to `cr-request`.
 | User asks for it in place of, or next to, the `cr-request` step after `implement` | `implementation` | one line with the reason; offer `cr-request` |
 | User explicitly asks to review a change made from conversation requests, with no spec or plan | `implementation` | as for any explicit request |
 
-No aw skill calls this one on its own: it runs on the user's request. A cross-review
-never blocks a plan handoff; a run that cannot happen returns `unavailable` with its
-reason.
+No agentflow skill calls this one on its own: it runs on the user's request. A
+cross-review never blocks a plan handoff; a run that cannot happen returns `unavailable`
+with its reason.
 
 ## Choose the reviewer, model, and effort
 

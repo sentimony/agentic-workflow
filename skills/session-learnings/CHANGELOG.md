@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.6] - 2026-11-01 - [0.0.15](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.15)
+
+1. Use the agentflow plugin identity in current references while preserving skill
+   behavior and historical state.
+
 ## [0.0.5] - 2026-10-29
 
 - Under `--auto`, `finalize` starts this skill in the same turn after a successful

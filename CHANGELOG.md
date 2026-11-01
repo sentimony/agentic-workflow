@@ -3,6 +3,15 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.15] - 2026-11-01
+
+1. Rename the plugin identity and active command namespaces from aw to agentflow,
+   retaining the repository, skill names and legacy state identifiers.
+2. Document explicit uninstall/reinstall migration without a duplicate alias plugin.
+3. Update cross-cr 0.0.5, finalize 0.0.7 and session-learnings 0.0.6 references.
+4. Native migration evidence remains unverified; owner-accepted follow-up:
+   https://github.com/sentimony/agentic-workflow/issues/29.
+
 ## [0.0.14] - 2026-11-01
 
 1. Move the aw plugin and its unchanged skills to the repository root.

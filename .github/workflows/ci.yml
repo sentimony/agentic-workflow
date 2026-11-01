@@ -100,8 +100,8 @@ jobs:
           plugin = load("plugin.json")
           if plugin.get("version") != release:
               errors.append("plugin.json version != README version")
-          if not re.search(rf"^\| \[aw\]\([^)]*\) \| {re.escape(str(release))} \|", readme, re.MULTILINE):
-              errors.append("README.md: Plugins table row for aw missing or stale")
+          if not re.search(rf"^\| \[agentflow\]\([^)]*\) \| {re.escape(str(release))} \|", readme, re.MULTILINE):
+              errors.append("README.md: Plugins table row for agentflow missing or stale")
           for market in (".claude-plugin/marketplace.json", ".agents/plugins/marketplace.json"):
               if pathlib.Path(market).exists():
                   errors.append(f"{market}: marketplace belongs in sentimony/marketplace")

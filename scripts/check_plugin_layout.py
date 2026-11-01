@@ -50,8 +50,8 @@ def check_layout(root):
             errors.append(f'{relative}: {exc}')
     canonical = manifests.get('plugin.json', {})
     identity = (canonical.get('name'), canonical.get('version'))
-    if identity[0] != 'aw' or not isinstance(identity[1], str) or not re.fullmatch(r'\d+\.\d+\.\d+', identity[1]):
-        errors.append('root identity must be aw with a semver version')
+    if identity[0] != 'agentflow' or not isinstance(identity[1], str) or not re.fullmatch(r'\d+\.\d+\.\d+', identity[1]):
+        errors.append('root identity must be agentflow with a semver version')
     for relative, data in manifests.items():
         if (data.get('name'), data.get('version')) != identity:
             errors.append(f'{relative}: identity name/version differs from root')

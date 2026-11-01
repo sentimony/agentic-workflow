@@ -25,7 +25,7 @@ jobs:
           python3 -m unittest discover -s scripts -p 'test_review_parity.py'
           python3 -m unittest discover -s scripts -p 'test_claude_review.py'
           python3 -m unittest discover -s skills/cr-received/scripts -p 'test_*.py'
-          python3 -m unittest discover -s skills/cross-cr/scripts -p 'test_*.py'
+          python3 -m unittest discover -s skills/cr-request/scripts -p 'test_*.py'
 
       - name: Test delivery helpers
         run: |

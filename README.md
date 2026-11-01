@@ -3,25 +3,24 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.
 
-Version: `v0.0.16`
+Version: `v0.0.17`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [agentflow](.) | 0.0.16 | specify, plan-craft, implement, verify, cr-request, cr-received, cross-cr, finalize, session-learnings |
+| [agentflow](.) | 0.0.17 | specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
 
 ## Skills
 
 | Skill | Version | Command | Description |
 | --- | --- | --- | --- |
 | [specify](skills/specify/SKILL.md) | 0.0.6 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
-| [plan-craft](skills/plan-craft/SKILL.md) | 0.0.6 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
+| [plan-craft](skills/plan-craft/SKILL.md) | 0.0.7 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
 | [implement](skills/implement/SKILL.md) | 0.0.7 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
-| [verify](skills/verify/SKILL.md) | 0.0.7 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
-| [cr-request](skills/cr-request/SKILL.md) | 0.0.11 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; show compact verdicts with a persistent full report and structured action identities. |
-| [cr-received](skills/cr-received/SKILL.md) | 0.0.7 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
-| [cross-cr](skills/cross-cr/SKILL.md) | 0.0.5 | `/cross-cr` | Hand a plan or a finished change to other agent CLIs (by default the opposite CLI, more by name) for a read-only review in the cr-request contract, then pass the findings to cr-received. |
+| [verify](skills/verify/SKILL.md) | 0.0.8 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
+| [cr-request](skills/cr-request/SKILL.md) | 0.0.12 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; show compact verdicts with a persistent full report and structured action identities. |
+| [cr-received](skills/cr-received/SKILL.md) | 0.0.8 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
 | [finalize](skills/finalize/SKILL.md) | 0.0.8 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
 | [session-learnings](skills/session-learnings/SKILL.md) | 0.0.6 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 
@@ -48,8 +47,11 @@ paths locally at its checkpoint and never pushes.
 Already authorized defer issue/reply actions and the bounded REJECT reply in
 `cr-received` may proceed under `--auto`; other outward gates remain in force.
 
-`cross-cr` is outside the chain: it runs only on request, next to or in place of the
-`cr-request` step, and hands its findings to `cr-received`.
+Standalone `cross-agent` is a separate experimental plugin, released as `0.0.1`.
+The installed [workflow owner adapter](skills/cr-request/references/cross-agent-adapter.md)
+binds explicit review/intake delegation; ordinary consultations remain generic.
+Native published-pair acceptance remains unverified:
+https://github.com/sentimony/agentic-workflow/issues/31.
 
 ## Delivery reliability
 
@@ -120,8 +122,8 @@ plugin as shown below.
 agentflow replaces these sentimony/skills devflow skills; remove them from a workspace
 that installs agentflow, or they intercept the same requests: `scope-triage`,
 `plan-crafting`, `inline-plan-dev`, `subagent-plan-dev`, `verification-gate`,
-`branch-finish`, `review-request`, `review-resolution`, and `cross-review`, which
-`cross-cr` replaces.
+`branch-finish`, `review-request`, `review-resolution`, and `cross-review`.
+Install standalone `cross-agent` separately for cross-model delegation.
 
 Claude Code:
 
@@ -140,7 +142,7 @@ codex plugin add agentflow@sentimony
 Any agent through [skills](https://github.com/vercel-labs/skills):
 
 ```bash
-npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify cr-request cr-received cross-cr finalize session-learnings -a codex claude-code -y
+npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify cr-request cr-received finalize session-learnings -a codex claude-code -y
 ```
 
 ## Review operations

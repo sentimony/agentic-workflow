@@ -3,7 +3,7 @@ name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>] [--auto]"
 metadata:
-  version: "0.0.11"
+  version: "0.0.12"
 license: MIT
 ---
 
@@ -22,6 +22,14 @@ the spec path, the plan path, the `Base` line of the plan's `## Execution record
 scope (`task <n>` or `branch`), and the `Verify:` lines of that record. `Verify:` lines
 are signals from the caller, not evidence the reviewer gathered. Without a spec or a
 plan, intent comes from the conversation and commit messages; no journal is written.
+
+## Standalone delegation
+
+1. For explicit delegation through standalone `cross-agent`, use the installed
+   [owner adapter](references/cross-agent-adapter.md). It prepares this contract and
+   validates the complete review before domain completion.
+2. Target selection, fingerprints, findings and intake remain owned by this workflow.
+   Missing adapters or partial reports cannot turn transport success into valid review.
 
 ## 1. Pin the target
 
@@ -258,11 +266,11 @@ nothing is pushed, opened as a PR, merged, tagged, or published under `--auto` w
 carries it; a new session or a manual call runs without it.
 ```
 
-Under `--auto`, a chain that another skill started for a step it owns returns to that
-skill: `finalize` (healing its gate) at a `finalize` row, `cross-cr` at a re-review (its
-next round, never a same-host `cr-request`), and `plan-craft` after a clean document
-review of its plan or `REVIEWER UNAVAILABLE` on it, which then starts `implement`
-instead of `verify`.
+Under `--auto`, a chain returns to the workflow owner of the invoking step:
+`finalize` while healing its gate, the external-review owner after a requested
+standalone `cross-agent` round, and `plan-craft` after a clean document review or
+`REVIEWER UNAVAILABLE` on its plan. The external-review owner retains its round and
+reviewer continuity; `plan-craft` then starts `implement` instead of `verify`.
 
 When the caller requires a closing line, that line goes right before the `Next step`
 line, in its exact text, and the `Next step` line stays the very last one. The CI
@@ -344,7 +352,7 @@ parsers never receive that token, and the reviewer never receives the yngwald PA
 
 Archive context: snapshots and briefs omit `.cross-review/`, including the host-written
 `.cross-review/local/` archive. Read-only access does not prevent reading that archive:
-a same-host `cr-request` subagent, like an external `cross-cr` CLI reviewer, may still
+a same-host `cr-request` subagent, like a delegated `cross-agent` reviewer, may still
 read it. This is an accepted trade-off, not a defect for review, based on the owner's
 decision to keep repository-local archives without mandatory deny-read isolation.
 Neither a deny-read guarantee nor an unavailable-reviewer gate is implied by this

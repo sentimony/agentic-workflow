@@ -3,6 +3,17 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.17] - 2026-11-01
+
+1. Retire embedded cross-cr and integrate the separately installed cross-agent 0.0.1
+   through a versioned workflow owner adapter.
+2. Preserve immutable review provenance, opaque intake binding and separately measured
+   post-action identity.
+3. Update cr-request 0.0.12, cr-received 0.0.8, plan-craft 0.0.7 and verify 0.0.8
+   without changing delivery contracts.
+4. Native pair installation and live resume remain unverified:
+   https://github.com/sentimony/agentic-workflow/issues/31.
+
 ## [0.0.16] - 2026-11-01
 
 1. Isolate mutable verification dependencies and require fresh project checks for

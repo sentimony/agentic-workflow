@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.12] - 2026-11-01 - [0.0.17](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.17)
+
+1. Keep HEAD provenance separate from content freshness, preserving review validity
+   after commits that only change the excluded record host.
+2. Bind receiver intake before launch; preserve immutable original evidence and
+   report post-fix committed/working/document identities after accepted fixes.
+
+1. Add the installed owner adapter for standalone cross-agent protocol 1; retain
+   target freshness, complete review grammar, qualified IDs and intake in this workflow.
+2. Reject partial domain results and persist only host-allowlisted review artifacts.
+
+3. Retire active cross-cr routes in favor of standalone cross-agent and its
+   workflow owner, preserving review round and reviewer continuity.
+
 ## [0.0.11] - 2026-10-30
 
 - Align the automatic outward exception with authorized defer actions and the bounded REJECT reply.

@@ -3,7 +3,7 @@ name: verify
 description: You MUST use this when anyone - you, a subagent, or the user - is about to state that work is done, fixed, ready, or mergeable, and before a merge, opening a pull request, or a handoff report, including work that has no plan. Covers every promise behind the claim - spec criteria, plan tasks, record entries, accepted review fixes, and the caller's words - proven with fresh checks on the committed tree and given one verdict, without editing code. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-or-spec-path>] [--auto]"
 metadata:
-  version: "0.0.7"
+  version: "0.0.8"
 license: MIT
 ---
 
@@ -274,11 +274,11 @@ carries it; a new session or a manual call runs without it.
 So under `--auto` the `implement - Task <n> (outward, needs confirmation)` row and the
 `finalize` rows end the turn, except as the next paragraph says.
 
-Under `--auto`, a chain that another skill started for a step it owns returns to that
-skill: `finalize` (healing its gate) at a `finalize` row, `cross-cr` at a re-review (its
-next round, never a same-host `cr-request`), and `plan-craft` after a clean document
-review of its plan or `REVIEWER UNAVAILABLE` on it, which then starts `implement`
-instead of `verify`.
+Under `--auto`, a chain returns to the workflow owner of the invoking step:
+`finalize` while healing its gate, the external-review owner after a requested
+standalone `cross-agent` round, and `plan-craft` after a clean document review or
+`REVIEWER UNAVAILABLE` on its plan. The external-review owner retains its round and
+reviewer continuity; `plan-craft` then starts `implement` instead of `verify`.
 
 ## When not to use
 

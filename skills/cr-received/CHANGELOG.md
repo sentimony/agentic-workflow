@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.8] - 2026-11-01 - [0.0.17](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.17)
+
+1. Preserve strict pre-execution review selection through a durable invocation binding.
+2. Validate accepted fixes/commits against original evidence and capture post-fix
+   identity separately; require fresh verification for the resulting tree.
+
+1. Route explicit standalone delegation through the installed workflow owner adapter.
+2. Require one current-task review with matching identity, original finding decisions
+   and the return block; ask before ambiguous intake or block stale evidence.
+
+3. Retire active cross-cr routes in favor of standalone cross-agent and its
+   workflow owner, preserving review round and reviewer continuity.
+
 ## [0.0.7] - 2026-10-30
 
 - Align review intake and gate evidence, and provide a bounded, idempotent host helper

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.8] - 2026-11-01 - [0.0.17](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.17)
+
+1. Replace active legacy cross-cr routing with standalone cross-agent delegation
+   through the workflow owner, preserving its round and reviewer continuity.
+
 ## [0.0.7] - 2026-11-01 - [0.0.16](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.16)
 
 1. Prepare private mutable dependency paths for committed-tree checks; shared writable

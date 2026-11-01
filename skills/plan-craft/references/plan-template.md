@@ -173,5 +173,5 @@ Ruling: plan revised after spec re-approval - <spec path>
 | `cr-request` | `Review`, `Finding` |
 | `cr-received` | `Received`, `Ruling` (`superseded by`, `escalation decided`, others), `Deferred` |
 | `finalize` | `Ruling: no review - <user's reason> - <cost if wrong>` |
-| a skill that starts a round past the limit (`verify`, `cr-request`, `cross-cr`) | `Ruling: round R<n> started by the user past the limit - ...` |
+| a skill that starts a round past the limit (`verify`, `cr-request`, `cross-agent`) | `Ruling: round R<n> started by the user past the limit - ...` |
 | any skill with a loop | `Round` |

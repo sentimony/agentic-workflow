@@ -11,13 +11,16 @@
   the newest `vX.Y.Z` tag unless
   `REVIEW_SKILLS_REF` pins a full SHA. The embedded schema and transport remain compatible
   with older released skills; changing a pin does not bypass the compatibility check.
-  The default model is `claude-sonnet-5-5` with `--effort medium`;
-  `CLAUDE_REVIEW_MODEL` overrides the model without a fallback.
+  Model and effort come from repository variables, so changing them needs no PR; the step
+  `Resolve review model and effort` validates both and fails with `::error` before the agent runs:
+  1. `CLAUDE_REVIEW_MODEL` - model id, default `claude-sonnet-5-5`; shape
+     `[a-z0-9][a-z0-9._:/-]*` with an optional `[1m]` suffix, up to 100 characters.
+  2. `CLAUDE_REVIEW_EFFORT` - `low`, `medium` or `high`, default `medium`.
   Automatic triggers review a head with no yngwald review, or a new head after a review
   with new or unresolved prior Critical or Important findings while the total yngwald
   review count is below 5.
   CI eligibility uses a successful push or workflow_dispatch run on the full head SHA;
-  the `validate` job includes review fixtures and parity checks.
+  the `validate` job includes the review fixtures.
   One `auto-review-rounds-N` label, with integer N >= 1, overrides that threshold;
   malformed or multiple threshold labels fail before inference. Explicit yngwald requests
   and dispatch bypass the count while retaining the other guards.
@@ -100,11 +103,8 @@
   deferrals are bound to the snapshot prepared before inference; a proposal changed after that
   snapshot stops the action. The publish finalizer ends only its own pending status after a
   failure and leaves a newer run's status alone.
-  The common package is checked by `scripts/check_review_parity.py` with the explicit adapter
-  in `scripts/review-parity.json`. Run `python3 scripts/check_review_parity.py --self-test` and
-  `python3 -m unittest discover -s scripts -p 'test_review_parity.py'` after changes. Keep common
-  logic, tests, and fixtures aligned across all four copies; only the listed project adapters
-  may differ.
+  The workflow is self-contained: there is no shared package with other repositories. Run
+  `python3 -m unittest discover -s scripts -p 'test_claude_review.py'` after changes.
 - The merged-only summary reads GitHub history without checkout or inference, validates
   yngwald ledgers and source markers, and updates one own summary comment. REJECT counts
   rejected findings; DECLINED defer does not. Later structured evidence determines each

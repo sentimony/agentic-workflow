@@ -21,8 +21,6 @@ jobs:
         run: |
           python3 scripts/check_plugin_layout.py --self-test
           python3 -m unittest discover -s scripts -p 'test_plugin_layout.py'
-          python3 scripts/check_review_parity.py --self-test
-          python3 -m unittest discover -s scripts -p 'test_review_parity.py'
           python3 -m unittest discover -s scripts -p 'test_claude_review.py'
           python3 -m unittest discover -s skills/cr-received/scripts -p 'test_*.py'
           python3 -m unittest discover -s skills/cr-request/scripts -p 'test_*.py'

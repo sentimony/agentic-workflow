@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.8] - 2026-11-03
+
+1. Triage re-reads the notes before pruning and removes each note by an exact single
+   replacement, keeping notes appended meanwhile; it counts bulleted and numbered notes
+   by structure and reports an unrecognized file instead of 0.
+2. A skill defect gets the target `skill <name> (<repository>)` and becomes an
+   improvement request in triage, never an edit of an installed copy; deduplication
+   searches open requests for that skill.
+3. When the project size check may not run in the notes root, recording measures the
+   chain with the skill recipe, and the report says how the number was taken.
+
 ## [0.0.7] - 2026-11-01
 
 1. Use the shared manual/auto stage transition contract and return orchestrated results

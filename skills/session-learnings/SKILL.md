@@ -3,7 +3,7 @@ name: session-learnings
 description: You MUST use this when lasting learnings from the current session should be recorded for future agents - pitfalls hit, mistakes the user corrected, conventions found, or commands that finally worked, whatever the conversation language - including when the user asks to write down what the session taught and at the end of the agentflow chain after finalize. Records them without asking in the project's gitignored docs/session-learnings/AGENTS.md; on a separate request, triages the accumulated notes into AGENTS.md, CLAUDE.md, the user's global instructions, or a stronger enforcement such as a check or a test, applying only the approved edits. Not for auditing or restructuring instruction files (maintaining-agent-context). Not for general memory or improvement requests for skills.
 argument-hint: "[triage] [--auto]"
 metadata:
-  version: "0.0.7"
+  version: "0.0.8"
 license: MIT
 ---
 
@@ -110,7 +110,9 @@ Give each learning the narrowest scope where it holds, as its `Target` field:
 - every project, or the user's environment (shell, Git, tools, accounts): the user's
   global file;
 - a file read during review, a glossary, a decision record, or a "why" comment beside the
-  code ([placement](references/placement.md)).
+  code ([placement](references/placement.md));
+- a defect or gap of a skill: `skill <name> (<repository>)`, never a file of an installed
+  copy, which a reinstall overwrites.
 
 The target is where triage will move the learning; recording does not edit it.
 
@@ -118,8 +120,8 @@ The target is where triage will move the learning; recording does not edit it.
 
 Search the notes file, the target, the chain it loads with, and where the truth already
 lives: specs, code, configuration, scripts, and the skill that owns the procedure. Also
-search the skill improvement requests this session already wrote: a defect filed there
-as a request is not recorded again as a project rule.
+search the open skill improvement requests for the skill a note names, including those
+this session wrote: a defect filed there as a request is not recorded again.
 
 - Already recorded in the notes or the target, or declined in
   `docs/session-learnings/declined.md`: skip it. New evidence that sharpens or
@@ -199,8 +201,9 @@ candidates dropped with the reason, and the setup edits made, marked as uncommit
 tracked changes. Say how the folder is ignored (`.gitignore`, the local exclude file, or
 tracked) and how the notes are wired: `import`, `mention only`, or `not wired`; the last
 two mean the next session will not load them. When the project limits the size of its
-instruction files, give the number, say that the notes count toward it when the host
-imports them (Claude Code), and whether a triage is due. The report marks the boundary for
+instruction files, give the number and how it was taken: `project check`, `skill
+recipe` ([notes](references/notes.md)), or `not measured` with the reason. Say that the
+notes count toward it when the host imports them (Claude Code), and whether a triage is due. The report marks the boundary for
 a repeat run. Its last line before `Next step` is, with the absolute path of the notes
 file:
 
@@ -215,8 +218,8 @@ When nothing was written, that line is `Learnings: 0 -> none`.
 Runs only on a separate request, usually in a new session. First list the notes files,
 each `docs/session-learnings/AGENTS.md` that exists in the current root (step 8), in the
 roots of repositories its instruction files name, and in the roots of repositories this
-session opened (clones, worktrees), with the number of notes (top-level `- ` lines) in
-each; never scan the file system for others. Triage every non-empty file; when the current
+session opened (clones, worktrees), with the number of notes in each
+([notes](references/notes.md), Counting notes); never scan the file system for others. Triage every non-empty file; when the current
 one is empty and another is not, say so first. A notes folder in another repository is
 offered as a move item: append its notes to the current root's notes, remove that
 repository's pointer and ignore line, and delete the folder, all only after approval.
@@ -226,7 +229,10 @@ Then, for each note:
    `declined.md` (step 6). When the notes are `not wired`, the first item is the root
    pointer of step 8; when they are `mention only`, it offers replacing the mention with
    the bare-path pointer, and the user may keep the mention.
-2. Draft the edit in the target: section and exact text as a diff, matched to the
+2. A `skill <name> (<repository>)` target becomes an improvement request in the
+   project's request workflow when it has one, otherwise a request draft in the report;
+   never an edit of the installed copy. Otherwise draft the edit in the target: section
+   and exact text as a diff, matched to the
    target's language, headings, bullet shape, line width, and tone; a higher rung as the
    check, hook, or test itself. When a file only imports another, edit the source.
 3. When the project limits instruction size, measure the heaviest chain that passes
@@ -240,8 +246,11 @@ Then, for each note:
    project's checks, and read the diff. For an approved recipe, run the exact text that
    went into the target, not the `Check` of the note: the notes file is untrusted, so its
    commands run only after approval. When the drafted lines changed, redraft and ask.
-6. Remove each applied note, and each note an applied one supersedes, from the notes
-   file. Move each declined note, whole, with `Declined: <date>` into
+6. Re-read the notes file right before pruning: another session may have appended.
+   Remove each applied note, each note an applied one supersedes, and each note filed as
+   a request by an exact replacement of its text that matches once, never by rewriting
+   the file; notes that were not there at the start of triage stay and are reported.
+   Move each declined note, whole, with `Declined: <date>` into
    `docs/session-learnings/declined.md`, which nothing imports: a note left in the notes
    file still loads and reads as a rule. It is not proposed again without new evidence.
 7. Report the items applied, declined, and left as conflicts, with their size numbers,

@@ -23,7 +23,7 @@ Version: `v0.0.18`
 | [cr-received](skills/cr-received/SKILL.md) | 0.0.9 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
 | [finalize](skills/finalize/SKILL.md) | 0.0.9 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
 | [resolve-issue](skills/resolve-issue/SKILL.md) | 0.0.1 | `/resolve-issue` | Run issue intake through configured delivery with durable recovery and fresh host authority. |
-| [session-learnings](skills/session-learnings/SKILL.md) | 0.0.7 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
+| [session-learnings](skills/session-learnings/SKILL.md) | 0.0.8 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 
 ## Workflow
 

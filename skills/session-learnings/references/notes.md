@@ -167,13 +167,24 @@ imports this file, so it does not count toward the chain size and is never read 
 rule; recording and triage search it only to avoid proposing the same note again. New
 evidence makes a new note in `AGENTS.md` that names the declined one.
 
+## Counting notes
+
+A note is a top-level item of a run section (`## <YYYY-MM-DD HH:MM> - <host>`), bulleted
+(`- `) or numbered (`1. `), in whatever form the user keeps. Its fields (Target, Rung,
+Confidence, Quote, Check, Supersedes, Conflict) are part of it even when they are
+numbered too. A file with only its header has 0 notes; a non-empty file whose structure
+matches neither form is read by hand and reported as `unknown structure`, never as 0.
+
 ## Chain size
 
 With Claude Code the notes load in every session through the import, so they count
 toward its instruction size; with Codex the agent reads them on demand. When the project
 limits instruction size (a check script or a documented limit), run its check after
 appending and report the number; over the limit, recommend a triage instead of trimming
-the notes yourself.
+the notes yourself. When that check may not run in the notes root (its instructions
+forbid it there, or it needs dependencies the root lacks), measure with the recipe below,
+with the root `AGENTS.md` as the target, and report the number as measured by the skill
+recipe, not by the project check. A plain sum of two files is not a chain size.
 
 In triage, an edit to a file changes every chain that passes through it: the file plus
 each nested instruction file below it. Measure the heaviest of those chains before and

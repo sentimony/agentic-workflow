@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.14] - 2026-11-04
+
+1. Trace assertions across callback, hook, and handler boundaries so a broad catch cannot
+   turn a failed assertion into a passing test (20261031-2048).
+2. Add the `Status R<n>: R<m>-F<k> ADDRESSED | NOT ADDRESSED - <evidence>` journal line,
+   count `NOT ADDRESSED` findings in the `Next step` number, and stop requiring
+   `Merge readiness` in document reviews, in the brief and in the owner adapter
+   (20261030-0854).
+3. Write the skill in local `Next step` lines as inline code in invocation form
+   (`/<skill>` in Claude Code, `$<skill>` in Codex) (20261024-2217).
+
 ## [0.0.13] - 2026-11-01
 
 1. Use the shared manual/auto stage transition contract and return orchestrated results

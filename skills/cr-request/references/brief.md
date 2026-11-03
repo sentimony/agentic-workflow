@@ -63,7 +63,8 @@ Fill every field with task-specific content; drop empty fields instead of paddin
     Outside it, report only a regression the fix caused, tagged [regression], with
     evidence that links it to the fix; older code outside the fix diff is out of
     scope. A finding ruled REJECT stays closed unless you bring evidence the ruling
-    did not have. Keep the earlier IDs; new findings take the new round's IDs.
+    did not have. Keep the earlier IDs; new findings take the new round's IDs. The caller records each
+    answer as `Status R<n>: R<m>-F<k> ADDRESSED | NOT ADDRESSED - <evidence>`.
 
 ### Document kind
 
@@ -84,6 +85,8 @@ Fill every field with task-specific content; drop empty fields instead of paddin
 
     Summary: Critical <n> | Important <n> | Minor <n>
     Merge readiness: ready | ready with fixes | not ready - <one line>
+      (document kind: `Readiness:` with the same values, where ready means ready to
+      implement or approve; the line is not required for a document)
 
     Previous findings: <re-review only: ID ADDRESSED | NOT ADDRESSED - evidence>
     Defer proposals: <previous ID NONE | PROPOSED | ACCEPTED | DECLINED - reason; owner>
@@ -116,7 +119,7 @@ the schema and confirmed origin identities in the brief; a reviewer never invent
 GitHub review ID or a host disposition.
 
 The skill, not the reviewer, adds the closing lines. It ends the result with
-`Next step: <skill> - <reason>`. When the caller requires a closing line, that line
+``Next step: `/<skill>` - <reason>``. When the caller requires a closing line, that line
 goes right before the `Next step` line, in its exact text, and the `Next step` line
 stays the very last one. The CI auto-review (`claude-review.yml`) requires the
 signature ``Reviewed with: `/cr-request` <version> skill``, backticks included, where

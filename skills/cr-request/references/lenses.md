@@ -21,7 +21,11 @@ Look past the diff to what it touches.
 - **Data and state** - invariants, validation at trust boundaries, nullability and
   empty cases, encoding, units, time zones, precision.
 - **Failure paths** - errors surfaced or swallowed, partial writes, cleanup, retries and
-  idempotence, timeouts.
+  idempotence, timeouts. When a test asserts inside a callback, hook, or event handler,
+  trace whether a failed assertion reaches the test runner: a broad catch, retry, or
+  success return must not turn it into a pass. Collect observations in the callback and
+  assert after it returns, or check the error signal explicitly; if reading leaves the
+  doubt, break the observed condition in the one allowed focused test and confirm it fails.
 - **Concurrency and order** - shared mutable state, races, reentrancy, ordering
   assumptions.
 - **Feedback loops** - caches, retries, queues, and background jobs that amplify a small

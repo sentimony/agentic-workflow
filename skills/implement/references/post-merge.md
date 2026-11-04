@@ -18,7 +18,7 @@ content unchanged on the base; completion and retries use the records below.
    a foreign owner or an unusable `HOME` blocks preparation, and there is no fallback to
    a temporary folder. Nothing is added to the project, its `.gitignore` or
    `.git/info/exclude`. A repository that still has a populated `.delivery-evidence/` and
-   no data in the new location keeps using it in place (it must be ignored as before:
+   no pending envelope in the new location (a lone snapshot does not count) keeps using it in place (it must be ignored as before:
    `git check-ignore -q -- .delivery-evidence/.ignore-proof`; a tracked path, negated
    rule or symlink blocks preparation); when both hold data the new location wins and the
    report names the unused legacy folder (`store.unused_legacy`). Nothing is moved silently.

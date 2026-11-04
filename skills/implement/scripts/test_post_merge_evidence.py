@@ -334,6 +334,32 @@ class PendingStoreLocationTests(unittest.TestCase):
             with self.assertRaises(evidence.EvidenceError):
                 evidence.PendingStore(self.repo, home=self.home)
 
+    def test_a_snapshot_alone_does_not_hide_a_legacy_envelope(self):
+        store = evidence.PendingStore(self.repo, home=self.home)
+        evidence.prepare(self.record, store=store)
+        for envelope in store.root.glob("*.json"):
+            if not envelope.name.startswith("snapshot-"):
+                envelope.unlink()
+        self.make_legacy()
+        chosen = evidence.PendingStore(self.repo, home=self.home)
+        self.assertTrue(chosen.legacy)
+        self.assertIsNone(chosen.unused_legacy)
+
+    def test_inherited_git_variables_do_not_change_the_project_key(self):
+        other = self.repo.parent / "other"
+        other.mkdir()
+        subprocess.run(["git", "-C", str(other), "init", "-q"], check=True)
+        expected = self.new_root()
+        with patch.dict(os.environ, {"GIT_DIR": str(other / ".git"), "GIT_COMMON_DIR": str(other / ".git")}):
+            self.assertEqual(evidence.PendingStore(self.repo, home=self.home).root, expected)
+
+    def test_a_home_inside_the_project_is_refused(self):
+        inside = self.repo / "fake-home"
+        inside.mkdir()
+        with self.assertRaisesRegex(evidence.EvidenceError, "outside the project"):
+            evidence.PendingStore(self.repo, home=inside)
+        self.assertEqual(list(inside.iterdir()), [])
+
     def test_an_unusable_home_is_refused_without_creating_anything(self):
         with self.assertRaisesRegex(evidence.EvidenceError, "HOME"):
             evidence.PendingStore(self.repo, home=self.home / "missing")

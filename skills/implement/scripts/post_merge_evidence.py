@@ -131,8 +131,9 @@ STATE_PARTS = (".sentimony", "agentflow", "implement")
 
 
 def project_key(repo):
+    env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
     done = subprocess.run(["git", "-C", str(repo), "rev-parse", "--path-format=absolute", "--git-common-dir"],
-                          capture_output=True, text=True, check=False)
+                          env=env, capture_output=True, text=True, check=False)
     _require(done.returncode == 0, "cannot read the Git common directory")
     common = Path(os.path.realpath(done.stdout.rstrip("\n")))
     return common.parent if common.name == ".git" else common
@@ -152,7 +153,8 @@ def slug(path):
 
 
 def _populated(folder):
-    return folder.is_dir() and any(folder.glob("*.json"))
+    # A bare snapshot is not pending state: only an envelope decides which store a retry continues in.
+    return folder.is_dir() and any(not item.name.startswith("snapshot-") for item in folder.glob("*.json"))
 
 
 class PendingStore:
@@ -170,6 +172,8 @@ class PendingStore:
         text = os.fspath(home) if home is not None else os.environ.get("HOME", "")
         _require(bool(text) and os.path.isabs(text) and os.path.isdir(text), "HOME is not usable for the evidence store")
         self.base = Path(text).resolve(strict=True)
+        _require(self.repo != self.base and self.repo not in self.base.parents,
+                 "HOME must be outside the project, so the store writes nothing into it")
         names = (*STATE_PARTS, slug(project_key(self.repo)))
         new_root, legacy_root = self.base.joinpath(*names), self.repo / directory
         self.unused_legacy = None
@@ -186,6 +190,8 @@ class PendingStore:
             self._make_private(names)
 
     def _make_private(self, names):
+        # Path-based checks, like the rest of this store: a same-user process swapping a component
+        # between the check and the use is outside the cooperative threat model of this helper.
         current = self.base
         for name in names:
             current = current / name

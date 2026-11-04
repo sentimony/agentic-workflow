@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.15] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
+
+1. Review the whole document when neither the previous tree nor head provides a usable
+   diff for a re-review, and state in the result that the diff was unavailable.
+
 ## [0.0.14] - 2026-11-04
 
 1. Trace assertions across callback, hook, and handler boundaries so a broad catch cannot

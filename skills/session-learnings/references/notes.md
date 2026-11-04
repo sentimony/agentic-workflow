@@ -111,6 +111,9 @@ variant below instead of steps 1 and 4.
    the file this branch edits, and name the result in the report:
    - `import`: a line there ends in the bare path (`@docs/session-learnings/AGENTS.md`,
      or `@docs/session-learnings/CLAUDE.md` in the root `CLAUDE.md`); add nothing.
+     Before reporting `import`, follow the actual chain from the root `CLAUDE.md` through
+     the root `AGENTS.md` when `CLAUDE.md` holds only `@AGENTS.md`, to the notes file;
+     if a link is missing, report `mention only` or `not wired` as appropriate.
    - `mention only`: the path is there only in a code span, without `@`, or followed by
      other text. Leave that line as it is and add no second pointer: the owner may have
      dropped the import on purpose. Triage offers the replacement as an approval item.

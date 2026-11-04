@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.9] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
+
+1. Require a local verification alternative or the owner's explicit decision for each
+   task affecting an environment known to share production resources.
+
 ## [0.0.8] - 2026-11-01
 
 1. Use the shared manual/auto stage transition contract and return orchestrated results

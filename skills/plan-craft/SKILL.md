@@ -3,7 +3,7 @@ name: plan-craft
 description: You MUST use this when a spec the user approved, an accepted design, or requirements already agreed in the conversation have to be turned into an ordered, multi-step implementation plan before any code is written - including a spec from specify, work with no spec yet, and a plan revision after a document review. Replaces devflow plan-crafting. Covers whether a plan is needed, task order, acceptance-criteria coverage, and the execution choice. Not for open design (specify) or executing a plan (implement).
 argument-hint: "[<spec-path>] [<plan-path>] [--auto]"
 metadata:
-  version: "0.0.8"
+  version: "0.0.9"
 license: MIT
 ---
 
@@ -165,6 +165,9 @@ Each task is self-contained for a fresh agent that never saw the conversation: i
 files, the context it needs, when it is done, the commands that check it, and what it
 must not touch. Dependencies are explicit in `Depends on`, so waves follow from them.
 
+For each task affecting an environment known to share production resources, document a
+local verification alternative or the owner's explicit decision for that task.
+
 `Outward: <what and where>` marks a task whose action leaves the repository: a deploy,
 production, a publication, an external service. Pushing and merging the work branch is
 `finalize`, not `Outward`. Such a task runs only after a full `PASS` and a closed review,
@@ -224,6 +227,8 @@ Read the saved plan once more against the spec and fix what fails:
 - no placeholders left: no `TBD`, no "add error handling", no unfilled angle brackets
   outside the record format and credential placeholder names such as `<API_TOKEN>`;
 - names, signatures, and formats agree between `Produces` and `Consumes` of every pair;
+- each task affecting an environment known to share production resources documents a
+  local verification alternative or the owner's explicit decision;
 - every project script or alias is checked against its definition (`package.json`,
   `Makefile`, config); `--help` or the documentation only for syntax the definition does
   not show; a command that cannot be confirmed is marked `check during execution`;

@@ -51,7 +51,8 @@ undoes it fully, or what does not come back (data migrations, published artifact
 
 ## Rulings
 
-- <each Ruling line from the record>
+- <each current reviewer-relevant decision, its reason, and a finding ID or document section when useful>
+- <link to the complete record>
 
 ## Deferred
 
@@ -70,10 +71,20 @@ Filling rules:
   freshly executed project checks on the current full committed head and fingerprint,
   with the exact commands, results, and target in both this body and the handoff.
   Undefined or unavailable project checks require a draft or clarification.
-- **Rulings** and **Deferred** copy the lines from the record host: the plan's
-  `## Execution record` or the spec's `## Verification record`, including those written
-  by `cr-received`. **Deferred** also lists every unfinished plan task with an
-  `Outward` field; `finalize` does not run them. Without a host, write `none`.
+- **Rulings** summarizes current decisions relevant to behavior, contract, security,
+  or accepted trade-offs. Give each decision and its reason briefly, with a finding ID
+  or document section when useful, and link to the complete record: the plan's
+  `## Execution record` or the spec's `## Verification record`. Include relevant
+  decisions written by `cr-received`. Leave session history, permissions, local
+  environment problems, and resolved waiting states in the record. Do not invent
+  rejected alternatives; write `none` when no decisions apply. Rebuild this section
+  after each push from the final state, excluding superseded decisions.
+- **Deferred** retains current deferred items with their owner or place, accepted risks,
+  open blockers, and outstanding checks. List every unfinished plan task with an
+  `Outward` field; `finalize` does not run them. Write `none` when nothing applies.
+  Without a record host, write `none` for record-based items; still report any known
+  current risks, blockers, outstanding checks, and unfinished `Outward` tasks. These
+  summaries do not replace verification or review gates.
 - The line `Stacked on #<n>` appears only for a stacked PR (SKILL.md "Find the base
   branch"); otherwise drop it.
 - Credentials, tokens, and values from env files never go into the title or the body;

@@ -62,6 +62,9 @@ produces them>
 
 **Depends on:** Task <n> | none
 
+<For a task affecting an environment known to share production resources, document a
+local verification alternative or the owner's explicit decision for that task.>
+
 **RED:** `<command>` -> <expected failing output>
 
 **GREEN:** `<command>` -> <expected passing output>

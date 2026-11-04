@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.8] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
+
+1. Split locally verifiable checks from PR or remote-state criteria, which the push task
+   covers.
+
 ## [0.0.7] - 2026-11-01
 
 1. Use the shared manual/auto stage transition contract and return orchestrated results
@@ -93,4 +98,5 @@
 - Calls `scope-check` after each save when it is installed.
 - Ends every result with a `Next step` line.
 
+[0.0.8]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20
 [0.0.7]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

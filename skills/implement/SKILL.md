@@ -3,7 +3,7 @@ name: implement
 description: You MUST use this when an existing implementation plan is to be executed, either directly in the current session or through subagents, including resuming an interrupted execution from the plan's execution record, or when one or two edits with an obvious approach need doing without a plan. Covers task-by-task execution with evidence, drift handling and blockers, and a resumable execution record. Replaces devflow inline-plan-dev and subagent-plan-dev. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize).
 argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents] [--auto]"
 metadata:
-  version: "0.0.9"
+  version: "0.0.10"
 license: MIT
 ---
 
@@ -216,6 +216,11 @@ into the `Task` line before integration. For a post-merge task, the correspondin
 evidence goes to its author-bound canonical PR comment with successful readback.
 Persist a gitignored local pending copy first; production success with unpublished
 evidence remains `evidence-pending` and the cycle is incomplete.
+
+After confirming a task is `done`, report the current checklist of all plan tasks in
+execution dependency order, preserving their original Task numbers and short titles.
+Mark done tasks `[x]` and all others `[ ]`; label active tasks `in progress` and
+blocked tasks `blocked`, leaving pending tasks clearly identified as `pending`.
 
 ## Step 6. Drift
 

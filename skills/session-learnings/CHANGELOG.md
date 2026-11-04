@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.9] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
+
+1. Verify the full import chain to the notes before reporting `import`.
+
 ## [0.0.8] - 2026-11-03
 
 1. Triage re-reads the notes before pruning and removes each note by an exact single

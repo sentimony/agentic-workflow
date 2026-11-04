@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.10] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
+
+1. Initialize required submodules at their pinned commits before clean-clone checks;
+   report affected checks as not verified when initialization is unavailable.
+
 ## [0.0.9] - 2026-11-01
 
 1. Use the shared manual/auto stage transition contract and return orchestrated results

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.10] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
+
+1. Report the ordered plan task checklist after each confirmed completion, preserving
+   task numbers and distinguishing done, active, blocked and pending tasks.
+
 ## [0.0.9] - 2026-11-04
 
 1. Keep pending post-merge evidence in `~/.sentimony/agentflow/implement/<project>/`

@@ -22,6 +22,16 @@ git -C '<tmp>' checkout -q --detach '<HEAD SHA>'
 Nothing is applied on top: no diff, no untracked files. Uncommitted paths stay out of
 the verdict and are listed in the report.
 
+Before running checks, initialize required submodules recursively at the commits pinned
+by the checkout, using available authorized access:
+
+```sh
+git -C '<tmp>' submodule update --init --recursive
+```
+
+If initialization is unavailable, report the affected checks as `not verified` with
+the reason. Do not treat an empty or incomplete submodule as evidence for those checks.
+
 ## Check before trusting it
 
 Compute the fingerprint inside the clone with the `## Committed tree` recipe in

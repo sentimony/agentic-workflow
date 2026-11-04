@@ -124,6 +124,9 @@ reset its approval.
 - The predicate names something that can be observed (a command result, a visible
   state, a value in a file), never an activity such as "tests were written".
 - Each criterion can be checked on its own, without reading the others.
+- Split a criterion that depends on PR or remote state into a locally verifiable
+  criterion, such as running the same CI steps on the working tree, and a separate
+  criterion for the PR or remote state. Only the push task covers the latter.
 
 ## Acceptance criteria coverage
 

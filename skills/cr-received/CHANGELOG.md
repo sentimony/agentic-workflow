@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.10] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
+
+1. Require a repository search for old rule or contract wording, updates to applicable
+   current copies, and the search command and result as resolution evidence.
+
 ## [0.0.9] - 2026-11-01
 
 1. Use the shared manual/auto stage transition contract and return orchestrated results

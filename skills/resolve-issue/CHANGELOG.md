@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.2] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
+
+1. Avoid a hard-coded version in the current local boundary.
+
 ## [0.0.1] - 2026-11-01
 
 1. Connect the actual installed G3 gates, canonical evidence and cleanup to explicit

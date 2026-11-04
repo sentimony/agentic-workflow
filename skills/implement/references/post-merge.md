@@ -12,18 +12,24 @@ content unchanged on the base; completion and retries use the records below.
    A retry of the same operation keeps its attempt; a new operation gets a new attempt
    linked with `previous_attempt(previous_record)`. Keep old local snapshots and old
    attempt comments intact. Do not put credentials in commands, results, or records.
-2. Use the repository's ignored `.delivery-evidence/` directory. If no rule exists,
-   resolve the repository-local exclude file with
-   `git rev-parse --path-format=absolute --git-path info/exclude`, and append only
-   `/.delivery-evidence/` there if absent. Preserve its existing content. Confirm
-   `git check-ignore -q -- .delivery-evidence/.ignore-proof` before writing artifacts.
-   No tracked `.gitignore` edit is needed. A tracked store path, negated ignore rule,
-   symlink, or failed proof blocks preparation; preserve existing files and report it.
+2. Use the evidence store `~/.sentimony/agentflow/implement/<project>/`, where `<project>`
+   is the slug of the main checkout (`slug()` in `post_merge_evidence.py`; every worktree
+   shares it). The folder is private (`0700`, files `0600`); a symlink on any component,
+   a foreign owner or an unusable `HOME` blocks preparation, and there is no fallback to
+   a temporary folder. Nothing is added to the project, its `.gitignore` or
+   `.git/info/exclude`. A repository that still has a populated `.delivery-evidence/` and
+   no data in the new location keeps using it in place (it must be ignored as before:
+   `git check-ignore -q -- .delivery-evidence/.ignore-proof`; a tracked path, negated
+   rule or symlink blocks preparation); when both hold data the new location wins and the
+   report names the unused legacy folder (`store.unused_legacy`). Nothing is moved silently.
 3. Construct `PendingStore(repo_root)` and call `prepare(content, store=store)`.
    This saves the desired content as an immutable snapshot and an atomic pending
-   envelope with file and directory fsync. It writes only inside the ignored store,
+   envelope with file and directory fsync. It writes only inside the store,
    never the tracked host. Save locally before looking up or publishing comments.
-   If local persistence fails, perform no publication and report the failure.
+   A retry of an `evidence-pending` attempt finds its snapshots and envelope in the same
+   store; the selection above prefers the new location and otherwise the legacy folder.
+   If local persistence fails, perform no publication and report the failure; name the
+   store path (`store.root`) in the report.
 
 ## Evidence record and publication
 

@@ -217,6 +217,8 @@ class PendingStore:
             _require(result.stdout.rstrip("\n") == expected, "store must use repository root")
 
     def _safe(self, path):
+        # Path-based checks, not dir_fd: a same-user swap between check and use is an accepted
+        # trade-off, not a defect for review (see AGENTS.md); the store is private and single-writer.
         path = Path(path)
         top = self.repo if self.legacy else self.base
         _require(path.is_absolute() and self.root in (path, *path.parents), "path outside evidence store")

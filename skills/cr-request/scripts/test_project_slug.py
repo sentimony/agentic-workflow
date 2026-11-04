@@ -127,6 +127,20 @@ class ProjectSlugTest(unittest.TestCase):
         with self.assertRaises(project_slug.StateError):
             project_slug.archive_root(str(project), home=home)
 
+    def test_home_inside_a_linked_worktree_is_refused(self):
+        main = self.tmp / "main3"
+        main.mkdir()
+        git(main, "init", "-q")
+        (main / "f").write_text("x")
+        git(main, "add", "f")
+        git(main, "commit", "-qm", "c")
+        tree = self.tmp / "tree3"
+        git(main, "worktree", "add", "-q", str(tree), "-b", "wt3")
+        home = tree / "home"
+        home.mkdir()
+        with self.assertRaises(project_slug.StateError):
+            project_slug.archive_root(str(tree), home=home)
+
 
 if __name__ == "__main__":
     unittest.main()

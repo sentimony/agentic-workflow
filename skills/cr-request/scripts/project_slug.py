@@ -53,7 +53,7 @@ def archive_root(cwd, home=None):
     base = Path(text)
     key = project_key(cwd)
     inside = Path(os.path.realpath(text))
-    if key in (inside, *inside.parents):
+    if key in (inside, *inside.parents) or Path(os.path.realpath(cwd)) in (inside, *inside.parents):
         raise StateError("HOME lies inside the project; the archive would be repository-local")
     return base / ".sentimony" / "agentflow" / "cr-request" / slug(key)
 

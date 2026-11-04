@@ -5,7 +5,7 @@
 1. Keep pending post-merge evidence in `~/.sentimony/agentflow/implement/<project>/`
    instead of the gitignored `.delivery-evidence/` with an `info/exclude` entry; a
    populated legacy folder keeps being used until the new location holds data, then the
-   new one wins and is reported as unused (`20261104-0706`). `PendingStore` takes an
+   new one wins and the legacy folder is reported as unused (`20261104-0706`). `PendingStore` takes an
    optional `home` and refuses symlinks, foreign owners and an unusable `HOME`.
 
 ## [0.0.8] - 2026-11-01

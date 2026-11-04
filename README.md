@@ -3,13 +3,13 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.
 
-Version: `v0.0.19`
+Version: `v0.0.20`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [agentflow](.) | 0.0.19 | resolve-issue, specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
+| [agentflow](.) | 0.0.20 | resolve-issue, specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
 
 ## Skills
 

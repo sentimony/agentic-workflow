@@ -3,7 +3,7 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
-## Unreleased (0.0.20)
+## [0.0.20] - 2026-11-04
 
 1. cr-received 0.0.10: when a fix changes rule or contract wording, search for the old
    wording and update the current copies, with the search and its result as evidence.
@@ -192,5 +192,6 @@ Release tag: `v0.0.1` (`39626fcce7cadd6a77b1cf5ebc6b0ce922f37960`).
 
 1. Add awf plugin with cr-request skill 0.0.1 (#1).
 
+[0.0.20]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20
 [0.0.19]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.19
 [0.0.18]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

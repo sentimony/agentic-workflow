@@ -24,7 +24,7 @@ Date: YYYY-MM-DD
 
 ## Route `design`, sections in this order
 
-```markdown
+````markdown
 ## Goal
 
 What the change is for and who uses it, from the caller's side, in a few sentences.
@@ -54,29 +54,44 @@ those belong to the plan.
 
 ## Out of scope
 
-- <item left out on purpose>
+1. <item left out on purpose>
 
 ## Open questions
 
-- <question> - recommended answer: <answer>, because <reason>
-- <question> - decision for the user: <what each option leads to>
-- blocking: <question> - risk if left open: <what it changes> - recommended answer:
+1. <question> - recommended answer: <answer>, because <reason>
+2. <question> - decision for the user: <what each option leads to>
+3. blocking: <question> - risk if left open: <what it changes> - recommended answer:
   <answer>, because <reason>
 (or "None.")
 
-Prefix a question with `blocking:` when its answer would change Behavior, Contract, or
-an acceptance criterion, and name the risk the user may accept instead of answering.
+Start the question text with `blocking:` immediately after the list marker when its
+answer would change Behavior, Contract, or an acceptance criterion, and name the risk
+the user may accept instead of answering.
 
 ## Acceptance criteria
 
-- AC1: <observable, checkable predicate>
-- AC2: <...>
+1. AC1: <observable, checkable predicate>
+2. AC2: <...>
 
 ## Security Model
 
 Trusted inputs, untrusted inputs, which content is data rather than instructions, and
 which shell commands or network calls the change makes.
+
+## Short conclusion
+
+1. <First key point>
+2. <Second key point>
+
+## Next step
+
+```text
+<Localized prompt naming this exact spec path and plan-craft, requesting explicit
+approval before planning while draft. After approval, name plan-craft as the next step
+when currently authorized. Check current status and let plan-craft select a matching
+plan under its step 3; pass the exact path of any already selected plan.>
 ```
+````
 
 ## Route `note`, sections in this order
 
@@ -84,7 +99,16 @@ which shell commands or network calls the change makes.
 ## Goal
 ## Decisions
 ## Acceptance criteria
+## Short conclusion
+## Next step
 ```
+
+Use numbered lists in new content. Keep existing record history and append any
+verification record after these sections. Refresh both sections while drafting before
+asking for approval, then preserve approved content apart from permitted record appends.
+Use conditional wording for the approval and next transition so approval needs no rewrite.
+Recognize localized headings in legacy drafts and update them instead of adding duplicates.
+The prompt records the state at save time; a plan created later does not update this spec.
 
 ## Decision rules
 
@@ -119,8 +143,11 @@ reset its approval.
 
 ## Acceptance criteria rules
 
-- One line per criterion: `AC<n>: <checkable predicate>`.
-- Numbering starts at 1 and has no gaps; renumber after removing one.
+- One numbered-list item per criterion: `AC<n>: <checkable predicate>`.
+- New lists use consecutive list numbers. For a legacy list with gaps, keep existing AC
+  identifiers; normalize list markers when editing the list without changing their IDs.
+  After removing a criterion, renumber AC identifiers only when needed for the no-gap
+  rule and update their references.
 - The predicate names something that can be observed (a command result, a visible
   state, a value in a file), never an activity such as "tests were written".
 - Each criterion can be checked on its own, without reading the others.

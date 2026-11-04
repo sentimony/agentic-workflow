@@ -3,6 +3,12 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.21] - 2026-11-05
+
+1. specify 0.0.9 and plan-craft 0.0.10: add localized conclusion and state-aware
+   next-step prompts and numbered lists; use separately installed `doc-preview` after
+   document saves and edits when available.
+
 ## [0.0.20] - 2026-11-04
 
 1. cr-received 0.0.10: when a fix changes rule or contract wording, search for the old

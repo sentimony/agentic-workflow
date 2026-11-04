@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.9] - 2026-11-05
+
+1. Add localized conclusion and state-aware next-step prompts, numbered lists, and
+   the separately installed `doc-preview` after each document save or edit when
+   available, while preserving workflow gates.
+
 ## [0.0.8] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
 
 1. Split locally verifiable checks from PR or remote-state criteria, which the push task

@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.0.9] - 2026-11-04
+## [0.0.9] - 2026-11-04 - [0.0.19](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.19)
 
 1. Keep pending post-merge evidence in `~/.sentimony/agentflow/implement/<project>/`
    instead of the gitignored `.delivery-evidence/` with an `info/exclude` entry; a

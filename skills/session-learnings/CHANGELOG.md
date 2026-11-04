@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.0.8] - 2026-11-03
+## [0.0.8] - 2026-11-03 - [0.0.19](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.19)
 
 1. Triage re-reads the notes before pruning and removes each note by an exact single
    replacement, keeping notes appended meanwhile; it counts bulleted and numbered notes

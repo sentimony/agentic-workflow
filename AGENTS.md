@@ -122,8 +122,12 @@
    `skills/implement/references/post-merge.md` and
    `skills/finalize/references/cleanup.md`. Read the applicable contract before ready,
    merge, post-merge evidence or cleanup. Canonical completion uses an authorized own
-   PR comment with readback; unavailable publication remains evidence-pending in an
-   ignored store. Post-merge tasks leave tracked plan/spec files on the base unchanged.
+   PR comment with readback; unavailable publication remains evidence-pending in a
+   private store under `~/.sentimony`. Post-merge tasks leave tracked plan/spec files on the base
+   unchanged. `PendingStore` checks paths before use rather than through directory descriptors; a
+   same-user process could swap a component in between. This is an accepted trade-off, not a defect
+   for review: the store is a private 0700 directory outside the project, one trusted host
+   serializes it, and a `dir_fd` redesign risks the evidence flow.
    Removing transferred duplicate hunks requires the captured ownership journal and
    canonical evidence. Branch/workspace disposal is separate: require current user
    authority, current branch/workspace integration or retention and data guards, plus

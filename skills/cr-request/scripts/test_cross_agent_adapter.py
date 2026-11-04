@@ -46,6 +46,20 @@ class ReviewPolicyTests(unittest.TestCase):
     def identity(self):
         return adapter.capture_identity(self.repo, record_host='record.md')
 
+    def test_merge_readiness_required_in_code_mode_only(self):
+        identity = self.identity()
+        text = report(identity)
+        self.assertNotIn('document', identity)
+        adapter.validate_review(text, identity)
+        without = text.replace('Merge readiness: fixes required\n', '')
+        with self.assertRaisesRegex(ValueError, 'missing Merge readiness'):
+            adapter.validate_review(without, identity)
+        doc_identity = dict(identity, document={'path': 'plan.md', 'sha256': 'a' * 64})
+        doc_text = report(doc_identity)
+        adapter.validate_review(doc_text, doc_identity)
+        adapter.validate_review(doc_text.replace('Merge readiness: fixes required\n', ''),
+                                doc_identity)
+
     def test_fingerprint_uses_committed_tree_excluding_record_host(self):
         identity = self.identity()
         self.assertNotEqual(identity['tree'], self.git('rev-parse', 'HEAD^{tree}'))

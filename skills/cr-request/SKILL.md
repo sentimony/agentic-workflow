@@ -3,7 +3,7 @@ name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>] [--auto]"
 metadata:
-  version: "0.0.13"
+  version: "0.0.14"
 license: MIT
 ---
 
@@ -200,20 +200,24 @@ format:
 ```text
 Review R<n>: <Summary line> tree <tree SHA> reviewer <model> mode <code|document|re-review>
 Finding R<n>-F<k>: <severity> <location> - <title>
+Status R<n>: R<m>-F<k> ADDRESSED | NOT ADDRESSED - <evidence>
 Round review <n>: <cause>
 Ruling: review R<n> origin <automatic|user-started|external> - <source and authorization>
 ```
 
 One `Finding` line per finding; `n` equals the review number `R<n>`, and a `Round` line
-the journal already has is skipped. Record origin once per review using the Ruling above;
+the journal already has is skipped. A re-review adds one `Status` line per previous
+finding, with `R<n>` the current review and `R<m>-F<k>` the finding it answers, so
+`cr-received` and `verify` read `NOT ADDRESSED` from the journal; never write it as a
+`Finding` line. Record origin once per review using the Ruling above;
 count only distinct automatic origins against the automatic budget. Local numbering and
 external review counts are not that budget. On older records with unknown provenance,
 reconstruct it from evidence or escalate instead of guessing or resetting the count.
 Never rewrite existing lines. After the reviewer
 finishes, the trusted host saves the complete local result and target identity to
-`<session-root>/.cross-review/local/<run-id>/review.md` and `identity.json`, using
+`~/.sentimony/agentflow/cr-request/<project>/<run-id>/review.md` and `identity.json`, using
 [review-actions.md](references/review-actions.md). Directories are `0700`, files are
-`0600`, and the archive is excluded through Git's `info/exclude`. An archive failure
+`0600`, and the archive lies outside the repository, so nothing is added to Git. An archive failure
 makes the handoff `INCOMPLETE`; name the failed write and retain any temporary result
 for recovery. Show the compact result with a link to the saved full review, following
 [compact.md](references/compact.md). CI uses its caller's output files and the same
@@ -242,11 +246,16 @@ The last line of the result is the next step:
 
 | Result | Last line |
 | --- | --- |
-| Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | `Next step: cr-received - <n> findings to rule on` |
-| Clean document review (mode `document`, or its re-review) | `Next step: implement - <plan path>` for a plan, `Next step: plan-craft - <spec path>` for an approved spec, `Next step: none - <spec path> is a draft, awaiting approval` for any other spec |
-| Clean, and a full `Verify: PASS` exists on this tree | `Next step: finalize - reviewed and verified on this tree` |
-| Clean, no full `Verify: PASS` on this tree | `Next step: verify - review is clean, verification missing on this tree` |
+| Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | ``Next step: `/cr-received` - <n> findings to rule on`` |
+| Clean document review (mode `document`, or its re-review) | ``Next step: `/implement` - <plan path>`` for a plan, ``Next step: `/plan-craft` - <spec path>`` for an approved spec, `Next step: none - <spec path> is a draft, awaiting approval` for any other spec |
+| Clean, and a full `Verify: PASS` exists on this tree | ``Next step: `/finalize` - reviewed and verified on this tree`` |
+| Clean, no full `Verify: PASS` on this tree | ``Next step: `/verify` - review is clean, verification missing on this tree`` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |
+
+Name the skill in `Next step` as inline code in the host's invocation form: `/<skill>` in
+Claude Code, `$<skill>` in Codex; `none` stays plain text. `<n>` counts the new findings
+plus the previous findings left `NOT ADDRESSED`; when both exist, write
+`<n> findings to rule on (<a> new, <b> not addressed)`.
 
 1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition;
@@ -296,7 +305,7 @@ recommends the merge method; it is not an argument. Any other line keeps
 (`Next step: none · <reason>`). The skill writes the signature without a duration; the
 workflow may append the review duration to it afterwards as ` · In <m> min <s> sec`,
 with `In 0 min 42 sec` under a minute. Only these two CI lines use ` · ` and ` -> `;
-every other `Next step` line keeps the local `Next step: <skill> - <reason>` form that
+every other `Next step` line keeps the local ``Next step: `/<skill>` - <reason>`` form that
 `--auto` and the chain read. The exact grammar of both lines, as regular expressions a
 workflow validator uses, and the accepted and rejected samples are in
 [brief.md](references/brief.md) "CI footer grammar"; the grammar is part of the
@@ -342,7 +351,7 @@ review gap. Preserve others' working trees without rollback or cleanup.
 
 The trusted host edits the record host's record (the plan's `## Execution record` or the
 spec's `## Verification record`), writes the private local archive after the reviewer
-finishes, and adds its Git `info/exclude` entry. The reviewer never writes that archive.
+finishes. The reviewer never writes that archive.
 The skill does not edit code, commit, push, or publish. CI publish is a separate trusted
 host capability, described in [review-actions.md](references/review-actions.md). Its
 separate API-only resolver alone gets the short-lived write GITHUB_TOKEN; model-output
@@ -351,8 +360,8 @@ parsers never receive that token, and the reviewer never receives the yngwald PA
 reviewer write capability; orchestrated results return to their owner, which checks
 the actual authority and delivery gates before any external action.
 
-Archive context: snapshots and briefs omit `.cross-review/`, including the host-written
-`.cross-review/local/` archive. Read-only access does not prevent reading that archive:
+Archive context: snapshots and briefs omit `.cross-review/`, the `cross-agent` archive
+(the local archive lies outside the repository). Read-only access does not prevent reading that archive:
 a same-host `cr-request` subagent, like a delegated `cross-agent` reviewer, may still
 read it. This is an accepted trade-off, not a defect for review, based on the owner's
 decision to keep repository-local archives without mandatory deny-read isolation.

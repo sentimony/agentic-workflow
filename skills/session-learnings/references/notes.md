@@ -167,31 +167,49 @@ imports this file, so it does not count toward the chain size and is never read 
 rule; recording and triage search it only to avoid proposing the same note again. New
 evidence makes a new note in `AGENTS.md` that names the declined one.
 
+## Counting notes
+
+A note is a top-level item of a run section (`## <YYYY-MM-DD HH:MM> - <host>`), bulleted
+(`- `) or numbered (`1. `), in whatever form the user keeps. Its fields (Target, Rung,
+Confidence, Quote, Check, Supersedes, Conflict) are part of it even when they are
+numbered too. A file with only its header has 0 notes; a non-empty file whose structure
+matches neither form is read by hand and reported as `unknown structure`, never as 0.
+
 ## Chain size
 
 With Claude Code the notes load in every session through the import, so they count
 toward its instruction size; with Codex the agent reads them on demand. When the project
 limits instruction size (a check script or a documented limit), run its check after
 appending and report the number; over the limit, recommend a triage instead of trimming
-the notes yourself.
+the notes yourself. When that check may not run in the notes root (its instructions
+forbid it there, or it needs dependencies the root lacks), measure with the recipe below,
+with the root `AGENTS.md` as the target, and report the number as measured by the skill
+recipe, not by the project check. A plain sum of two files is not a chain size.
 
 In triage, an edit to a file changes every chain that passes through it: the file plus
 each nested instruction file below it. Measure the heaviest of those chains before and
 after the edit. Prefer the project's own check script; otherwise, for `AGENTS.md` chains,
 run this from the repository root with `bash` (zsh does not split an unquoted file list,
-and `cat $files | wc -c` then prints 0). It lists tracked, untracked, and gitignored
-files on purpose, so the ignored notes count; a nested repository shows as one directory
-entry and is not entered. When the root `CLAUDE.md` or `AGENTS.md` imports the notes (a
+and `cat $files | wc -c` then prints 0). It walks nested instruction files that are
+tracked or new and not ignored (`--exclude-standard`): a gitignored `AGENTS.md`, such as a
+fixture under `docs/evals/**/workspace/`, is no instruction chain and is not walked. The
+ignored notes still count through the explicit notes check below. A nested repository
+shows as one directory entry and is not entered. When recording with the root `AGENTS.md`
+as the target, pass `root-only` as the second argument: it measures only that file plus
+the notes and walks no nested leaf. When the root `CLAUDE.md` or `AGENTS.md` imports the notes (a
 line ending in the bare path), it adds them to every chain, since Claude Code imports them
 through the root; a `mention only` line adds nothing:
 
 ```bash
-bash -s -- <target> <<'EOF'
+bash -s -- <target> [root-only] <<'EOF'
 target=$1
+mode=$2
 dir=$(dirname "$target")
 max=0
 heaviest=
-for leaf in $( { echo "$target"; git ls-files -c -o -- "$dir" | grep -E '(^|/)AGENTS\.md$'; } | sort -u); do
+if [ "$mode" = root-only ]; then leaves=$target
+else leaves=$( { echo "$target"; git ls-files -c -o --exclude-standard -- "$dir" | grep -E '(^|/)AGENTS\.md$'; } | sort -u); fi
+for leaf in $leaves; do
   files=AGENTS.md
   path=
   for part in $(dirname "$leaf" | tr / ' '); do
@@ -213,4 +231,7 @@ EOF
 ```
 
 It prints the size in bytes and the deepest file of the heaviest chain. Show both the
-before and after numbers in the approval item.
+before and after numbers in the approval item. Name the heaviest leaf next to the number
+in every report. When it is gitignored (`git check-ignore -q <leaf>`) or lies under an
+`evals` or `workspace` folder, say so and do not present the number as a budget overrun:
+such a file is not part of the repository's instruction chain.

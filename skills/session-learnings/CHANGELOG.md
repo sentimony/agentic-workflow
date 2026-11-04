@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.0.8] - 2026-11-03 - [0.0.19](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.19)
+
+1. Triage re-reads the notes before pruning and removes each note by an exact single
+   replacement, keeping notes appended meanwhile; it counts bulleted and numbered notes
+   by structure and reports an unrecognized file instead of 0.
+2. A skill defect gets the target `skill <name> (<repository>)` and becomes an
+   improvement request in triage, never an edit of an installed copy; deduplication
+   searches open requests for that skill.
+3. When the project size check may not run in the notes root, recording measures the
+   chain with the skill recipe, and the report says how the number was taken.
+4. The skill size recipe walks only tracked or new non-ignored nested `AGENTS.md`
+   files, so gitignored fixtures no longer inflate the number; recording measures the
+   root target with `root-only` (that file plus the notes); the report names the
+   heaviest leaf and does not present an ignored or `evals`/`workspace` leaf as a
+   budget overrun.
+
 ## [0.0.7] - 2026-11-01
 
 1. Use the shared manual/auto stage transition contract and return orchestrated results

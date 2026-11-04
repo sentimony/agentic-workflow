@@ -108,6 +108,9 @@ def validate_review(text, identity):
     labels = ('Target reviewed', 'Reviewer model', 'Coverage', 'Intent', 'System', 'Craft',
               'Summary', 'Merge readiness', 'Findings', 'Evidence attribution',
               'Not checkable from the diff', 'Set aside', 'Open questions', 'Strengths')
+    if identity.get('document'):
+        # A spec or plan is not merged: document reviews do not require Merge readiness.
+        labels = tuple(label for label in labels if label != 'Merge readiness')
     for label in labels:
         if not re.search(r'(?m)^' + re.escape(label) + r':', text):
             raise ValueError('incomplete review: missing ' + label)

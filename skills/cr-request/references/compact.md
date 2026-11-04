@@ -10,7 +10,7 @@ review archive. CI embeds the full result in one collapsed `<details>` block.
 After the trusted host archives the completed review using
 [review-actions.md](review-actions.md), show the one-row table and `Readiness` line
 below, then `Full review: <link to archived review.md>` and the local
-`Next step: <skill> - <reason>` line. Keep full findings, target identity, evidence,
+``Next step: `/<skill>` - <reason>`` line. Keep full findings, target identity, evidence,
 set-aside items, and gaps in the archived report. A missing or failed archive makes
 the handoff `INCOMPLETE`, with the failed operation and recovery path visible.
 

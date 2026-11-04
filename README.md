@@ -66,7 +66,7 @@ release exception: https://github.com/sentimony/agentic-workflow/issues/30.
    jobs may start after ready. Merge waits for every applicable check, keeps unknown
    policy unresolved until its gate is satisfied, and receives the verified full SHA.
 3. Post-merge completion belongs in an authorized own PR comment with readback.
-   Publication failure remains evidence-pending in an ignored local store, separate
+   Publication failure remains evidence-pending in a private store under `~/.sentimony`, separate
    from the result of the external task; tracked plan/spec files stay unchanged.
 4. Removing transferred duplicate hunks requires captured ownership and canonical
    evidence. Separate branch/workspace disposal requires current authority, integration

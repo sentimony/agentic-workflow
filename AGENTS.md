@@ -122,8 +122,8 @@
    `skills/implement/references/post-merge.md` and
    `skills/finalize/references/cleanup.md`. Read the applicable contract before ready,
    merge, post-merge evidence or cleanup. Canonical completion uses an authorized own
-   PR comment with readback; unavailable publication remains evidence-pending in an
-   ignored store. Post-merge tasks leave tracked plan/spec files on the base unchanged.
+   PR comment with readback; unavailable publication remains evidence-pending in a
+   private store under `~/.sentimony`. Post-merge tasks leave tracked plan/spec files on the base unchanged.
    Removing transferred duplicate hunks requires the captured ownership journal and
    canonical evidence. Branch/workspace disposal is separate: require current user
    authority, current branch/workspace integration or retention and data guards, plus

@@ -10,6 +10,10 @@
    (20261030-0854).
 3. Write the skill in local `Next step` lines as inline code in invocation form
    (`/<skill>` in Claude Code, `$<skill>` in Codex) (20261024-2217).
+4. Save the local review archive to `~/.sentimony/agentflow/cr-request/<project>/<run-id>/`
+   instead of `.cross-review/local/` with an `info/exclude` entry; the safety checks, unique
+   run IDs and the `INCOMPLETE` handoff on a failed write stay. `scripts/project_slug.py`
+   prints the archive root (`20261104-0706`).
 
 ## [0.0.13] - 2026-11-01
 

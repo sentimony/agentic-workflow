@@ -215,9 +215,9 @@ external review counts are not that budget. On older records with unknown proven
 reconstruct it from evidence or escalate instead of guessing or resetting the count.
 Never rewrite existing lines. After the reviewer
 finishes, the trusted host saves the complete local result and target identity to
-`<session-root>/.cross-review/local/<run-id>/review.md` and `identity.json`, using
+`~/.sentimony/agentflow/cr-request/<project>/<run-id>/review.md` and `identity.json`, using
 [review-actions.md](references/review-actions.md). Directories are `0700`, files are
-`0600`, and the archive is excluded through Git's `info/exclude`. An archive failure
+`0600`, and the archive lies outside the repository, so nothing is added to Git. An archive failure
 makes the handoff `INCOMPLETE`; name the failed write and retain any temporary result
 for recovery. Show the compact result with a link to the saved full review, following
 [compact.md](references/compact.md). CI uses its caller's output files and the same
@@ -351,7 +351,7 @@ review gap. Preserve others' working trees without rollback or cleanup.
 
 The trusted host edits the record host's record (the plan's `## Execution record` or the
 spec's `## Verification record`), writes the private local archive after the reviewer
-finishes, and adds its Git `info/exclude` entry. The reviewer never writes that archive.
+finishes. The reviewer never writes that archive.
 The skill does not edit code, commit, push, or publish. CI publish is a separate trusted
 host capability, described in [review-actions.md](references/review-actions.md). Its
 separate API-only resolver alone gets the short-lived write GITHUB_TOKEN; model-output
@@ -360,8 +360,8 @@ parsers never receive that token, and the reviewer never receives the yngwald PA
 reviewer write capability; orchestrated results return to their owner, which checks
 the actual authority and delivery gates before any external action.
 
-Archive context: snapshots and briefs omit `.cross-review/`, including the host-written
-`.cross-review/local/` archive. Read-only access does not prevent reading that archive:
+Archive context: snapshots and briefs omit `.cross-review/`, the `cross-agent` archive
+(the local archive lies outside the repository). Read-only access does not prevent reading that archive:
 a same-host `cr-request` subagent, like a delegated `cross-agent` reviewer, may still
 read it. This is an accepted trade-off, not a defect for review, based on the owner's
 decision to keep repository-local archives without mandatory deny-read isolation.

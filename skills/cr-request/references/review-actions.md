@@ -269,21 +269,27 @@ repository's absolute top level once; pass it explicitly to local `cr-request` a
 `cross-agent`. Never infer it from the reviewed target or accept a replacement from
 reviewer output. The target may be a different repository.
 
-1. Local `cr-request`: `<session_root>/.cross-review/local/<run-id>/review.md` and
-  `identity.json`.
+1. Local `cr-request`: `~/.sentimony/agentflow/cr-request/<project>/<run-id>/review.md` and
+  `identity.json`; `<project>` is the slug of the main checkout of `<session_root>`
+  (`python3 scripts/project_slug.py --cwd <session_root>` prints the root). Archives that
+  older versions wrote to `.cross-review/local/<run-id>/` stay as they are, and references
+  to them in earlier journals remain valid.
 2. `cross-agent`: `<session_root>/.cross-review/<run-id>/`, retaining each reviewer's full
   result and identity. Its runner may keep working logs/session files in OS temporary
   storage, with the stable archive remaining after temporary cleanup.
 3. The host chooses a unique run ID with only ASCII letters, digits, `.`, `_`, or `-`,
   beginning with a letter or digit; reject `.`/`..`, path separators, and collisions.
-  Keep `.cross-review`, `local`, and each run directory private (`0700`), and archived
-  files `0600`. Reject symlink components, symlink destinations, paths escaping the
-  resolved session root, and incompatible ownership; never follow or overwrite them.
-4. Resolve Git's `info/exclude` with
-  `git rev-parse --path-format=absolute --git-path info/exclude` in `session_root`.
-  Add `/.cross-review/` idempotently without rewriting existing rules. Verify the
-  archive is ignored; fail if it is already tracked. Do not edit the tracked
-  `.gitignore` or stage archive files. This resolver also applies to worktrees.
+  Keep every directory from `~/.sentimony` down to the run directory private (`0700`),
+  and archived files `0600`. Reject symlink components, symlink destinations, paths
+  escaping the resolved archive root, and incompatible ownership; never follow or
+  overwrite them. A missing or unusable HOME fails the archive; no fallback path is used.
+4. The local archive lives outside every repository: do not edit `info/exclude` or the
+  tracked `.gitignore` for it, and do not stage archive files. The `cross-agent` archive
+  keeps its `<session_root>/.cross-review/<run-id>/` location; for that archive resolve
+  Git's `info/exclude` with `git rev-parse --path-format=absolute --git-path info/exclude`
+  in `session_root`, add `/.cross-review/` idempotently without rewriting existing rules,
+  verify the archive is ignored, and fail if it is already tracked. This resolver also
+  applies to worktrees.
 5. After the reviewer has fully finished, the trusted host validates the output and
   writes the archive, using private temporary files and atomic replacement within a
   newly created run directory. Reviewers never receive permission to write the archive.
@@ -301,9 +307,11 @@ reviewer output. The target may be a different repository.
 GitHub source ID is created for a local review. Keep multiple reviewers' identities
 and findings separate. The host's identity and permissions checks precede every write.
 
-Exclude the entire `.cross-review/` archive, including `local/`, from target snapshots,
-briefs, and attachments. This does not promise deny-read isolation: a same-host
-`cr-request` subagent or external `cross-agent` CLI reviewer can still discover and read
+Exclude the entire `.cross-review/` archive (the `cross-agent` archive and any legacy
+`local/` folder) from target snapshots, briefs, and attachments. The local archive now lies
+outside the repository, so a read-only reviewer inside the target cannot discover it by
+walking the tree. This does not promise deny-read isolation: a same-host
+`cr-request` subagent or external `cross-agent` CLI reviewer can still read
 repository-local archives. The owner accepts that read risk; mandatory deny-read and
 an unavailable-reviewer gate are outside this contract. Preserve the existing project
 trust and read-only boundaries. Focused-test write isolation is a separate rule in

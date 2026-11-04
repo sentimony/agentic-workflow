@@ -190,19 +190,26 @@ In triage, an edit to a file changes every chain that passes through it: the fil
 each nested instruction file below it. Measure the heaviest of those chains before and
 after the edit. Prefer the project's own check script; otherwise, for `AGENTS.md` chains,
 run this from the repository root with `bash` (zsh does not split an unquoted file list,
-and `cat $files | wc -c` then prints 0). It lists tracked, untracked, and gitignored
-files on purpose, so the ignored notes count; a nested repository shows as one directory
-entry and is not entered. When the root `CLAUDE.md` or `AGENTS.md` imports the notes (a
+and `cat $files | wc -c` then prints 0). It walks nested instruction files that are
+tracked or new and not ignored (`--exclude-standard`): a gitignored `AGENTS.md`, such as a
+fixture under `docs/evals/**/workspace/`, is no instruction chain and is not walked. The
+ignored notes still count through the explicit notes check below. A nested repository
+shows as one directory entry and is not entered. When recording with the root `AGENTS.md`
+as the target, pass `root-only` as the second argument: it measures only that file plus
+the notes and walks no nested leaf. When the root `CLAUDE.md` or `AGENTS.md` imports the notes (a
 line ending in the bare path), it adds them to every chain, since Claude Code imports them
 through the root; a `mention only` line adds nothing:
 
 ```bash
-bash -s -- <target> <<'EOF'
+bash -s -- <target> [root-only] <<'EOF'
 target=$1
+mode=$2
 dir=$(dirname "$target")
 max=0
 heaviest=
-for leaf in $( { echo "$target"; git ls-files -c -o -- "$dir" | grep -E '(^|/)AGENTS\.md$'; } | sort -u); do
+if [ "$mode" = root-only ]; then leaves=$target
+else leaves=$( { echo "$target"; git ls-files -c -o --exclude-standard -- "$dir" | grep -E '(^|/)AGENTS\.md$'; } | sort -u); fi
+for leaf in $leaves; do
   files=AGENTS.md
   path=
   for part in $(dirname "$leaf" | tr / ' '); do
@@ -224,4 +231,7 @@ EOF
 ```
 
 It prints the size in bytes and the deepest file of the heaviest chain. Show both the
-before and after numbers in the approval item.
+before and after numbers in the approval item. Name the heaviest leaf next to the number
+in every report. When it is gitignored (`git check-ignore -q <leaf>`) or lies under an
+`evals` or `workspace` folder, say so and do not present the number as a budget overrun:
+such a file is not part of the repository's instruction chain.

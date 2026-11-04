@@ -10,6 +10,11 @@
    searches open requests for that skill.
 3. When the project size check may not run in the notes root, recording measures the
    chain with the skill recipe, and the report says how the number was taken.
+4. The skill size recipe walks only tracked or new non-ignored nested `AGENTS.md`
+   files, so gitignored fixtures no longer inflate the number; recording measures the
+   root target with `root-only` (that file plus the notes); the report names the
+   heaviest leaf and does not present an ignored or `evals`/`workspace` leaf as a
+   budget overrun.
 
 ## [0.0.7] - 2026-11-01
 

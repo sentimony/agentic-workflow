@@ -3,6 +3,17 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.19] - 2026-11-04
+
+1. Keep implement pending evidence and the cr-request local archive under the private
+   `~/.sentimony` store instead of the project; refuse an unusable HOME, a HOME inside
+   the project or a linked worktree, Git environment overrides and a dangling `.git`.
+2. cr-request 0.0.14: callback assertions, re-review status lines and an invocable
+   Next step.
+3. session-learnings 0.0.8: harden triage and size reporting, and exclude ignored
+   fixtures from the size recipe.
+4. Record the path-based PendingStore checks as an accepted trade-off.
+
 ## [0.0.18] - 2026-11-01
 
 1. Add resolve-issue 0.0.1 with durable issue orchestration, current host authority,
@@ -167,4 +178,5 @@ Release tag: `v0.0.1` (`39626fcce7cadd6a77b1cf5ebc6b0ce922f37960`).
 
 1. Add awf plugin with cr-request skill 0.0.1 (#1).
 
+[0.0.19]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.19
 [0.0.18]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

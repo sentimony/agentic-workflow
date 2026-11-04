@@ -5,7 +5,7 @@
 1. Review the whole document when neither the previous tree nor head provides a usable
    diff for a re-review, and state in the result that the diff was unavailable.
 
-## [0.0.14] - 2026-11-04
+## [0.0.14] - 2026-11-04 - [0.0.19](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.19)
 
 1. Trace assertions across callback, hook, and handler boundaries so a broad catch cannot
    turn a failed assertion into a passing test (20261031-2048).

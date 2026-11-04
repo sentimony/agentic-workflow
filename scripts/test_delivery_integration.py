@@ -46,7 +46,7 @@ class DeliveryIntegrationTest(unittest.TestCase):
         self.addCleanup(self.environment.stop)
         self.git("init", "-q")
         self.git("config", "core.hooksPath", os.devnull)
-        (self.repo / ".gitignore").write_text(".delivery-evidence/\nignored/\n")
+        (self.repo / ".gitignore").write_text("ignored/\n")
         (self.repo / "plan.md").write_text("Post-merge completion: PR #23 evidence.\n")
         (self.repo / "spec.md").write_text("Approved local fixture contract.\n")
         (self.repo / "owned.txt").write_text("before\n")
@@ -189,7 +189,8 @@ class DeliveryIntegrationTest(unittest.TestCase):
         merged = self.transition("merge", ready, newer_head, squash)
         self.assertNotEqual(merged, newer_head)
         hosts_before = {name: (self.repo / name).read_bytes() for name in ("plan.md", "spec.md")}
-        store = evidence.PendingStore(self.repo)
+        (self.root / "home").mkdir(exist_ok=True)
+        store = evidence.PendingStore(self.repo, home=self.root / "home")
         content = dict(schema="evidence-record-v1", **self.identity, merge_sha=merged,
                        deployment={"id": "scratch-only", "version": "fixture-1"}, timestamp=120,
                        checks=[{"command": "scratch committed-object checks", "result": "passed"}],

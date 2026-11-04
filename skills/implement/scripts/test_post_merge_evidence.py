@@ -3,7 +3,9 @@
 from copy import deepcopy
 from dataclasses import replace
 import json
+import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -67,11 +69,13 @@ class PostMergeEvidenceTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name).resolve()
+        self.home = self.repo.parent / (self.repo.name + "-home")
+        self.home.mkdir()
+        self.addCleanup(shutil.rmtree, self.home, True)
         self.git("init", "-q")
-        (self.repo / ".gitignore").write_text(".delivery-evidence/\n")
         (self.repo / "plan.md").write_text("Completion in PR #23.\n")
         (self.repo / "spec.md").write_text("Approved spec.\n")
-        self.git("add", ".gitignore", "plan.md", "spec.md")
+        self.git("add", "plan.md", "spec.md")
         self.git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.test",
                  "-c", "core.hooksPath=/dev/null", "commit", "-qm", "Fixture squash result")
         self.record = {"schema": "evidence-record-v1", "repo": "forge.test/owner/repo", "pr": 23,
@@ -79,7 +83,7 @@ class PostMergeEvidenceTests(unittest.TestCase):
             "deployment": {"id": "deployment-8", "version": "build-19"}, "timestamp": 100,
             "checks": [{"command": "verify-deployment", "result": "health checks passed"}],
             "production_status": "succeeded", "author": {"id": 17, "login": "owner"}, "previous_attempt": None}
-        self.store = evidence.PendingStore(self.repo)
+        self.store = evidence.PendingStore(self.repo, home=self.home)
         self.path = evidence.prepare(self.record, store=self.store)
         self.transport = FakeTransport(self.store, self.path)
 
@@ -179,18 +183,6 @@ class PostMergeEvidenceTests(unittest.TestCase):
         self.assertEqual(self.publish()["evidence_status"], "evidence-pending")
         self.assertEqual(self.transport.writes, [])
 
-    def test_store_requires_gitignore_and_rejects_symlink(self):
-        (self.repo / ".gitignore").write_text("")
-        with self.assertRaises(evidence.EvidenceError):
-            evidence.PendingStore(self.repo)
-        exclude = Path(self.git("rev-parse", "--path-format=absolute", "--git-path", "info/exclude"))
-        exclude.write_text(exclude.read_text() + "\n/.delivery-evidence/\n")
-        self.assertEqual(evidence.PendingStore(self.repo).root, self.store.root)
-        (self.repo / ".gitignore").write_text(".delivery-evidence/\n.other/\n")
-        (self.repo / ".other").symlink_to(self.store.root, target_is_directory=True)
-        with self.assertRaises(evidence.EvidenceError):
-            evidence.PendingStore(self.repo, directory=".other")
-
     def test_atomic_fsync_store_and_failed_replace_retains_old_file(self):
         self.record["timestamp"] = 102
         with patch.object(evidence.os, "fsync", wraps=evidence.os.fsync) as sync:
@@ -211,7 +203,144 @@ class PostMergeEvidenceTests(unittest.TestCase):
         self.assertEqual(self.git("rev-parse", "HEAD"), before_head)
         self.assertEqual({name: (self.repo / name).read_bytes() for name in before}, before)
         self.assertEqual(self.git("status", "--porcelain"), "")
-        self.assertIn(".delivery-evidence/", self.git("status", "--porcelain", "--ignored"))
+        self.assertEqual(self.git("status", "--porcelain", "--ignored"), "")
+
+
+class PendingStoreLocationTests(unittest.TestCase):
+    """Where the pending store lives: ~/.sentimony first, a populated legacy folder otherwise."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.repo = Path(self.temp.name).resolve() / "repo"
+        self.repo.mkdir()
+        self.home = Path(self.temp.name).resolve() / "home"
+        self.home.mkdir()
+        self.git("init", "-q")
+        (self.repo / "plan.md").write_text("Completion in PR #23.\n")
+        self.git("add", "plan.md")
+        self.git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.test",
+                 "-c", "core.hooksPath=/dev/null", "commit", "-qm", "Fixture")
+        self.record = {"schema": "evidence-record-v1", "repo": "forge.test/owner/repo", "pr": 23,
+            "task": "Task 9", "attempt": "attempt-1", "merge_sha": self.git("rev-parse", "HEAD"),
+            "deployment": {"id": "deployment-8", "version": "build-19"}, "timestamp": 100,
+            "checks": [{"command": "verify-deployment", "result": "health checks passed"}],
+            "production_status": "succeeded", "author": {"id": 17, "login": "owner"}, "previous_attempt": None}
+
+    def git(self, *args):
+        return subprocess.run(["git", "-C", str(self.repo), *args], check=True,
+                              capture_output=True, text=True).stdout.strip()
+
+    def exclude(self):
+        return Path(self.git("rev-parse", "--path-format=absolute", "--git-path", "info/exclude"))
+
+    def new_root(self):
+        return self.home / ".sentimony" / "agentflow" / "implement" / evidence.slug(evidence.project_key(self.repo))
+
+    def make_legacy(self, ignored=True):
+        legacy = self.repo / ".delivery-evidence"
+        legacy.mkdir(mode=0o700)
+        if ignored:
+            self.exclude().write_text(self.exclude().read_text() + "\n/.delivery-evidence/\n")
+        (legacy / "pending.json").write_text("{}")
+        return legacy
+
+    def test_slug_matches_the_context_transfer_vectors(self):
+        self.assertEqual(evidence.slug("/"), "root-8a5edab28263")
+        name, _, _ = evidence.slug(self.repo.parent / ("щ" * 100)).rpartition("-")
+        self.assertEqual(name, "щ" * 32)
+
+    def test_fresh_run_uses_a_private_folder_and_leaves_the_project_untouched(self):
+        exclude_before = self.exclude().read_bytes() if self.exclude().exists() else None
+        store = evidence.PendingStore(self.repo, home=self.home)
+        self.assertEqual(store.root, self.new_root())
+        self.assertFalse(store.legacy)
+        self.assertIsNone(store.unused_legacy)
+        for part in (store.root, store.root.parent, store.root.parent.parent, store.root.parent.parent.parent):
+            self.assertEqual(part.stat().st_mode & 0o777, 0o700)
+        evidence.prepare(self.record, store=store)
+        self.assertEqual(self.git("status", "--porcelain", "--ignored"), "")
+        self.assertEqual(self.exclude().read_bytes() if self.exclude().exists() else None, exclude_before)
+
+    def test_two_worktrees_share_one_store(self):
+        tree = self.repo.parent / "linked"
+        self.git("worktree", "add", "-q", str(tree), "-b", "other")
+        self.assertEqual(evidence.PendingStore(self.repo, home=self.home).root,
+                         evidence.PendingStore(tree, home=self.home).root)
+
+    def test_populated_legacy_is_kept_until_the_new_place_has_data(self):
+        self.make_legacy()
+        store = evidence.PendingStore(self.repo, home=self.home)
+        self.assertTrue(store.legacy)
+        self.assertEqual(store.root, self.repo / ".delivery-evidence")
+        path = evidence.prepare(self.record, store=store)
+        self.assertFalse((self.home / ".sentimony").exists())
+        again = evidence.PendingStore(self.repo, home=self.home)
+        self.assertTrue(again.legacy)
+        self.assertEqual(again.load(path)["record"]["task"], "Task 9")
+        self.assertTrue((again.root / ("snapshot-" + again.load(path)["record"]["content_sha256"] + ".json")).is_file())
+
+    def test_new_place_wins_when_both_have_data(self):
+        store = evidence.PendingStore(self.repo, home=self.home)
+        evidence.prepare(self.record, store=store)
+        legacy = self.make_legacy()
+        chosen = evidence.PendingStore(self.repo, home=self.home)
+        self.assertFalse(chosen.legacy)
+        self.assertEqual(chosen.root, self.new_root())
+        self.assertEqual(chosen.unused_legacy, legacy)
+        self.assertEqual((legacy / "pending.json").read_text(), "{}")
+
+    def test_a_legacy_folder_must_still_be_ignored_and_real(self):
+        legacy = self.make_legacy(ignored=False)
+        with self.assertRaises(evidence.EvidenceError):
+            evidence.PendingStore(self.repo, home=self.home)
+        shutil.rmtree(legacy)
+        real = self.repo.parent / "elsewhere"
+        real.mkdir()
+        (real / "pending.json").write_text("{}")
+        self.exclude().write_text(self.exclude().read_text() + "\n/.delivery-evidence\n")
+        legacy.symlink_to(real, target_is_directory=True)
+        with self.assertRaises(evidence.EvidenceError):
+            evidence.PendingStore(self.repo, home=self.home)
+
+    def test_a_symlink_on_any_component_is_refused(self):
+        evidence.PendingStore(self.repo, home=self.home)
+        outside = self.repo.parent / "outside"
+        names = [".sentimony", "agentflow", "implement", evidence.slug(evidence.project_key(self.repo))]
+        for depth in range(len(names)):
+            with self.subTest(depth=depth):
+                shutil.rmtree(self.home / ".sentimony", ignore_errors=True)
+                if (self.home / ".sentimony").is_symlink():
+                    (self.home / ".sentimony").unlink()
+                shutil.rmtree(outside, ignore_errors=True)
+                outside.mkdir()
+                current = self.home
+                for name in names[:depth]:
+                    current = current / name
+                    current.mkdir(mode=0o700)
+                (current / names[depth]).symlink_to(outside, target_is_directory=True)
+                with self.assertRaisesRegex(evidence.EvidenceError, "symlink"):
+                    evidence.PendingStore(self.repo, home=self.home)
+                self.assertEqual(list(outside.iterdir()), [])
+
+    def test_wide_folders_are_narrowed_and_foreign_owners_refused(self):
+        store = evidence.PendingStore(self.repo, home=self.home)
+        for part in (store.root, store.root.parent, store.root.parent.parent, store.root.parent.parent.parent):
+            part.chmod(0o777)
+        evidence.PendingStore(self.repo, home=self.home)
+        self.assertEqual(store.root.stat().st_mode & 0o777, 0o700)
+        self.assertEqual(store.root.parent.parent.parent.stat().st_mode & 0o777, 0o700)
+        with patch.object(evidence.os, "getuid", return_value=os.getuid() + 1):
+            with self.assertRaises(evidence.EvidenceError):
+                evidence.PendingStore(self.repo, home=self.home)
+
+    def test_an_unusable_home_is_refused_without_creating_anything(self):
+        with self.assertRaisesRegex(evidence.EvidenceError, "HOME"):
+            evidence.PendingStore(self.repo, home=self.home / "missing")
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(evidence.EvidenceError, "HOME"):
+                evidence.PendingStore(self.repo)
+        self.assertEqual(list(self.home.iterdir()), [])
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 """Durable local evidence with an injected, explicitly authorized comment transport.
 
-No forge adapter, shell execution, or production action. Git is used only to verify
-that the local store is ignored. Publication status is independent of production.
+No forge adapter, shell execution, or production action. Git is used only to locate
+the main checkout and, for a legacy in-project store, to verify that it is ignored.
+Publication status is independent of production.
 One trusted host must serialize calls for a repo/PR/task/attempt.
 """
 
@@ -13,6 +14,7 @@ import math
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 import tempfile
 from urllib.parse import urlsplit
@@ -125,18 +127,80 @@ def _valid_url(url, repo):
         return False
 
 
-class PendingStore:
-    """Atomic, fsynced state and immutable content snapshots inside an ignored folder."""
+STATE_PARTS = (".sentimony", "agentflow", "implement")
 
-    def __init__(self, repo_root, directory=".delivery-evidence"):
+
+def project_key(repo):
+    done = subprocess.run(["git", "-C", str(repo), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                          capture_output=True, text=True, check=False)
+    _require(done.returncode == 0, "cannot read the Git common directory")
+    common = Path(os.path.realpath(done.stdout.rstrip("\n")))
+    return common.parent if common.name == ".git" else common
+
+
+def slug(path):
+    """Same algorithm as slug() in context-transfer; every skill carries its own copy."""
+    resolved = str(Path(path).resolve())
+    digest = hashlib.sha256(os.fsencode(resolved)).hexdigest()[:12]
+    name, size = "", 0
+    for char in Path(resolved).name or "root":
+        size += len(os.fsencode(char))
+        if size > 64:
+            break
+        name += char
+    return name + "-" + digest
+
+
+def _populated(folder):
+    return folder.is_dir() and any(folder.glob("*.json"))
+
+
+class PendingStore:
+    """Atomic, fsynced state and immutable content snapshots in ~/.sentimony/agentflow/implement/<project>/.
+
+    A populated legacy folder inside the repository keeps being used until the new location
+    holds data; then the new one wins and ``unused_legacy`` names the old folder.
+    """
+
+    def __init__(self, repo_root, *, home=None, directory=".delivery-evidence"):
         self.repo = Path(repo_root).resolve(strict=True)
         _require(type(directory) is str and directory.startswith(".") and "/" not in directory
                  and directory not in (".", "..", ".git"), "invalid store directory")
-        self.root = self.repo / directory
         self._git("rev-parse", "--show-toplevel", expected=str(self.repo))
-        self._ignored(self.root / ".ignore-proof")
-        self._safe(self.root)
-        self.root.mkdir(mode=0o700, exist_ok=True)
+        text = os.fspath(home) if home is not None else os.environ.get("HOME", "")
+        _require(bool(text) and os.path.isabs(text) and os.path.isdir(text), "HOME is not usable for the evidence store")
+        self.base = Path(text).resolve(strict=True)
+        names = (*STATE_PARTS, slug(project_key(self.repo)))
+        new_root, legacy_root = self.base.joinpath(*names), self.repo / directory
+        self.unused_legacy = None
+        self.legacy = not _populated(new_root) and _populated(legacy_root)
+        self.root = legacy_root if self.legacy else new_root
+        if not self.legacy and _populated(legacy_root):
+            self.unused_legacy = legacy_root
+        if self.legacy:
+            self._ignored(self.root / ".ignore-proof")
+            self._safe(self.root)
+            self.root.mkdir(mode=0o700, exist_ok=True)
+        else:
+            self._safe(self.root)
+            self._make_private(names)
+
+    def _make_private(self, names):
+        current = self.base
+        for name in names:
+            current = current / name
+            _require(not current.is_symlink(), "symlink evidence path")
+            try:
+                current.mkdir(mode=0o700)
+            except FileExistsError:
+                pass
+            except OSError:
+                raise EvidenceError("cannot create the evidence store") from None
+            info = current.lstat()
+            _require(stat.S_ISDIR(info.st_mode), "evidence store component is not a directory")
+            _require(info.st_uid == os.getuid(), "evidence store belongs to another user")
+            if info.st_mode & 0o077:
+                current.chmod(0o700)
 
     def _git(self, *args, expected=None):
         env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
@@ -148,16 +212,18 @@ class PendingStore:
 
     def _safe(self, path):
         path = Path(path)
+        top = self.repo if self.legacy else self.base
         _require(path.is_absolute() and self.root in (path, *path.parents), "path outside evidence store")
         _require(path.resolve(strict=False) == path, "symlink or noncanonical evidence path")
         for component in (path, *path.parents):
-            if component == self.repo:
+            if component == top:
                 break
             _require(not component.is_symlink(), "symlink evidence path")
         return path
 
     def _ignored(self, path):
-        self._git("check-ignore", "--quiet", "--", str(path.relative_to(self.repo)))
+        if self.legacy:
+            self._git("check-ignore", "--quiet", "--", str(path.relative_to(self.repo)))
 
     def path_for(self, key):
         return self.root / (_hash(key) + ".json")

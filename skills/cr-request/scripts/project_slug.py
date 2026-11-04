@@ -21,13 +21,13 @@ def project_key(cwd):
         raise StateError("the working directory does not exist")
     try:
         done = subprocess.run(["git", "-C", cwd, "rev-parse", "--path-format=absolute", "--git-common-dir"],
-                              capture_output=True, text=True, env=dict(os.environ, LC_ALL="C"))
+                              capture_output=True, text=True, env=dict({k: v for k, v in os.environ.items() if not k.startswith("GIT_")}, LC_ALL="C"))
     except OSError:
         raise StateError("git cannot be run")
     if done.returncode != 0:
         # Only a plain directory may fall back to itself; any other failure must not pick a new key.
         here = Path(os.path.realpath(cwd))
-        if "not a git repository" in done.stderr and not any((d / ".git").exists() for d in (here, *here.parents)):
+        if "not a git repository" in done.stderr and not any(os.path.lexists(d / ".git") for d in (here, *here.parents)):
             return here
         raise StateError("git failed to read the repository")
     common = Path(os.path.realpath(done.stdout.rstrip("\n")))
@@ -51,7 +51,11 @@ def archive_root(cwd, home=None):
     if not text or not os.path.isabs(text) or not os.path.isdir(text):
         raise StateError("HOME is not usable; the archive root has no fallback location")
     base = Path(text)
-    return base / ".sentimony" / "agentflow" / "cr-request" / slug(project_key(cwd))
+    key = project_key(cwd)
+    inside = Path(os.path.realpath(text))
+    if key in (inside, *inside.parents):
+        raise StateError("HOME lies inside the project; the archive would be repository-local")
+    return base / ".sentimony" / "agentflow" / "cr-request" / slug(key)
 
 
 def main():

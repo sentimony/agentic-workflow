@@ -69,9 +69,11 @@ class ProjectSlugTest(unittest.TestCase):
     def test_archive_root_lives_under_home(self):
         home = self.tmp / "home"
         home.mkdir()
-        root = project_slug.archive_root(str(self.tmp), home=home)
+        project = self.tmp / "proj"
+        project.mkdir()
+        root = project_slug.archive_root(str(project), home=home)
         self.assertEqual(root.parent, home / ".sentimony" / "agentflow" / "cr-request")
-        self.assertEqual(root.name, project_slug.slug(self.tmp))
+        self.assertEqual(root.name, project_slug.slug(project))
         self.assertFalse(root.exists())
 
     def test_missing_or_unusable_home_is_refused_without_a_fallback(self):
@@ -98,6 +100,32 @@ class ProjectSlugTest(unittest.TestCase):
         bare = self.tmp / "bare "
         subprocess.run(["git", "init", "-q", "--bare", str(bare)], check=True)
         self.assertEqual(project_slug.project_key(str(bare)), bare)
+
+    def test_git_environment_does_not_redirect_the_key(self):
+        other = self.tmp / "other"
+        other.mkdir()
+        git(other, "init", "-q")
+        mine = self.tmp / "mine"
+        mine.mkdir()
+        git(mine, "init", "-q")
+        with unittest.mock.patch.dict(os.environ, {"GIT_DIR": str(other / ".git")}):
+            self.assertEqual(project_slug.project_key(str(mine)), mine)
+
+    def test_dangling_git_symlink_is_not_a_plain_directory(self):
+        broken = self.tmp / "dangling"
+        broken.mkdir()
+        (broken / ".git").symlink_to(self.tmp / "nowhere")
+        with self.assertRaises(project_slug.StateError):
+            project_slug.project_key(str(broken))
+
+    def test_home_inside_the_project_is_refused(self):
+        project = self.tmp / "proj2"
+        project.mkdir()
+        git(project, "init", "-q")
+        home = project / "home"
+        home.mkdir()
+        with self.assertRaises(project_slug.StateError):
+            project_slug.archive_root(str(project), home=home)
 
 
 if __name__ == "__main__":

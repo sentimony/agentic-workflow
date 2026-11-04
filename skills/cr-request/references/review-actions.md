@@ -271,7 +271,8 @@ reviewer output. The target may be a different repository.
 
 1. Local `cr-request`: `~/.sentimony/agentflow/cr-request/<project>/<run-id>/review.md` and
   `identity.json`; `<project>` is the slug of the main checkout of `<session_root>`
-  (`python3 scripts/project_slug.py --cwd <session_root>` prints the root). Archives that
+  (`python3 <skill-dir>/scripts/project_slug.py --cwd <session_root>` prints the root; `<skill-dir>` is the
+  installed skill directory; the script refuses a HOME inside the project). Archives that
   older versions wrote to `.cross-review/local/<run-id>/` stay as they are, and references
   to them in earlier journals remain valid.
 2. `cross-agent`: `<session_root>/.cross-review/<run-id>/`, retaining each reviewer's full
@@ -281,7 +282,8 @@ reviewer output. The target may be a different repository.
   beginning with a letter or digit; reject `.`/`..`, path separators, and collisions.
   Keep every directory from `~/.sentimony` down to the run directory private (`0700`),
   and archived files `0600`. Reject symlink components, symlink destinations, paths
-  escaping the resolved archive root, and incompatible ownership; never follow or
+  escaping the resolved HOME (resolve HOME first, then open every component with `O_NOFOLLOW` through
+  directory descriptors so a swap after the check cannot redirect the write), and incompatible ownership; never follow or
   overwrite them. A missing or unusable HOME fails the archive; no fallback path is used.
 4. The local archive lives outside every repository: do not edit `info/exclude` or the
   tracked `.gitignore` for it, and do not stage archive files. The `cross-agent` archive

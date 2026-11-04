@@ -3,6 +3,20 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.20] - 2026-11-04
+
+1. cr-received 0.0.10: when a fix changes rule or contract wording, search for the old
+   wording and update the current copies, with the search and its result as evidence.
+2. cr-request 0.0.15: review the whole document when a re-review has no usable diff.
+3. finalize 0.0.10: the PR body template keeps only current reviewer-relevant decisions.
+4. implement 0.0.10: report the ordered task checklist after each confirmed completion.
+5. plan-craft 0.0.9: tasks touching environments with shared production resources need a
+   local verification alternative or an owner decision.
+6. session-learnings 0.0.9: verify the full import chain before reporting `import`.
+7. specify 0.0.8: separate locally verifiable acceptance criteria from PR or remote state.
+8. verify 0.0.10: initialize required submodules at their pinned commits in a clean clone.
+9. resolve-issue 0.0.2: the local boundary text no longer hard-codes the version.
+
 ## [0.0.19] - 2026-11-04
 
 1. Keep implement pending evidence and the cr-request local archive under the private
@@ -178,5 +192,6 @@ Release tag: `v0.0.1` (`39626fcce7cadd6a77b1cf5ebc6b0ce922f37960`).
 
 1. Add awf plugin with cr-request skill 0.0.1 (#1).
 
+[0.0.20]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20
 [0.0.19]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.19
 [0.0.18]: https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.18

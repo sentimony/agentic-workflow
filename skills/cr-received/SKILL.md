@@ -3,7 +3,7 @@ name: cr-received
 description: You MUST use this when findings from a code review, pull request comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix - a cr-request result, a spec or plan review, or a reviewer's message - in any programming language. Verifies each finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, records the decisions in the plan's execution record or the spec's verification record, commits each round's fixes locally, and routes back to verify. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.9"
+  version: "0.0.10"
 license: MIT
 ---
 
@@ -202,9 +202,13 @@ For each `ACCEPT` and `PARTIAL`:
 - change the cause with the smallest correct edit; keep refactors out of fixes;
 - for observable behavior with a test seam, add or adjust a test that fails without it;
 - keep behavior and compatibility outside the finding unchanged;
+- when a fix changes rule or contract wording, search the repository for the old wording
+  and update applicable current copies, including unreleased changelog entries; leave
+  released entries unchanged;
 - when a safe fix needs a redesign or new scope, escalate instead and route to `specify`
   (a spec decision is wrong) or `plan-craft` (the plan needs changed tasks);
-- in a document review, edit only the cited section of the spec or plan;
+- in a document review, edit only the cited section of the spec or plan, except for
+  applicable copies of changed rule or contract wording;
 - a fix that materially changes an approved spec (a decision, behavior, contract, or
   criterion) also sets the spec's `Status` back to `draft` in the same edit, and the
   route is `specify`; a typo-level fix (spelling, a broken link, formatting) leaves
@@ -234,6 +238,8 @@ A fix is resolved only with finding-level evidence: the check run, its result, a
 it proves this finding; "fixed" alone is not evidence. Read the actual diff after the
 fixes, untracked files included, and account for every changed path. Per-finding proof
 is local; the full checks are `verify`'s job before the work is called done.
+For a fix that changes rule or contract wording, include the repository search command
+for the old wording and its result in the resolution evidence.
 
 Only a check that passed resolves a finding. A failing check is classed as
 `caused by fix`, `pre-existing`, `environment`, `flaky`, or `tool unavailable`, with the

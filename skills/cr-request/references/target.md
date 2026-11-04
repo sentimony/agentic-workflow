@@ -113,7 +113,9 @@ line or identity record. Tree IDs are valid diff endpoints:
     git diff --no-ext-diff --no-textconv <previous tree> <current tree>
 
 The current tree is the fresh fingerprint. If the previous tree object is missing,
-fall back to the previous `Head` and say so in the brief.
+fall back to the previous `Head` and say so in the brief. For a document re-review,
+if neither the previous tree nor the previous `Head` provides a usable diff, review
+the whole document and say in the result that the diff was unavailable.
 
 ## Prepared target
 

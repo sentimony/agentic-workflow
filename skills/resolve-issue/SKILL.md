@@ -3,7 +3,7 @@ name: resolve-issue
 description: You MUST use this when the user asks to take a GitHub issue through the agentflow workflow, with manual stage approvals or a single --auto invocation. Owns intake, clarification, planning, implementation, review, handoff and resumable orchestration. Delivery consumes the installed owner's G3 helpers through explicit current project callbacks and proofs; unknown delivery contracts block their actions. Not for writing a standalone spec, executing an existing plan without issue orchestration, or bypassing project permissions.
 argument-hint: "<issue-url|#number> [--auto]"
 metadata:
-  version: "0.0.1"
+  version: "0.0.2"
 license: MIT
 ---
 
@@ -15,7 +15,7 @@ orchestrator launch the same next stage.
 
 ## Current local boundary
 
-1. Version `0.0.1` connects intake, planning, implementation and review to
+1. This version connects intake, planning, implementation and review to
    local G3 delivery gates, durable evidence and cleanup through trusted host callbacks.
    A configured `--auto` run can reach completion with verified project-specific proofs.
 2. Native installation, real provider/deployment adapters and external acceptance remain

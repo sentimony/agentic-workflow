@@ -34,9 +34,9 @@ reviewer of the finished change should look first.>
 
 ## Acceptance criteria
 
-<Only with `Spec: none`: the criteria taken from the conversation, one per line,
-`AC<n>: <checkable predicate>`, numbered from 1 without gaps. With a spec, omit this
-section; the spec holds the criteria.>
+<Only with `Spec: none`: the criteria taken from the conversation, each a numbered-list
+item `AC<n>: <checkable predicate>`, numbered from 1 without gaps. With a spec, omit
+this section; the spec holds the criteria.>
 
 ## Files
 
@@ -80,6 +80,20 @@ external service), never for pushing or merging the work branch:>
 
 **Outward:** <what and where>
 
+## Short conclusion
+
+1. <First key point>
+2. <Second key point>
+
+## Next step
+
+```text
+<Localized prompt naming this exact plan path and the next skill and action, based on
+review and execution choice; pending mandatory or selected review comes first. When
+no review is pending and mode is unset, offer the actual numbered execution choices;
+when chosen, name the mode for implement. Keep blocking questions visible.>
+```
+
 ## Execution record
 
 ```text
@@ -87,6 +101,11 @@ Base: unset
 Task <n>: pending
 ```
 ````
+
+Use numbered lists in new content and edited sections. Refresh the conclusion and
+prompt after substantive changes and when review or execution state changes. The prompt
+is a snapshot: direct its reader to check the execution record and current review state
+before acting. Keep the execution record last and preserve its history.
 
 ## Field notes
 

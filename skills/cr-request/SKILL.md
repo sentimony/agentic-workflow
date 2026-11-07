@@ -286,7 +286,7 @@ reviewer continuity; `plan-craft` then starts `implement` instead of `verify`.
 
 When the caller requires a closing line, that line goes right before the `Next step`
 line, in its exact text, and the `Next step` line stays the very last one. The CI
-auto-review (`auto-reviewer.yaml`) requires the signature
+auto-review (`claude-review.yml`) requires the signature
 ``Reviewed with: `/cr-request` <version> skill``, backticks included, where `<version>`
 is this skill's `metadata.version`, and requires the `Next step` line after it. In that
 line each skill is inline code with a leading slash, its arguments inside the code

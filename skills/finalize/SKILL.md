@@ -3,7 +3,7 @@ name: finalize
 description: You MUST use this when verified work awaits a decision on how it leaves the branch - merging it, pushing it, opening a pull request (PR), keeping the branch, discarding the branch, or cleaning up a worktree or workspace - in any repository. Not for work that is not verified yet (verify), open review findings (cr-received), a plain commit with no integration decision, or release work with its own checklist. Replaces devflow branch-finish.
 argument-hint: "[merge|pr|squash|keep|discard|pause] [--draft] [--auto]"
 metadata:
-  version: "0.0.10"
+  version: "0.0.11"
 license: MIT
 ---
 
@@ -319,6 +319,10 @@ follows the table below; `evidence-pending` takes precedence over ordinary compl
 | full `PASS`, but `Re-review: needed` with no later review on this tree | `Next step: cr-request - re-review still needed on this tree` |
 | the remote base lacks the fork point | `Next step: none - push the base, target the stacked PR's branch, or confirm the commits are this branch's work` |
 | unfinished Git operation or a decision is pending | `Next step: none - <what the user must do>` |
+
+Name the skill in `Next step` as inline code in the host's invocation form: `/<skill>` in
+Claude Code, `$<skill>` in Codex; `none` stays plain text. Skill names in the rows above
+and in the earlier `Next step` lines of this skill are shown bare.
 
 ## Prohibitions
 

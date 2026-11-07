@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for project_slug.py: the same slug algorithm as context-transfer."""
+"""Tests for project_slug.py: the same slug algorithm as transfer-context."""
 
 import hashlib
 import os

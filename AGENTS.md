@@ -160,7 +160,7 @@
    production acceptance remains unverified by synthetic tests. The installed review
    adapter remains owner of review policy; ordinary consultations use the generic core.
 - agentflow skills replace their sentimony/skills devflow counterparts (scope-triage,
-  plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
+  plan-crafting, plan-execution, plan-orchestration, verification-gate, branch-finish,
   review-request, review-resolution, cross-review): a description opens with
   `You MUST use this when`, as devflow's do, and names the skill it replaces.
 1. The installed cross-agent owner adapter reads its own `brief.md` and `lenses.md`

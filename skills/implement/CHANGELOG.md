@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.12] - 2026-11-07
+
+1. Comment names `transfer-context`, the new name of `context-transfer`.
+
 ## [0.0.11] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 
 1. Name the skill in `Next step` as inline code in the host's invocation form

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.12] - 2026-11-07
+
+1. Preview handoff names `doc-preview`, the new name of `scope-check` in skills 0.0.102.
+
 ## [0.0.11] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 
 1. Name the skill in `Next step` in the host's invocation form, `/<skill>` in Claude Code

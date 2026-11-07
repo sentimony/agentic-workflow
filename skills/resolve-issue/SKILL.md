@@ -3,7 +3,7 @@ name: resolve-issue
 description: You MUST use this when the user asks to take a GitHub issue through the agentflow workflow, with manual stage approvals or a single --auto invocation. Owns intake, clarification, planning, implementation, review, handoff and resumable orchestration. Delivery consumes the installed owner's G3 helpers through explicit current project callbacks and proofs; unknown delivery contracts block their actions. Not for writing a standalone spec, executing an existing plan without issue orchestration, or bypassing project permissions.
 argument-hint: "<issue-url|#number> [--auto]"
 metadata:
-  version: "0.0.2"
+  version: "0.0.3"
 license: MIT
 ---
 
@@ -29,9 +29,11 @@ orchestrator launch the same next stage.
 
 1. Read [the intake contract](references/intake.md) before accessing an issue or
    selecting a workspace. An example URL grants no permission to execute that issue.
-2. Take a GitHub issue URL or `#number` with one known checkout repository. Use the
-   project's account guard before an allowed forge read. An inaccessible issue,
-   unknown repository/base or a dirty workspace belonging to another task stops intake.
+2. Take a GitHub issue URL or `#number` with one known checkout repository. Without
+   an issue argument, ask which issue to take and stop; never infer one from the
+   branch, the workspace or the conversation. Use the project's account guard before
+   an allowed forge read. An inaccessible issue, unknown repository/base or a dirty
+   workspace belonging to another task stops intake.
 3. Reuse a verified worktree of this task, or create an isolated worktree from the
    verified current base under project rules. Never move another session's dirty work.
 4. Report task/repository/issue, base and full source identity, approved scope,

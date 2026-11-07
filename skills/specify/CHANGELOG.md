@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.10] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
+
+1. Name the skill in `Next step` as inline code in the host's invocation form
+   (`/<skill>` in Claude Code, `$<skill>` in Codex); `none` stays plain text
+   (`20261024-2217`).
+2. Preview handoff names `scope-check` again, matching skills 0.0.101.
+
 ## [0.0.9] - 2026-11-05
 
 1. Add localized conclusion and state-aware next-step prompts, numbered lists, and

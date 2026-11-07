@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.3] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
+
+1. State in intake that a missing issue argument makes the skill ask which issue to
+   take and stop (`20261003-1418`).
+
 ## [0.0.2] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
 
 1. Avoid a hard-coded version in the current local boundary.

@@ -3,7 +3,7 @@ name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>] [--auto]"
 metadata:
-  version: "0.0.15"
+  version: "0.0.16"
 license: MIT
 ---
 
@@ -139,6 +139,9 @@ Lenses for each axis, language-agnostic, are in [lenses.md](references/lenses.md
   with the repository and neighboring documents), Craft (every acceptance criterion is
   checkable, no placeholders). Fields: [brief.md](references/brief.md),
   [target.md](references/target.md).
+- **Prose-only** - a document or article text with code excluded: the same read-only
+  reviewer and target identity, recorded as `mode document`, with the scope in
+  [brief.md](references/brief.md) "Prose-only kind".
 
 ## 6. Check the result
 
@@ -247,7 +250,8 @@ The last line of the result is the next step:
 | Result | Last line |
 | --- | --- |
 | Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | ``Next step: `/cr-received` - <n> findings to rule on`` |
-| Clean document review (mode `document`, or its re-review) | ``Next step: `/implement` - <plan path>`` for a plan, ``Next step: `/plan-craft` - <spec path>`` for an approved spec, `Next step: none - <spec path> is a draft, awaiting approval` for any other spec |
+| Clean plan or spec review (mode `document`, or its re-review) | ``Next step: `/implement` - <plan path>`` for a plan, ``Next step: `/plan-craft` - <spec path>`` for an approved spec, `Next step: none - <spec path> is a draft, awaiting approval` for any other spec |
+| Clean prose-only review (mode `document`, target neither a spec nor a plan) | `Next step: none - <document path> reviewed` |
 | Clean, and a full `Verify: PASS` exists on this tree | ``Next step: `/finalize` - reviewed and verified on this tree`` |
 | Clean, no full `Verify: PASS` on this tree | ``Next step: `/verify` - review is clean, verification missing on this tree`` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |

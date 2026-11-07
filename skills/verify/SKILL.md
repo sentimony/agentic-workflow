@@ -3,7 +3,7 @@ name: verify
 description: You MUST use this when anyone - you, a subagent, or the user - is about to state that work is done, fixed, ready, or mergeable, and before a merge, opening a pull request, or a handoff report, including work that has no plan. Covers every promise behind the claim - spec criteria, plan tasks, record entries, accepted review fixes, and the caller's words - proven with fresh checks on the committed tree and given one verdict, without editing code. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-or-spec-path>] [--auto]"
 metadata:
-  version: "0.0.10"
+  version: "0.0.11"
 license: MIT
 ---
 
@@ -220,7 +220,8 @@ line is printed in the report only. Do not invent spec criteria the caller never
 
 ## 10. Next step
 
-The result ends with exactly one line `Next step: <skill> - <one-line reason>`:
+The result ends with exactly one line ``Next step: `/<skill>` - <one-line reason>``
+(`$<skill>` in Codex; the names in the table are bare, `none` stays plain text):
 
 Only `Review` lines whose mode is `code`, or `re-review` after a code review, count as a
 review of the implementation in this table. A `Review` line with `mode document` (a spec

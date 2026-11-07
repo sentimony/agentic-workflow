@@ -2,8 +2,7 @@
 
 ## Layout
 
-- `.claude-plugin/plugin.json` - Claude Code manifest; discovers root `skills/` implicitly.
-- `.codex-plugin/plugin.json` - Codex manifest; reads `./skills/`.
+- `plugin.json` - the full manifest: it carries `skills: "./skills/"` and the Codex `interface` under `extensions.com.openai`. A hidden manifest exists only for a host listed in `KEPT_HIDDEN` of `scripts/check_plugin_layout.py`.
 - `skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
   `claude-review.yml` separates the gate, read-only reviewer, trusted publish, API-only
@@ -28,9 +27,7 @@
 ## Rules
 
 - New skill: place it in root `skills/`; frontmatter `name` equals the directory.
-  `plugin.json` is portable; `.codex-plugin/plugin.json` retains the complete OpenAI
-  interface fallback. Claude Code and Antigravity discover root skills implicitly.
-  Keep name/version equal across all four manifests; do not repeat default skill paths.
+  The root `plugin.json` is the full manifest: it carries `skills: "./skills/"` and the Codex `interface` under `extensions.com.openai`. A hidden manifest exists only for a host listed in `KEPT_HIDDEN` of `scripts/check_plugin_layout.py`; keep its name/version equal to the root.
 - Versions: patch bumps; manifest `version` equals the release tag without `v`; the top
   `CHANGELOG.md` entry matches `metadata.version`. README shows the repository
   version, each plugin version, and each skill version.

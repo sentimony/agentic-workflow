@@ -3,7 +3,7 @@ name: cr-received
 description: You MUST use this when findings from a code review, pull request comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix - a cr-request result, a spec or plan review, or a reviewer's message - in any programming language. Verifies each finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, records the decisions in the plan's execution record or the spec's verification record, commits each round's fixes locally, and routes back to verify. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.10"
+  version: "0.0.11"
 license: MIT
 ---
 
@@ -323,7 +323,10 @@ Document review: `Changed paths` lists changed sections, `Previous verification`
 the file's new `sha256`, and `Route` is `plan-craft` for a plan, `specify` for a spec.
 A spec whose accepted fix was material now reads `Status: draft`; the report says so.
 
-The last line of the result, right after the block, is `Next step: <skill> - <reason>`:
+The last line of the result, right after the block, is `Next step: <skill> - <reason>`.
+Name the skill in `Next step` as inline code in the host's invocation form: `/<skill>` in
+Claude Code, `$<skill>` in Codex; `none` stays plain text. Skill names in the list below
+are shown bare:
 
 - `Route: verify` -> `Next step: verify - <fixes to check on the new tree>`;
 - `Route: specify` -> `Next step: specify - <the spec decision to revisit>`; after a

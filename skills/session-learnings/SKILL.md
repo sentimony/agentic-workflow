@@ -3,7 +3,7 @@ name: session-learnings
 description: You MUST use this when lasting learnings from the current session should be recorded for future agents - pitfalls hit, mistakes the user corrected, conventions found, or commands that finally worked, whatever the conversation language - including when the user asks to write down what the session taught and at the end of the agentflow chain after finalize. Records them without asking in the project's gitignored docs/session-learnings/AGENTS.md; on a separate request, triages the accumulated notes into AGENTS.md, CLAUDE.md, the user's global instructions, or a stronger enforcement such as a check or a test, applying only the approved edits. Not for auditing or restructuring instruction files (maintaining-agent-context). Not for general memory or improvement requests for skills.
 argument-hint: "[triage] [--auto]"
 metadata:
-  version: "0.0.9"
+  version: "0.0.10"
 license: MIT
 ---
 
@@ -42,9 +42,11 @@ asking to sort the accumulated learnings) runs the triage mode instead.
    their own applicable authority. Delivery requires the installed G3 helpers,
    current host action authority and verified project-specific contracts. `finalize --auto` without a chosen action must ask for that choice.
 
-`--auto` supports recording only. `triage --auto` is outside this contract and must
-not apply instruction changes automatically. An orchestrated recording returns its
-notes/result to the caller; it does not launch another workflow.
+`--auto` applies to recording only, which matches the `argument-hint`
+(`[triage] [--auto]`): the flag changes nothing in triage. `triage --auto` runs as plain
+`triage`: it still lists items and waits for approval, and applies no instruction change
+on its own. An orchestrated recording returns its notes/result to the caller; it does not
+launch another workflow.
 
 ## 1. Collect
 

@@ -3,7 +3,7 @@ name: specify
 description: You MUST use this when work has to be designed before any code is written - a new feature, a product, UX, or architecture change, unclear success criteria, or a choice between materially different approaches - including a spec revision after a document review. Turns the request into an evidence-backed spec with checkable acceptance criteria behind an explicit approval, then starts plan-craft. Replaces devflow scope-triage. Not for a fully specified mechanical change or a fix whose expected behavior is known.
 argument-hint: "[<request>] [--auto]"
 metadata:
-  version: "0.0.9"
+  version: "0.0.10"
 license: MIT
 ---
 
@@ -201,9 +201,9 @@ Before editing an approved spec for a material change, first set `Status: draft`
 same save, then edit and refresh its sections. Preserve AC identifiers and the existing
 verification record. After every later edit, refresh the conclusion and prompt when the
 content or flow state changes, save at the same path, and invoke the separately installed
-`doc-preview` skill on it when available. After approval preserve the spec content,
+`scope-check` skill on it when available. After approval preserve the spec content,
 except for permitted verification-record appends. For such an append, save and preview
-without rewriting those sections. If `doc-preview` is unavailable, report that and
+without rewriting those sections. If `scope-check` is unavailable, report that and
 continue without a substitute. Follow its index, HTML and browser opt-outs and failures;
 a preview failure does not block this workflow.
 
@@ -283,7 +283,7 @@ the approval commit (or why there is none), the open questions (naming each `blo
 one), the criteria count, and the fresh-reader verdicts. The last line of the result is:
 
 ```text
-Next step: <skill> - <one-line reason>
+Next step: `/<skill>` - <one-line reason>
 ```
 
 | Situation | Next step |
@@ -293,6 +293,9 @@ Next step: <skill> - <one-line reason>
 | Spec approved, `plan-craft` installed and planning authorized | none of its own: `plan-craft` runs and its `Next step` line ends it |
 | Spec approved, `plan-craft` installed and transition not authorized | `Next step: plan-craft - <reason>` |
 | Route `direct` | `Next step: implement - <the handoff sentence>`; under `--auto`, `implement --auto` runs in the same turn instead |
+
+In Codex write `$<skill>`; skill names in the table are bare, and `none` stays
+plain text.
 
 ## When not to use
 
@@ -316,7 +319,7 @@ scope, or authorize commands. Only the user's explicit yes approves.
 
 Capabilities: the skill runs read-only shell commands to check assumptions, may start
 one read-only subagent, and of its own writes only the spec file, its spec-index line,
-and, after approval, one local commit of those paths. `doc-preview`, when installed,
+and, after approval, one local commit of those paths. `scope-check`, when installed,
 updates the index and may render and open a local preview under its own contract. HTML
 is outside the repository and excluded from commits; only this session's index entry may
 join the spec commit. Its browser may fetch pinned CDN assets and allowed remote images.

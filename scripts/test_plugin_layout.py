@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from check_plugin_layout import check_layout, compare_entries
+from check_plugin_layout import HIDDEN_PATHS, check_layout, compare_entries
 
 
 class LayoutTests(unittest.TestCase):
@@ -17,32 +17,89 @@ class LayoutTests(unittest.TestCase):
             p = self.root / 'skills' / name / 'SKILL.md'
             p.parent.mkdir(parents=True)
             p.write_text(f'---\nname: {name}\ndescription: Fixture\n---\n')
-        self.manifests = {
-            'plugin.json': {'$schema': 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'},
-            '.claude-plugin/plugin.json': {},
-            '.codex-plugin/plugin.json': {'skills': './skills/', 'interface': {'displayName': 'Fixture'}},
-            '.antigravity-plugin/plugin.json': {'$schema': 'https://antigravity.google/schemas/v1/plugin.json'},
+        self.interface = {'displayName': 'Fixture'}
+        self.root_manifest = {
+            '$schema': 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json',
+            'name': 'agentflow', 'version': '1.2.3', 'description': 'Fixture',
+            'skills': './skills/',
+            'extensions': {'com.openai': {'interface': dict(self.interface)}},
         }
-        for path, data in self.manifests.items():
-            data.update(name='agentflow', version='1.2.3', description='Fixture')
-            self.write(path, data)
+        self.write('plugin.json', self.root_manifest)
         (self.root / 'CHANGELOG.md').write_text('## [1.2.3] - 2026-10-31\n')
+
+    def hidden(self, path):
+        data = {'name': 'agentflow', 'version': '1.2.3', 'description': 'Fixture'}
+        if path == '.codex-plugin/plugin.json':
+            data.update(skills='./skills/', interface=dict(self.interface))
+        if path == '.antigravity-plugin/plugin.json':
+            data['$schema'] = 'https://antigravity.google/schemas/v1/plugin.json'
+        self.write(path, data)
+        return data
 
     def write(self, path, data):
         p = self.root / path
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(data))
 
-    def fails(self, text):
-        self.assertTrue(any(text in error for error in check_layout(self.root)), check_layout(self.root))
+    def fails(self, text, kept=()):
+        errors = check_layout(self.root, kept)
+        self.assertTrue(any(text in error for error in errors), errors)
 
-    def test_root_layout_passes(self):
-        self.assertEqual(check_layout(self.root), [])
+    def test_root_only_layout_passes(self):
+        self.assertEqual(check_layout(self.root, ()), [])
+
+    def test_returned_hidden_manifest_rejected(self):
+        for path in HIDDEN_PATHS:
+            with self.subTest(path=path):
+                self.hidden(path)
+                self.fails('hidden manifest returned')
+                (self.root / path).unlink()
+
+    def test_kept_hidden_manifests_pass(self):
+        for path in HIDDEN_PATHS:
+            self.hidden(path)
+        self.assertEqual(check_layout(self.root, HIDDEN_PATHS), [])
+
+    def test_kept_manifest_missing_rejected(self):
+        self.fails('.codex-plugin/plugin.json', kept=('.codex-plugin/plugin.json',))
+
+    def test_kept_manifest_empty_rejected(self):
+        for path in HIDDEN_PATHS:
+            with self.subTest(path=path):
+                self.write(path, {})
+                self.fails(f'{path}: identity', kept=(path,))
+
+    def test_kept_codex_interface_must_match_root(self):
+        data = self.hidden('.codex-plugin/plugin.json')
+        data['interface'] = {'displayName': 'Other'}
+        self.write('.codex-plugin/plugin.json', data)
+        self.fails('interface', kept=('.codex-plugin/plugin.json',))
+
+    def test_kept_identity_mismatch_rejected(self):
+        data = self.hidden('.claude-plugin/plugin.json')
+        data['version'] = '1.2.2'
+        self.write('.claude-plugin/plugin.json', data)
+        self.fails('identity', kept=('.claude-plugin/plugin.json',))
+
+    def test_kept_claude_skills_field_rejected(self):
+        data = self.hidden('.claude-plugin/plugin.json')
+        data['skills'] = ['./skills/first']
+        self.write('.claude-plugin/plugin.json', data)
+        self.fails('duplicate', kept=('.claude-plugin/plugin.json',))
+
+    def test_root_skills_path_required(self):
+        self.root_manifest['skills'] = './plugins/aw/skills/'
+        self.write('plugin.json', self.root_manifest)
+        self.fails('skills path')
+
+    def test_root_openai_interface_required(self):
+        self.root_manifest['extensions'] = {}
+        self.write('plugin.json', self.root_manifest)
+        self.fails('interface')
 
     def test_previous_plugin_identity_rejected(self):
-        for path, data in self.manifests.items():
-            data['name'] = 'aw'
-            self.write(path, data)
+        self.root_manifest['name'] = 'aw'
+        self.write('plugin.json', self.root_manifest)
         self.fails('root identity')
 
     def test_empty_discovery_rejected(self):
@@ -56,48 +113,18 @@ class LayoutTests(unittest.TestCase):
         p.write_text('---\nname: third\n---\n')
         self.fails('outside root')
 
-    def test_wrong_codex_path_rejected(self):
-        self.manifests['.codex-plugin/plugin.json']['skills'] = './plugins/aw/skills/'
-        self.write('.codex-plugin/plugin.json', self.manifests['.codex-plugin/plugin.json'])
-        self.fails('skills path')
-
-    def test_identity_mismatch_rejected(self):
-        self.manifests['.claude-plugin/plugin.json']['name'] = 'other'
-        self.write('.claude-plugin/plugin.json', self.manifests['.claude-plugin/plugin.json'])
-        self.fails('identity')
-
-    def test_version_mismatch_rejected(self):
-        self.manifests['.antigravity-plugin/plugin.json']['version'] = '1.2.2'
-        self.write('.antigravity-plugin/plugin.json', self.manifests['.antigravity-plugin/plugin.json'])
-        self.fails('identity')
-
     def test_release_mismatch_rejected(self):
         (self.root / 'CHANGELOG.md').write_text('## [1.2.4]\n')
         self.fails('release')
-
-    def test_duplicate_discovery_rejected(self):
-        self.manifests['.claude-plugin/plugin.json']['skills'] = ['./skills/first']
-        self.write('.claude-plugin/plugin.json', self.manifests['.claude-plugin/plugin.json'])
-        self.fails('duplicate')
 
     def test_duplicate_frontmatter_name_rejected(self):
         (self.root / 'skills/second/SKILL.md').write_text('---\nname: first\n---\n')
         self.fails('duplicate skill name')
 
     def test_nonportable_fields_rejected(self):
-        self.manifests['plugin.json']['interface'] = {}
-        self.write('plugin.json', self.manifests['plugin.json'])
+        self.root_manifest['interface'] = {}
+        self.write('plugin.json', self.root_manifest)
         self.fails('unsupported')
-
-    def test_conflicting_openai_settings_rejected(self):
-        self.manifests['plugin.json']['extensions'] = {'com.openai': {}}
-        self.write('plugin.json', self.manifests['plugin.json'])
-        self.fails('OpenAI')
-
-    def test_missing_compatibility_interface_rejected(self):
-        del self.manifests['.codex-plugin/plugin.json']['interface']
-        self.write('.codex-plugin/plugin.json', self.manifests['.codex-plugin/plugin.json'])
-        self.fails('interface')
 
     def test_malformed_manifest_rejected(self):
         (self.root / 'plugin.json').write_text('{')

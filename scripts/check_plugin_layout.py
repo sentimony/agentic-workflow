@@ -12,11 +12,24 @@ PORTABLE_SCHEMA = 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'
 AGY_SCHEMA = 'https://antigravity.google/schemas/v1/plugin.json'
 METADATA = {'$schema', 'name', 'version', 'description', 'author', 'homepage',
             'repository', 'license', 'keywords', 'extensions'}
-MANIFESTS = ('plugin.json', '.claude-plugin/plugin.json',
-             '.codex-plugin/plugin.json', '.antigravity-plugin/plugin.json')
+HIDDEN_PATHS = ('.claude-plugin/plugin.json', '.codex-plugin/plugin.json',
+                '.antigravity-plugin/plugin.json')
+# Hidden manifests kept because their host probe did not pass; see the README.
+KEPT_HIDDEN = ()
 
 
-def check_layout(root):
+def load_manifest(root, relative, errors):
+    try:
+        data = json.loads((root / relative).read_text(encoding='utf-8'))
+        if not isinstance(data, dict):
+            raise ValueError('manifest must be an object')
+        return data
+    except (OSError, ValueError) as exc:
+        errors.append(f'{relative}: {exc}')
+        return None
+
+
+def check_layout(root, kept=KEPT_HIDDEN):
     """Check current metadata and discovery without freezing skill contents."""
     root = Path(root)
     errors = []
@@ -39,40 +52,45 @@ def check_layout(root):
     for directory in (root / 'skills').iterdir() if (root / 'skills').is_dir() else []:
         if directory.is_dir() and not (directory / 'SKILL.md').is_file():
             errors.append(f'{directory}: missing SKILL.md')
-    manifests = {}
-    for relative in MANIFESTS:
-        try:
-            data = json.loads((root / relative).read_text(encoding='utf-8'))
-            if not isinstance(data, dict):
-                raise ValueError('manifest must be an object')
-            manifests[relative] = data
-        except (OSError, ValueError) as exc:
-            errors.append(f'{relative}: {exc}')
-    canonical = manifests.get('plugin.json', {})
+    canonical = load_manifest(root, 'plugin.json', errors) or {}
     identity = (canonical.get('name'), canonical.get('version'))
     if identity[0] != 'agentflow' or not isinstance(identity[1], str) or not re.fullmatch(r'\d+\.\d+\.\d+', identity[1]):
         errors.append('root identity must be agentflow with a semver version')
-    for relative, data in manifests.items():
+    if canonical.get('$schema') != PORTABLE_SCHEMA:
+        errors.append('plugin.json: incorrect portable schema')
+    unknown = set(canonical) - METADATA - {'skills'}
+    if unknown:
+        errors.append(f'plugin.json: unsupported metadata fields {sorted(unknown)}')
+    if canonical.get('skills') != './skills/':
+        errors.append('plugin.json: skills path must be ./skills/')
+    extensions = canonical.get('extensions')
+    openai = extensions.get('com.openai') if isinstance(extensions, dict) else None
+    interface = openai.get('interface') if isinstance(openai, dict) else None
+    if not isinstance(interface, dict) or not interface:
+        errors.append('plugin.json: extensions.com.openai.interface must be a non-empty object')
+    for relative in HIDDEN_PATHS:
+        if relative not in kept:
+            if (root / relative).exists():
+                errors.append(f'{relative}: hidden manifest returned; the root plugin.json is the only manifest')
+            continue
+        data = load_manifest(root, relative, errors)
+        if data is None:
+            continue
         if (data.get('name'), data.get('version')) != identity:
             errors.append(f'{relative}: identity name/version differs from root')
-        if relative in ('plugin.json', '.antigravity-plugin/plugin.json'):
-            unknown = set(data) - METADATA
-            if unknown:
-                errors.append(f'{relative}: unsupported metadata fields {sorted(unknown)}')
-        if relative != '.codex-plugin/plugin.json' and 'skills' in data:
-            errors.append(f'{relative}: explicit skills can duplicate default discovery')
         if relative == '.codex-plugin/plugin.json':
             if data.get('skills') != './skills/':
                 errors.append(f'{relative}: skills path must be ./skills/')
-            if not isinstance(data.get('interface'), dict) or not data['interface']:
-                errors.append(f'{relative}: preserve the complete compatibility interface')
-    if canonical.get('$schema') != PORTABLE_SCHEMA:
-        errors.append('plugin.json: incorrect portable schema')
-    if manifests.get('.antigravity-plugin/plugin.json', {}).get('$schema') != AGY_SCHEMA:
-        errors.append('.antigravity-plugin/plugin.json: incorrect schema')
-    extensions = canonical.get('extensions', {})
-    if not isinstance(extensions, dict) or 'com.openai' in extensions:
-        errors.append('plugin.json: OpenAI settings must come solely from compatibility manifest')
+            if data.get('interface') != interface:
+                errors.append(f'{relative}: interface differs from extensions.com.openai.interface')
+        elif 'skills' in data:
+            errors.append(f'{relative}: explicit skills can duplicate default discovery')
+        if relative == '.antigravity-plugin/plugin.json':
+            if data.get('$schema') != AGY_SCHEMA:
+                errors.append(f'{relative}: incorrect schema')
+            unsupported = set(data) - METADATA
+            if unsupported:
+                errors.append(f'{relative}: unsupported metadata fields {sorted(unsupported)}')
     try:
         release = re.search(r'^## \[(\d+\.\d+\.\d+)\]', (root / 'CHANGELOG.md').read_text(encoding='utf-8'), re.M)
         if not release or release.group(1) != identity[1]:

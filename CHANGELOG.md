@@ -3,6 +3,20 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.22] - 2026-11-07
+
+1. The root `plugin.json` is the only plugin manifest: it carries `skills` and the Codex
+   `interface` under `extensions.com.openai`; no hidden manifests remain. Claude Code,
+   Codex and Antigravity installed the plugin and invoked a skill from it (host-matrix-v2).
+2. cr-request 0.0.16: add a prose-only review kind (`20261003-0939`).
+3. plan-craft 0.0.11, cr-received 0.0.11, verify 0.0.11, specify 0.0.10, finalize 0.0.11
+   and implement 0.0.11: name the skill in `Next step` in the host's invocation form,
+   `/<skill>` in Claude Code or `$<skill>` in Codex (`20261024-2217`).
+4. specify 0.0.10 and plan-craft 0.0.11: the preview handoff names `scope-check` again,
+   matching skills 0.0.101.
+5. session-learnings 0.0.10: `triage --auto` runs as plain `triage` (`20261003-1418`).
+6. resolve-issue 0.0.3: without an issue argument, ask which issue to take and stop.
+
 ## [0.0.21] - 2026-11-05
 
 1. specify 0.0.9 and plan-craft 0.0.10: add localized conclusion and state-aware

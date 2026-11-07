@@ -3,20 +3,20 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.
 
-Version: `v0.0.22`
+Version: `v0.0.23`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [agentflow](.) | 0.0.22 | resolve-issue, specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
+| [agentflow](.) | 0.0.23 | resolve-issue, specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
 
 ## Skills
 
 | Skill | Version | Command | Description |
 | --- | --- | --- | --- |
-| [specify](skills/specify/SKILL.md) | 0.0.10 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
-| [plan-craft](skills/plan-craft/SKILL.md) | 0.0.11 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
+| [specify](skills/specify/SKILL.md) | 0.0.11 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
+| [plan-craft](skills/plan-craft/SKILL.md) | 0.0.12 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
 | [implement](skills/implement/SKILL.md) | 0.0.11 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
 | [verify](skills/verify/SKILL.md) | 0.0.11 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
 | [cr-request](skills/cr-request/SKILL.md) | 0.0.16 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; show compact verdicts with a persistent full report and structured action identities. |
@@ -26,7 +26,7 @@ Version: `v0.0.22`
 | [session-learnings](skills/session-learnings/SKILL.md) | 0.0.10 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 
 `specify` and `plan-craft` use the separately installed
-[`scope-check`](https://github.com/sentimony/skills/tree/main/skills/scope-check) skill
+[`doc-preview`](https://github.com/sentimony/skills/tree/main/skills/doc-preview) skill
 for document previews. If it is unavailable, they report that and continue.
 
 ## Workflow

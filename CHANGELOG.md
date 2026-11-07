@@ -3,6 +3,12 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.23] - 2026-11-07
+
+1. specify 0.0.11 and plan-craft 0.0.12: the preview handoff names `doc-preview`,
+   matching skills 0.0.102, where `scope-check` is renamed to `doc-preview`
+   (`20261031-2038`).
+
 ## [0.0.22] - 2026-11-07
 
 1. The root `plugin.json` is the only plugin manifest: it carries `skills` and the Codex

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.11] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
+
+1. Name the skill in the `Next step` line as inline code in the host's invocation form
+   (`/<skill>` in Claude Code, `$<skill>` in Codex); `none` stays plain text
+   (`20261024-2217`).
+
 ## [0.0.10] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
 
 1. Initialize required submodules at their pinned commits before clean-clone checks;

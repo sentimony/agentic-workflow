@@ -32,7 +32,7 @@ Bar check: <weakening found, with path and line, or none>
 Review blockers: <IDs with severity and disposition, or none>
 Verdict: PASS | FAIL | INCOMPLETE (<owner> - <next action>) | BLOCKED (<what stops the check>)
 Record: Verify: <verdict> full tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
-Next step: <skill> - <one-line reason>
+Next step: `/<skill>` - <one-line reason>
 ```
 
 ## Compact report
@@ -41,7 +41,7 @@ Next step: <skill> - <one-line reason>
 Verdict: <verdict>   Tree: <full tree ID>
 <only rows whose status is not passed, in the matrix form>
 Record: Verify: <verdict> compact tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
-Next step: <skill> - <one-line reason>
+Next step: `/<skill>` - <one-line reason>
 ```
 
 A compact `PASS` lists no rows. A compact report never stands in for the full matrix:

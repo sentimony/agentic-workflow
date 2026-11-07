@@ -140,7 +140,8 @@ Lenses for each axis, language-agnostic, are in [lenses.md](references/lenses.md
   checkable, no placeholders). Fields: [brief.md](references/brief.md),
   [target.md](references/target.md).
 - **Prose-only** - a document or article text with code excluded: the same read-only
-  reviewer and target identity, with the scope in [brief.md](references/brief.md) "Prose-only kind".
+  reviewer and target identity, recorded as `mode document`, with the scope in
+  [brief.md](references/brief.md) "Prose-only kind".
 
 ## 6. Check the result
 

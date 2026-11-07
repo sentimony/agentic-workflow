@@ -1,5 +1,7 @@
 # Agentflow
 
+[![Claude Review](https://github.com/sentimony/agentic-workflow/actions/workflows/auto-reviewer.yaml/badge.svg)](https://github.com/sentimony/agentic-workflow/actions/workflows/auto-reviewer.yaml)
+
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.
 
@@ -159,7 +161,7 @@ npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify
 
 ## Review operations
 
-Automatic yngwald reviews use Sonnet 5.5 medium and a default limit of five reviews.
+Automatic yngwald reviews use Sonnet 5.5 medium and a default limit of ten reviews.
 One `auto-review-rounds-N` label overrides the limit for that PR. Inspect its review
 jobs with:
 

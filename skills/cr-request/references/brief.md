@@ -134,7 +134,7 @@ GitHub review ID or a host disposition.
 The skill, not the reviewer, adds the closing lines. It ends the result with
 ``Next step: `/<skill>` - <reason>``. When the caller requires a closing line, that line
 goes right before the `Next step` line, in its exact text, and the `Next step` line
-stays the very last one. The CI auto-review (`claude-review.yml`) requires the
+stays the very last one. The CI auto-review (`auto-reviewer.yaml`) requires the
 signature ``Reviewed with: `/cr-request` <version> skill``, backticks included, where
 `<version>` is the skill's `metadata.version`, followed by the `Next step` line as
 the last line, with each skill as inline code with a leading slash, its arguments
@@ -157,7 +157,7 @@ The two closing lines of a CI review body match these POSIX extended regular
 expressions, as bash `[[ =~ ]]` reads them; a port to another regex dialect replaces
 `[^[:space:]]` with its own class (`\S` in a JavaScript `RegExp`). `<version>` is the
 skill's `metadata.version` with each `.` escaped. Before the match, the validator in
-`claude-review.yml`, the source of truth, removes every `\r`, drops the lines that hold
+`auto-reviewer.yaml`, the source of truth, removes every `\r`, drops the lines that hold
 only whitespace, takes the last two remaining lines, and strips trailing whitespace
 from each.
 

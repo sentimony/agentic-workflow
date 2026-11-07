@@ -3,6 +3,7 @@
 ## [0.0.17] - 2026-11-07
 
 1. Comments name `transfer-context`, the new name of `context-transfer`.
+2. Point CI review guidance to the renamed `auto-reviewer.yaml` workflow.
 
 ## [0.0.16] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 

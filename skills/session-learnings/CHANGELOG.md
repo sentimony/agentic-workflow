@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.11] - 2026-11-07
+
+1. Name `agent-instructions`, the new name of `maintaining-agent-context`.
+
 ## [0.0.10] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 
 1. State that `triage --auto` runs as plain `triage`, listing items and waiting for

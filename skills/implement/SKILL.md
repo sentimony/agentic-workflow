@@ -3,7 +3,7 @@ name: implement
 description: You MUST use this when an existing implementation plan is to be executed, either directly in the current session or through subagents, including resuming an interrupted execution from the plan's execution record, or when one or two edits with an obvious approach need doing without a plan. Covers task-by-task execution with evidence, drift handling and blockers, and a resumable execution record. Replaces devflow inline-plan-dev and subagent-plan-dev. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize).
 argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents] [--auto]"
 metadata:
-  version: "0.0.10"
+  version: "0.0.11"
 license: MIT
 ---
 
@@ -325,6 +325,10 @@ It takes precedence over the table's ordinary completion row.
 | the Round rule stopped a task | `Next step: none - <cause>, awaiting user` |
 | a failing claim of the last `Verify` has no task, or, with no plan, the change is more than one or two obvious edits | `Next step: plan-craft - <the claim, or why a plan is needed>` |
 | all tasks are `done` except `Outward` tasks still waiting for a full `PASS`, or the edit without a plan has its evidence (a task-less plan-journal from before 0.0.5: `Base` and its evidence) | `Next step: verify - all tasks done, check the tree` |
+
+Name the skill in `Next step` as inline code in the host's invocation form: `/<skill>`
+in Claude Code, `$<skill>` in Codex; `none` stays plain text. Skill names in the rows
+above are shown bare.
 
 `done` here is a task state, not a claim that the work is complete; that claim belongs to
 `verify`.

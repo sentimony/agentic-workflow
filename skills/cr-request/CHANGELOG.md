@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.16] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
+
+1. Add a prose-only review kind to the brief and the Target section: the same read-only
+   reviewer limited to the text of a document or article, with code reported as
+   UNASSESSED (20261003-0939).
+
 ## [0.0.15] - 2026-11-04 - [0.0.20](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.20)
 
 1. Review the whole document when neither the previous tree nor head provides a usable

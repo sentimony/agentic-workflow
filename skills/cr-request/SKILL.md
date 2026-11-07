@@ -3,7 +3,7 @@ name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
 argument-hint: "[<base-ref>] [<spec-path>] [--auto]"
 metadata:
-  version: "0.0.15"
+  version: "0.0.16"
 license: MIT
 ---
 
@@ -139,6 +139,8 @@ Lenses for each axis, language-agnostic, are in [lenses.md](references/lenses.md
   with the repository and neighboring documents), Craft (every acceptance criterion is
   checkable, no placeholders). Fields: [brief.md](references/brief.md),
   [target.md](references/target.md).
+- **Prose-only** - a document or article text with code excluded: the same read-only
+  reviewer and target identity, with the scope in [brief.md](references/brief.md) "Prose-only kind".
 
 ## 6. Check the result
 

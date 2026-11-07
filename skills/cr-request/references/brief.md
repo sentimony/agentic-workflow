@@ -73,6 +73,19 @@ Fill every field with task-specific content; drop empty fields instead of paddin
     neighboring documents. Craft: every acceptance criterion is checkable and
     nothing is a placeholder. Locations are section references: §<heading>.
 
+### Prose-only kind
+
+    Use this when the caller limits the review to the text of a document or article. Name
+    the reader, the goal, the requirements document, and the exact text boundary. Text
+    counts wherever it sits, including template markup and table strings in a script block.
+    Check clarity, terms, internal consistency, conditions, numeric thresholds, time windows,
+    and decision rules, as far as the text and the given requirements allow. Read the whole
+    chosen text again, including unchanged related passages; after new commits, take the new
+    diff first. Report code and engineering as UNASSESSED when the caller excludes code.
+    Keep consistency apart from factual accuracy: when the primary source is missing, name
+    the claims left unchecked. Use this skill's severity and verdicts; severity follows the
+    impact in this review contract, not a fixed mapping from another scale.
+
 ## Result contract
 
     Target reviewed: <identity, with Tree; sha256 for a document>

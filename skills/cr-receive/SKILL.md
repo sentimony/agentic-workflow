@@ -1,6 +1,9 @@
 ---
 name: cr-receive
 description: Inform users that cr-receive has been renamed to cr-received and show how to install the replacement. Use when a user invokes cr-receive or asks about its new name.
+metadata:
+  version: "0.0.1"
+license: MIT
 ---
 
 # CR Receive has moved

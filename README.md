@@ -24,7 +24,7 @@ Version: `v0.0.23`
 | [finalize](skills/finalize/SKILL.md) | 0.0.11 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
 | [resolve-issue](skills/resolve-issue/SKILL.md) | 0.0.3 | `/resolve-issue` | Run issue intake through configured delivery with durable recovery and fresh host authority. |
 | [session-learnings](skills/session-learnings/SKILL.md) | 0.0.11 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
-| [cr-receive](skills/cr-receive/SKILL.md) | - | `/cr-receive` | Migration notice for the renamed `cr-received` skill. |
+| [cr-receive](skills/cr-receive/SKILL.md) | 0.0.1 | `/cr-receive` | Migration notice for the renamed `cr-received` skill. |
 
 `specify` and `plan-craft` use the separately installed
 [`doc-preview`](https://github.com/sentimony/skills/tree/main/skills/doc-preview) skill

@@ -3,6 +3,8 @@
 ## [0.0.12] - 2026-11-07
 
 1. Comment names `transfer-context`, the new name of `context-transfer`.
+2. The description names the replaced devflow skills `plan-execution` and `plan-orchestration`
+   (were `inline-plan-dev` and `subagent-plan-dev`).
 
 ## [0.0.11] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 

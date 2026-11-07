@@ -2,7 +2,7 @@
 
 ## [0.0.17] - 2026-11-07
 
-1. Update references to the renamed `pr-review.yml` workflow.
+1. Update references to the renamed `auto-reviewer.yaml` workflow.
 
 ## [0.0.16] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 

@@ -250,7 +250,8 @@ The last line of the result is the next step:
 | Result | Last line |
 | --- | --- |
 | Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | ``Next step: `/cr-received` - <n> findings to rule on`` |
-| Clean document review (mode `document`, or its re-review) | ``Next step: `/implement` - <plan path>`` for a plan, ``Next step: `/plan-craft` - <spec path>`` for an approved spec, `Next step: none - <spec path> is a draft, awaiting approval` for any other spec |
+| Clean plan or spec review (mode `document`, or its re-review) | ``Next step: `/implement` - <plan path>`` for a plan, ``Next step: `/plan-craft` - <spec path>`` for an approved spec, `Next step: none - <spec path> is a draft, awaiting approval` for any other spec |
+| Clean prose-only review (mode `document`, target neither a spec nor a plan) | `Next step: none - <document path> reviewed` |
 | Clean, and a full `Verify: PASS` exists on this tree | ``Next step: `/finalize` - reviewed and verified on this tree`` |
 | Clean, no full `Verify: PASS` on this tree | ``Next step: `/verify` - review is clean, verification missing on this tree`` |
 | `REVIEWER UNAVAILABLE` | `Next step: none - choose another reviewer or retry` |

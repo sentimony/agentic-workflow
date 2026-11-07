@@ -91,10 +91,16 @@ establish live acceptance or authorize outward actions.
 
 ## Install
 
+Since `v0.0.22` the root `plugin.json` is the only manifest. Checked on 2026-11-07
+with Claude Code 2.1.319, Codex 0.166.0, Antigravity 1.5.2: Codex and Antigravity read
+it; Claude Code installs the plugin from the standard layout and the marketplace entry.
+Installation and skill invocation both passed on all three hosts.
+
 Version `0.0.15` renames the plugin from `aw` to `agentflow` after the separate
 root-layout release. The repository remains `sentimony/agentic-workflow`. Native
-installation, upgrade and rollback evidence remains unverified under the owner-approved
-release exception: https://github.com/sentimony/agentic-workflow/issues/29.
+installation was checked on 2026-11-07 (see above); upgrade and rollback evidence
+remains unverified under the owner-approved release exception:
+https://github.com/sentimony/agentic-workflow/issues/29.
 Use the commands below after the matching marketplace update.
 
 ### Migrate an existing aw installation

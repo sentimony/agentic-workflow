@@ -134,22 +134,22 @@ GitHub review ID or a host disposition.
 The skill, not the reviewer, adds the closing lines. It ends the result with
 ``Next step: `/<skill>` - <reason>``. When the caller requires a closing line, that line
 goes right before the `Next step` line, in its exact text, and the `Next step` line
-stays the very last one. The CI auto-review (`auto-reviewer.yaml`) requires the
+stays the very last one. The CI auto-review
+(`sentimony/github-workflows/.github/workflows/auto-reviewer.yaml`) requires the
 signature ``Reviewed with: `/cr-request` <version> skill``, backticks included, where
-`<version>` is the skill's `metadata.version`, followed by the `Next step` line as
-the last line, with each skill as inline code with a leading slash, its arguments
-inside the code span, and ` · ` before a reason. Findings give
-`` Next step: `/cr-received PR #<n>` `` with no reason; a clean review (CI cannot match a
-`Verify` line) gives ``Next step: `/verify <plan path>` -> `/finalize` squash``,
-or ``Next step: `/verify` -> `/finalize` squash`` with no plan found; any other line is
+`<version>` is the skill's `metadata.version`, followed by the `Next step` line as the
+last line, with each skill as inline code with a leading slash, its arguments inside the
+code span, and ` · ` before a reason. Findings give
+`` Next step: `/cr-received PR #<n>` `` with no reason; a clean review (CI cannot match
+a `Verify` line) gives ``Next step: `/verify <plan path>` -> `/finalize` squash``, or
+``Next step: `/verify` -> `/finalize` squash`` with no plan found; any other line is
 ``Next step: `/<skill>` · <reason>``, with `none` as plain text
-(`Next step: none · <reason>`). The skill writes the signature without a duration;
-the workflow may append ` · In <m> min <s> sec` to it afterwards (`In 0 min 42 sec`
-under a minute).
-Only these two CI lines use ` · ` and ` -> `; every other `Next step` line keeps ` - `.
-The workflow chooses what it publishes the body as: a PR review (event `COMMENT`) leaves
-the approval state unchanged and is not counted in the comment count of the PR list,
-while a conversation comment is counted there but is not a review.
+(`Next step: none · <reason>`). The skill writes the signature without a duration; the
+workflow may append ` · In <m> min <s> sec` to it afterwards (`In 0 min 42 sec` under a
+minute). Only these two CI lines use ` · ` and ` -> `; every other `Next step` line
+keeps ` - `. The workflow chooses what it publishes the body as: a PR review (event
+`COMMENT`) leaves the approval state unchanged and is not counted in the comment count
+of the PR list, while a conversation comment is counted there but is not a review.
 
 ### CI footer grammar
 
@@ -157,9 +157,9 @@ The two closing lines of a CI review body match these POSIX extended regular
 expressions, as bash `[[ =~ ]]` reads them; a port to another regex dialect replaces
 `[^[:space:]]` with its own class (`\S` in a JavaScript `RegExp`). `<version>` is the
 skill's `metadata.version` with each `.` escaped. Before the match, the validator in
-`auto-reviewer.yaml`, the source of truth, removes every `\r`, drops the lines that hold
-only whitespace, takes the last two remaining lines, and strips trailing whitespace
-from each.
+`sentimony/github-workflows/.github/workflows/auto-reviewer.yaml`, the source of truth,
+removes every `\r`, drops the lines that hold only whitespace, takes the last two
+remaining lines, and strips trailing whitespace from each.
 
 ```text
 signature: ^Reviewed with: `/cr-request` <version> skill( · In [0-9]+ min [0-9]+ sec)?$

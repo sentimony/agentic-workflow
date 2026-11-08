@@ -160,9 +160,20 @@ npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify
 
 ## Review operations
 
-Automatic yngwald reviews use Sonnet 5.5 medium and a default limit of ten reviews.
-One `auto-review-rounds-N` label overrides the limit for that PR. Inspect its review
-jobs with:
+The caller delegates to `sentimony/github-workflows/.github/workflows/auto-reviewer.yaml`
+using the `validate` CI job adapter. The shared workflow owns the engine and its tests;
+local `scripts/test_auto_reviewer.py` checks the caller contract. Run it with
+`python3 -m unittest discover -s scripts -p 'test_auto_reviewer.py'`.
+
+Repository variables configure the review: `CLAUDE_REVIEW_MODEL` defaults to
+`claude-sonnet-5-5`, `CLAUDE_REVIEW_EFFORT` to `medium`, and
+`CLAUDE_REVIEW_MAX_ROUNDS` to 10 when empty. Invalid values fail before inference.
+`REVIEW_SKILLS_REF` can pin a full SHA instead of the latest released `cr-request`.
+One `auto-review-rounds-N` label overrides the configured round limit; malformed or
+multiple labels fail validation. An explicit yngwald request or dispatch bypasses the
+count while retaining the other guards. The count includes manual reviews.
+
+Inspect the review jobs with:
 
 ```bash
 gh pr checks <number> --repo sentimony/agentic-workflow

@@ -1,6 +1,6 @@
 # Agentflow
 
-[![Claude Review](https://github.com/sentimony/agentic-workflow/actions/workflows/auto-reviewer.yaml/badge.svg)](https://github.com/sentimony/agentic-workflow/actions/workflows/auto-reviewer.yaml)
+[![Auto Reviewer](https://github.com/sentimony/agentic-workflow/actions/workflows/auto-reviewer.yaml/badge.svg)](https://github.com/sentimony/agentic-workflow/actions/workflows/auto-reviewer.yaml)
 
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.

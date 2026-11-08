@@ -1,4 +1,4 @@
-name: Claude Review
+name: Auto Reviewer
 
 on:
   workflow_run:
@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   auto_review:
-    uses: sentimony/github-workflows/.github/workflows/auto-reviewer.yaml@e589d7871bed62551a6a7624c3f28c5cac49a1e7
+    uses: sentimony/github-workflows/.github/workflows/auto-reviewer.yaml@594d50399b925b20f55c331139ca3b56fdb96fc7
     with:
       required-ci-job: validate
       pr: ${{ inputs.pr || '' }}

@@ -35,7 +35,8 @@ def validate(w):
     assert set(job) == {'uses', 'with', 'secrets'}
     assert job['uses'] == 'sentimony/github-workflows/.github/workflows/auto-reviewer.yaml@' + PIN
     assert job['with'] == {'required-ci-job': CI_JOB, 'pr': "${{ inputs.pr || '' }}", 'pr_number': "${{ inputs.pr_number || '' }}"}
-    assert job['secrets'] == {key: '${{ secrets.' + key + ' }}' for key in ('YNGWALD_PR_TOKEN', 'CLAUDE_CODE_OAUTH_TOKEN')}
+    assert job['secrets'] == {'YNGWALD_PR_TOKEN': '${{ secrets.AUTO_REVIEWER_YNGWALD }}',
+                              'CLAUDE_CODE_OAUTH_TOKEN': '${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}'}
 
 
 class CallerContractTest(unittest.TestCase):

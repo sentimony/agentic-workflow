@@ -161,8 +161,10 @@ npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify
 ## Review operations
 
 The caller delegates to `sentimony/github-workflows/.github/workflows/auto-reviewer.yaml`
-using the `validate` CI job adapter. The shared workflow owns the engine and its tests;
-local `scripts/test_auto_reviewer.py` checks the caller contract. Run it with
+using the `validate` CI job adapter and the published `v0.0.1` tag. Adopt later versions
+through a PR that updates the caller and its contract test; published tags never move.
+The shared workflow owns the engine and its tests; local `scripts/test_auto_reviewer.py`
+checks the caller contract. Run it with
 `python3 -m unittest discover -s scripts -p 'test_auto_reviewer.py'`.
 
 Repository variables configure the review: `CLAUDE_REVIEW_MODEL` defaults to

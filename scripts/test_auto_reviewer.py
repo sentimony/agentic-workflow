@@ -7,7 +7,7 @@ import subprocess
 import unittest
 
 WORKFLOW = Path(__file__).resolve().parents[1] / '.github/workflows/auto-reviewer.yaml'
-PIN = 'v0.0.3'
+PIN = 'v0.0.4'
 NAME = 'Auto Reviewer'
 CI_JOB = 'validate'
 
@@ -32,7 +32,7 @@ def validate(w):
     assert set(w['jobs']) == {'auto_review'}
     job = w['jobs']['auto_review']
     assert set(job) == {'uses', 'with', 'secrets'}
-    assert job['uses'] == 'sentimony/github-workflows/.github/workflows/auto-reviewer.yaml@' + PIN
+    assert job['uses'] == 'sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@' + PIN
     assert job['with'] == {'required-ci-job': CI_JOB, 'pr': "${{ inputs.pr || '' }}"}
     assert job['secrets'] == {'AUTO_REVIEWER_YNGWALD': '${{ secrets.AUTO_REVIEWER_YNGWALD }}',
                               'CLAUDE_CODE_OAUTH_TOKEN': '${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}'}
@@ -67,7 +67,7 @@ class CallerContractTest(unittest.TestCase):
                 elif mutation == 'old_ref':
                     job['uses'] = job['uses'].replace('@'+PIN, '@v0.0.1')
                 else:
-                    job['uses'] = job['uses'].replace('/auto-reviewer.yaml@', '/wrong-workflow.yaml@')
+                    job['uses'] = job['uses'].replace('/auto-reviewer-shared.yaml@', '/wrong-workflow.yaml@')
                 with self.assertRaises(AssertionError):
                     validate(w)
 

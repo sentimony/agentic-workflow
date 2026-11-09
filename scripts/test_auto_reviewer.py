@@ -7,7 +7,7 @@ import subprocess
 import unittest
 
 WORKFLOW = Path(__file__).resolve().parents[1] / '.github/workflows/auto-reviewer.yaml'
-PIN = 'v0.0.1'
+PIN = 'v0.0.3'
 NAME = 'Auto Reviewer'
 CI_JOB = 'validate'
 
@@ -25,8 +25,8 @@ def validate(w):
     assert events['workflow_run'] == {'workflows': ['CI'], 'types': ['completed']}
     assert events['pull_request']['types'] == ['opened', 'reopened', 'ready_for_review', 'review_requested', 'closed']
     inputs = events['workflow_dispatch']['inputs']
-    assert set(inputs) == {'pr', 'pr_number'}
-    for key, description in [('pr', 'PR number'), ('pr_number', 'Legacy PR number')]:
+    assert set(inputs) == {'pr'}
+    for key, description in [('pr', 'PR number')]:
         assert inputs[key]['description'] == description and inputs[key]['required'] is False
     assert w['permissions'] == {'actions': 'read', 'contents': 'write', 'pull-requests': 'write', 'issues': 'read', 'statuses': 'write'}
     assert 'concurrency' not in w
@@ -34,14 +34,25 @@ def validate(w):
     job = w['jobs']['auto_review']
     assert set(job) == {'uses', 'with', 'secrets'}
     assert job['uses'] == 'sentimony/github-workflows/.github/workflows/auto-reviewer.yaml@' + PIN
-    assert job['with'] == {'required-ci-job': CI_JOB, 'pr': "${{ inputs.pr || '' }}", 'pr_number': "${{ inputs.pr_number || '' }}"}
-    assert job['secrets'] == {'YNGWALD_PR_TOKEN': '${{ secrets.AUTO_REVIEWER_YNGWALD }}',
+    assert job['with'] == {'required-ci-job': CI_JOB, 'pr': "${{ inputs.pr || '' }}"}
+    assert job['secrets'] == {'AUTO_REVIEWER_YNGWALD': '${{ secrets.AUTO_REVIEWER_YNGWALD }}',
                               'CLAUDE_CODE_OAUTH_TOKEN': '${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}'}
 
 
 class CallerContractTest(unittest.TestCase):
     def test_actual_caller(self):
         validate(load())
+
+    def test_rejects_legacy_pr_number(self):
+        for scope in ('dispatch', 'with'):
+            with self.subTest(scope=scope):
+                w = copy.deepcopy(load())
+                if scope == 'dispatch':
+                    w['on']['workflow_dispatch']['inputs']['pr_number'] = {'description': 'Legacy PR number', 'required': False}
+                else:
+                    w['jobs']['auto_review']['with']['pr_number'] = '42'
+                with self.assertRaises(AssertionError):
+                    validate(w)
 
     def test_rejects_inherit_steps_runner_and_concurrency(self):
         for mutation in ('inherit', 'steps', 'runs-on', 'job_concurrency', 'workflow_concurrency'):

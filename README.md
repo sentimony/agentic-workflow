@@ -160,16 +160,19 @@ npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify
 
 ## Review operations
 
-The caller delegates to `sentimony/github-workflows/.github/workflows/auto-reviewer.yaml`
-using the `validate` CI job adapter and the published `v0.0.1` tag. Adopt later versions
-through a PR that updates the caller and its contract test; published tags never move.
+The caller uses the `validate` CI job adapter. During review it delegates to
+`sentimony/github-workflows/.github/workflows/auto-reviewer.yaml@v0.0.3`.
+After Ready, this PR will pin the upcoming
+`sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@v0.0.4`.
+Publish that tag before merging this consumer. Later upgrades update the caller and
+its contract test together; published tags never move.
 The shared workflow owns the engine and its tests; local `scripts/test_auto_reviewer.py`
 checks the caller contract. Run it with
 `python3 -m unittest discover -s scripts -p 'test_auto_reviewer.py'`.
 
 Live reviews require repository secrets `AUTO_REVIEWER_YNGWALD` and
-`CLAUDE_CODE_OAUTH_TOKEN`. The caller maps `AUTO_REVIEWER_YNGWALD` to the published
-callee's `YNGWALD_PR_TOKEN` input; use separate token values for each repository.
+`CLAUDE_CODE_OAUTH_TOKEN`, mapped to callee inputs with the same names.
+Use separate token values for each repository.
 
 Repository variables configure the review: `CLAUDE_REVIEW_MODEL` defaults to
 `claude-sonnet-5-5`, `CLAUDE_REVIEW_EFFORT` to `medium`, and

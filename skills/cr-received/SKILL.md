@@ -3,7 +3,7 @@ name: cr-received
 description: You MUST use this when findings from a code review, pull request comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix - a cr-request result, a spec or plan review, or a reviewer's message - in any programming language. Verifies each finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, records the decisions in the plan's execution record or the spec's verification record, commits each round's fixes locally, and routes back to verify. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.11"
+  version: "0.0.12"
 license: MIT
 ---
 

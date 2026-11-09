@@ -168,13 +168,9 @@
    despite snapshot exclusion: an accepted trade-off, not a defect for review,
    because stronger OS containment remains a separate design.
 
-- A change to the cr-request output contract (closing lines, footer order, separators) goes
-  into `SKILL.md`, `references/brief.md` (the `Result contract` paragraph and
-  `### CI footer grammar`), the prompt and `next_re` in the shared
-  `sentimony/github-workflows/.github/workflows/auto-reviewer.yaml`, its fixtures, and
-  the top `CHANGELOG.md` entry in a coordinated update using the same terms; find them
-  all with ``git grep -n 'Next step: `/'``. Each place left behind comes back as a
-  separate review finding.
+1. Generic cr-request review output belongs to the skill. Auto Reviewer presentation,
+  footer validation, transport, and their fixtures belong to `sentimony/github-workflows`;
+  preserve compatibility with the generic review result when changing either contract.
 - A review fix that rewords a skill's `SKILL.md` also updates the same wording in that skill's
   unreleased top `CHANGELOG.md` entry, in the same commit.
 - License: MIT, Ihor Orlovskyi.

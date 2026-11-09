@@ -54,6 +54,24 @@ class CallerContractTest(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     validate(w)
 
+    def test_rejects_wrong_workflow_ref_and_secret_contract(self):
+        for mutation in ('legacy_secret', 'missing_secret', 'extra_secret', 'old_ref', 'wrong_path'):
+            with self.subTest(mutation=mutation):
+                w = copy.deepcopy(load())
+                job = w['jobs']['auto_review']
+                if mutation == 'legacy_secret':
+                    job['secrets']['YNGWALD_PR_TOKEN'] = job['secrets'].pop('AUTO_REVIEWER_YNGWALD')
+                elif mutation == 'missing_secret':
+                    del job['secrets']['AUTO_REVIEWER_YNGWALD']
+                elif mutation == 'extra_secret':
+                    job['secrets']['EXTRA'] = '${{ secrets.EXTRA }}'
+                elif mutation == 'old_ref':
+                    job['uses'] = job['uses'].replace('@'+PIN, '@v0.0.1')
+                else:
+                    job['uses'] = job['uses'].replace('/auto-reviewer.yaml@', '/wrong-workflow.yaml@')
+                with self.assertRaises(AssertionError):
+                    validate(w)
+
     def test_rejects_inherit_steps_runner_and_concurrency(self):
         for mutation in ('inherit', 'steps', 'runs-on', 'job_concurrency', 'workflow_concurrency'):
             with self.subTest(mutation=mutation):

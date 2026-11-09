@@ -5,9 +5,10 @@
 - `plugin.json` - the full manifest: it carries `skills: "./skills/"` and the Codex `interface` under `extensions.com.openai`. A hidden manifest exists only for a host listed in `KEPT_HIDDEN` of `scripts/check_plugin_layout.py`.
 - `skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
-  The caller delegates to `sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml`
-  using the `validate` CI job adapter. See README's Review operations for the
-  temporary released-path review phase and the final version pin.
+  The caller uses the `validate` CI job adapter. During migration review it calls
+  `sentimony/github-workflows/.github/workflows/auto-reviewer.yaml@v0.0.3`;
+  after Ready it targets `auto-reviewer-shared.yaml@v0.0.4` in the same repository.
+  See README's Review operations for the release order.
   The shared workflow owns the engine and its tests;
   local `scripts/test_auto_reviewer.py` checks the caller contract. Run it with
   `python3 -m unittest discover -s scripts -p 'test_auto_reviewer.py'`.

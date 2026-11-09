@@ -26,8 +26,7 @@ def validate(w):
     assert events['pull_request']['types'] == ['opened', 'reopened', 'ready_for_review', 'review_requested', 'closed']
     inputs = events['workflow_dispatch']['inputs']
     assert set(inputs) == {'pr'}
-    for key, description in [('pr', 'PR number')]:
-        assert inputs[key]['description'] == description and inputs[key]['required'] is False
+    assert inputs['pr']['description'] == 'PR number' and inputs['pr']['required'] is False
     assert w['permissions'] == {'actions': 'read', 'contents': 'write', 'pull-requests': 'write', 'issues': 'read', 'statuses': 'write'}
     assert 'concurrency' not in w
     assert set(w['jobs']) == {'auto_review'}

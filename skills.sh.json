@@ -21,7 +21,8 @@
       "title": "Renamed skills",
       "description": "Earlier names of renamed skills. No files remain under these names.",
       "skills": [
-        "cr-receive"
+        "cr-receive",
+        "cross-cr"
       ]
     }
   ]

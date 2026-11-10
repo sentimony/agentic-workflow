@@ -1,4 +1,4 @@
-"""Validate the current root package; optionally prove a byte-preserving migration."""
+"""Validate the three-manifest package; optionally prove a byte-preserving migration."""
 import argparse
 import json
 import os
@@ -8,14 +8,16 @@ import stat
 import subprocess
 import sys
 
-PORTABLE_SCHEMA = 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'
 AGY_SCHEMA = 'https://antigravity.google/schemas/v1/plugin.json'
-METADATA = {'$schema', 'name', 'version', 'description', 'author', 'homepage',
-            'repository', 'license', 'keywords', 'extensions'}
-HIDDEN_PATHS = ('.claude-plugin/plugin.json', '.codex-plugin/plugin.json',
-                '.antigravity-plugin/plugin.json')
-# Hidden manifests kept because their host probe did not pass; see the README.
-KEPT_HIDDEN = ()
+BASE = {'name', 'version', 'description', 'author', 'homepage', 'repository',
+        'license', 'keywords'}
+ALLOWED = {
+    '.claude-plugin/plugin.json': BASE,
+    '.codex-plugin/plugin.json': BASE | {'skills', 'interface'},
+    '.antigravity-plugin/plugin.json': BASE | {'$schema', 'displayName',
+                                               'suggestedPrompts', 'category'},
+}
+HIDDEN_PATHS = tuple(ALLOWED)
 
 
 def load_manifest(root, relative, errors):
@@ -29,7 +31,7 @@ def load_manifest(root, relative, errors):
         return None
 
 
-def check_layout(root, kept=KEPT_HIDDEN):
+def check_layout(root):
     """Check current metadata and discovery without freezing skill contents."""
     root = Path(root)
     errors = []
@@ -52,45 +54,32 @@ def check_layout(root, kept=KEPT_HIDDEN):
     for directory in (root / 'skills').iterdir() if (root / 'skills').is_dir() else []:
         if directory.is_dir() and not (directory / 'SKILL.md').is_file():
             errors.append(f'{directory}: missing SKILL.md')
-    canonical = load_manifest(root, 'plugin.json', errors) or {}
-    identity = (canonical.get('name'), canonical.get('version'))
-    if identity[0] != 'agentflow' or not isinstance(identity[1], str) or not re.fullmatch(r'\d+\.\d+\.\d+', identity[1]):
-        errors.append('root identity must be agentflow with a semver version')
-    if canonical.get('$schema') != PORTABLE_SCHEMA:
-        errors.append('plugin.json: incorrect portable schema')
-    unknown = set(canonical) - METADATA - {'skills'}
-    if unknown:
-        errors.append(f'plugin.json: unsupported metadata fields {sorted(unknown)}')
-    if canonical.get('skills') != './skills/':
-        errors.append('plugin.json: skills path must be ./skills/')
-    extensions = canonical.get('extensions')
-    openai = extensions.get('com.openai') if isinstance(extensions, dict) else None
-    interface = openai.get('interface') if isinstance(openai, dict) else None
-    if not isinstance(interface, dict) or not interface:
-        errors.append('plugin.json: extensions.com.openai.interface must be a non-empty object')
+    if (root / 'plugin.json').exists():
+        errors.append('root plugin.json returned; the three hidden manifests are the only manifests')
+    manifests = {}
     for relative in HIDDEN_PATHS:
-        if relative not in kept:
-            if (root / relative).exists():
-                errors.append(f'{relative}: hidden manifest returned; the root plugin.json is the only manifest')
-            continue
         data = load_manifest(root, relative, errors)
-        if data is None:
-            continue
+        if data is not None:
+            manifests[relative] = data
+    claude = manifests.get('.claude-plugin/plugin.json', {})
+    identity = (claude.get('name'), claude.get('version'))
+    if identity[0] != 'agentflow' or not isinstance(identity[1], str) or not re.fullmatch(r'\d+\.\d+\.\d+', identity[1]):
+        errors.append('.claude-plugin/plugin.json: identity must be agentflow with a semver version')
+    for relative, data in manifests.items():
         if (data.get('name'), data.get('version')) != identity:
-            errors.append(f'{relative}: identity name/version differs from root')
+            errors.append(f'{relative}: identity name/version differs from .claude-plugin/plugin.json')
+        unsupported = set(data) - ALLOWED[relative]
+        if unsupported:
+            errors.append(f'{relative}: unsupported metadata fields {sorted(unsupported)}')
         if relative == '.codex-plugin/plugin.json':
             if data.get('skills') != './skills/':
                 errors.append(f'{relative}: skills path must be ./skills/')
-            if data.get('interface') != interface:
-                errors.append(f'{relative}: interface differs from extensions.com.openai.interface')
+            if not isinstance(data.get('interface'), dict) or not data['interface']:
+                errors.append(f'{relative}: interface must be a non-empty object')
         elif 'skills' in data:
             errors.append(f'{relative}: explicit skills can duplicate default discovery')
-        if relative == '.antigravity-plugin/plugin.json':
-            if data.get('$schema') != AGY_SCHEMA:
-                errors.append(f'{relative}: incorrect schema')
-            unsupported = set(data) - METADATA
-            if unsupported:
-                errors.append(f'{relative}: unsupported metadata fields {sorted(unsupported)}')
+        if relative == '.antigravity-plugin/plugin.json' and data.get('$schema') != AGY_SCHEMA:
+            errors.append(f'{relative}: incorrect schema')
     try:
         release = re.search(r'^## \[(\d+\.\d+\.\d+)\]', (root / 'CHANGELOG.md').read_text(encoding='utf-8'), re.M)
         if not release or release.group(1) != identity[1]:
@@ -166,7 +155,7 @@ def main():
     for error in errors:
         print(f'::error::{error}')
     if not errors:
-        print('Root plugin layout PASS')
+        print('Plugin layout PASS')
     return int(bool(errors))
 
 

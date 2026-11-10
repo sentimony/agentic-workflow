@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.12] - 2026-11-10
+
+1. Drop `--auto` from the `argument-hint`, which is now `[triage]`: the flag comes only
+   from an orchestrating chain and applies to recording only (`20261030-0358`).
+2. Keep confidence for the strength of the evidence and record an unverified check as
+   `Check: not checkable - <why>` without lowering the level; the report names broader
+   triage-due conditions: many notes, conflicting or stale notes, and a lesson that
+   repeats despite its rule (`20261029-2039`).
+
 ## [0.0.11] - 2026-11-07
 
 1. Name `agent-instructions`, the new name of `maintaining-agent-context`.

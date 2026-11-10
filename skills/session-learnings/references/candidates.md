@@ -46,6 +46,10 @@ confidence of a "the user wants" rule.
 
 ## Confidence
 
+Confidence reflects only the strength of the evidence in the session. An environment
+check that could not be run goes into `Check` as `not checkable - <why>` and does not
+lower the level.
+
 - `high` - the session shows both the failure and the fix: a command failed and another
   form succeeded, or the user typed the correction and the agent's next attempt held.
 - `medium` - one side is shown: the user stated a preference once, or a workaround held

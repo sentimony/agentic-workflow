@@ -2,7 +2,7 @@
 
 ## Layout
 
-- `plugin.json` - the full manifest: it carries `skills: "./skills/"` and the Codex `interface` under `extensions.com.openai`. A hidden manifest exists only for a host listed in `KEPT_HIDDEN` of `scripts/check_plugin_layout.py`.
+- `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.antigravity-plugin/plugin.json` - the three manifests with identical `name` and `version`; there is no root `plugin.json`. Only the Codex manifest carries `skills: "./skills/"` and `interface`; the Antigravity one carries `$schema`, `displayName`, `suggestedPrompts`, and `category`.
 - `skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
   The caller delegates to
@@ -29,7 +29,7 @@
 ## Rules
 
 - New skill: place it in root `skills/`; frontmatter `name` equals the directory.
-  The root `plugin.json` is the full manifest: it carries `skills: "./skills/"` and the Codex `interface` under `extensions.com.openai`. A hidden manifest exists only for a host listed in `KEPT_HIDDEN` of `scripts/check_plugin_layout.py`; keep its name/version equal to the root.
+  The three manifests (`.claude-plugin`, `.codex-plugin`, `.antigravity-plugin`) must keep equal `name` and `version`; `scripts/check_plugin_layout.py` enforces it and rejects a root `plugin.json`.
 - Versions: patch bumps; manifest `version` equals the release tag without `v`; the top
   `CHANGELOG.md` entry matches `metadata.version`. README shows the repository
   version, each plugin version, and each skill version.

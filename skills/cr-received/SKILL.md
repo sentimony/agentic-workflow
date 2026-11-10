@@ -3,7 +3,7 @@ name: cr-received
 description: You MUST use this when findings from a code review, pull request comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix - a cr-request result, a spec or plan review, or a reviewer's message - in any programming language. Verifies each finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, records the decisions in the plan's execution record or the spec's verification record, commits each round's fixes locally, and routes back to verify. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.12"
+  version: "0.0.13"
 license: MIT
 ---
 
@@ -238,12 +238,22 @@ A fix is resolved only with finding-level evidence: the check run, its result, a
 it proves this finding; "fixed" alone is not evidence. Read the actual diff after the
 fixes, untracked files included, and account for every changed path. Per-finding proof
 is local; the full checks are `verify`'s job before the work is called done.
+A check can leave side effects: an updated snapshot or a formatter autofix shows up as
+tracked or untracked changes nobody planned. Name each such change in the report; do not
+accept it silently and do not revert it destructively.
 For a fix that changes rule or contract wording, include the repository search command
 for the old wording and its result in the resolution evidence.
 
 Only a check that passed resolves a finding. A failing check is classed as
-`caused by fix`, `pre-existing`, `environment`, `flaky`, or `tool unavailable`, with the
-evidence for the class; none of them resolves the finding.
+`caused by fix`, `pre-existing`, `environment`, `flaky`, `tool unavailable`, or
+`unknown`, with the evidence for the class (for `unknown`, the report names the missing
+evidence); none of them resolves the finding.
+
+A generic failure of an external API does not prove a contract defect by itself. First
+establish the job, the phase, the actual operation, and a durable readback of its state.
+A bounded retry of the smallest failed job is allowed when the action is authorized and
+idempotent. Record an unknown cause as unknown. Do not change token permissions or code
+on the error text alone.
 
 To show that a test fails without its fix, run it in a temporary detached worktree at the
 pre-fix revision: `git worktree add --detach <tmp> <pre-fix rev>`, apply only the test's

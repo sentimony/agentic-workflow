@@ -3,6 +3,18 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.24] - 2026-11-10
+
+1. The three manifests (`.claude-plugin`, `.codex-plugin`, `.antigravity-plugin`) replace
+   the root `plugin.json` (standard layout). A `git-subdir` marketplace source with
+   `path: "."` installs only top-level files in Claude Code 2.1.322, so the marketplace
+   pins the plugin with a `url` source. `check_plugin_layout.py` requires all three
+   manifests and rejects a root `plugin.json`.
+2. `skills.sh.json` lists `cross-cr` under Renamed skills.
+3. session-learnings 0.0.12: the `argument-hint` is `[triage]`, confidence is separated
+   from `Check`, and the report names broader triage-due conditions.
+4. cr-received 0.0.13: side effects of checks and generic external API failures.
+
 ## [0.0.23] - 2026-11-07
 
 1. specify 0.0.11 and plan-craft 0.0.12: the preview handoff names `doc-preview`,

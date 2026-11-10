@@ -43,9 +43,9 @@ asking to sort the accumulated learnings) runs the triage mode instead.
    current host action authority and verified project-specific contracts. `finalize --auto` without a chosen action must ask for that choice.
 
 `--auto` comes only from an orchestrating chain and applies to recording only: it
-changes nothing in triage. `triage --auto` runs as plain `triage`: it still lists items and waits for approval, and applies no instruction change
-on its own. An orchestrated recording returns its notes/result to the caller; it does not
-launch another workflow.
+changes nothing in triage. `triage --auto` runs as plain `triage`: it still lists items
+and waits for approval, and applies no instruction change on its own. An orchestrated
+recording returns its notes/result to the caller; it does not launch another workflow.
 
 ## 1. Collect
 

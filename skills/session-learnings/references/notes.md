@@ -151,7 +151,7 @@ One section per run, appended at the end:
 - <rule the next agent should follow>
   - Target: <file and section, global file, other repository path, or check/hook/test>
   - Rung: <structure | type | check | test | prose> - <why not higher>
-  - Confidence: <high | medium> - <what it rests on>
+  - Confidence: <high | medium> - <what the session evidence rests on, not the Check result>
   - Quote: "<verbatim excerpt>" - <user | command | tool | agent>
   - Check: <environment check and result, or not checkable - why>
 ```

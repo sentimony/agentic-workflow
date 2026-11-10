@@ -1,7 +1,7 @@
 ---
 name: session-learnings
 description: You MUST use this when lasting learnings from the current session should be recorded for future agents - pitfalls hit, mistakes the user corrected, conventions found, or commands that finally worked, whatever the conversation language - including when the user asks to write down what the session taught and at the end of the agentflow chain after finalize. Records them without asking in the project's gitignored docs/session-learnings/AGENTS.md; on a separate request, triages the accumulated notes into AGENTS.md, CLAUDE.md, the user's global instructions, or a stronger enforcement such as a check or a test, applying only the approved edits. Not for auditing or restructuring instruction files (agent-instructions). Not for general memory or improvement requests for skills.
-argument-hint: "[triage] [--auto]"
+argument-hint: "[triage]"
 metadata:
   version: "0.0.11"
 license: MIT
@@ -42,9 +42,8 @@ asking to sort the accumulated learnings) runs the triage mode instead.
    their own applicable authority. Delivery requires the installed G3 helpers,
    current host action authority and verified project-specific contracts. `finalize --auto` without a chosen action must ask for that choice.
 
-`--auto` applies to recording only, which matches the `argument-hint`
-(`[triage] [--auto]`): the flag changes nothing in triage. `triage --auto` runs as plain
-`triage`: it still lists items and waits for approval, and applies no instruction change
+`--auto` comes only from an orchestrating chain and applies to recording only: it
+changes nothing in triage. `triage --auto` runs as plain `triage`: it still lists items and waits for approval, and applies no instruction change
 on its own. An orchestrated recording returns its notes/result to the caller; it does not
 launch another workflow.
 
@@ -88,7 +87,8 @@ Before drafting, confirm that what the candidate claims is true now: the remote,
 path, the script, the flag, the account, or the version it names. Use read-only means:
 read the file, list the directory, print the remote, run the command's help. A candidate
 that fails the check is corrected or dropped; one that cannot be checked says so in its
-record and loses a confidence level.
+record as `Check: not checkable - <why>`; the confidence level stays as the evidence
+sets it.
 
 ## 4. Pick the rung
 
@@ -144,7 +144,8 @@ A recipe is checked in the form it is written: run the commands of the drafted r
 placeholders filled in, where that is local and safe, and record that run in `Check`.
 Shortening may drop the flag the recipe rests on, so copy the working command's flags
 verbatim and shorten only the explanation. A recipe whose written form was not run says
-so in `Check` and loses a confidence level.
+so in `Check` as `not checkable - <why>`; the confidence level stays as the evidence
+sets it.
 
 ## 8. Set up the notes folder
 
@@ -206,7 +207,10 @@ two mean the next session will not load them. When the project limits the size o
 instruction files, give the number and how it was taken: `project check`, `skill
 recipe` ([notes](references/notes.md)), or `not measured` with the reason; name the heaviest leaf beside it, and do not report an
 ignored or `evals`/`workspace` leaf as a budget overrun. Say that the
-notes count toward it when the host imports them (Claude Code), and whether a triage is due. The report marks the boundary for
+notes count toward it when the host imports them (Claude Code), and whether a triage is due. Besides size, name a triage as due when the notes have
+grown many, when notes conflict or have gone stale, or when a lesson repeats despite its
+rule; there are no fixed thresholds, and triage stays a separate operation that needs
+approval. The report marks the boundary for
 a repeat run. Its last line before `Next step` is, with the absolute path of the notes
 file:
 

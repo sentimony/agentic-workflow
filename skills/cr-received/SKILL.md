@@ -238,12 +238,21 @@ A fix is resolved only with finding-level evidence: the check run, its result, a
 it proves this finding; "fixed" alone is not evidence. Read the actual diff after the
 fixes, untracked files included, and account for every changed path. Per-finding proof
 is local; the full checks are `verify`'s job before the work is called done.
+A check can leave side effects: an updated snapshot or a formatter autofix shows up as
+tracked or untracked changes nobody planned. Name each such change in the report; do not
+accept it silently and do not revert it destructively.
 For a fix that changes rule or contract wording, include the repository search command
 for the old wording and its result in the resolution evidence.
 
 Only a check that passed resolves a finding. A failing check is classed as
 `caused by fix`, `pre-existing`, `environment`, `flaky`, or `tool unavailable`, with the
 evidence for the class; none of them resolves the finding.
+
+A generic failure of an external API does not prove a contract defect by itself. First
+establish the job, the phase, the actual operation, and a durable readback of its state.
+A bounded retry of the smallest failed job is allowed when the action is authorized and
+idempotent. Record an unknown cause as unknown. Do not change token permissions or code
+on the error text alone.
 
 To show that a test fails without its fix, run it in a temporary detached worktree at the
 pre-fix revision: `git worktree add --detach <tmp> <pre-fix rev>`, apply only the test's

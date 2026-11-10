@@ -118,9 +118,9 @@ jobs:
 
           import subprocess
           subprocess.run([sys.executable, "scripts/check_plugin_layout.py"], check=True)
-          plugin = load("plugin.json")
+          plugin = load(".claude-plugin/plugin.json")
           if plugin.get("version") != release:
-              errors.append("plugin.json version != README version")
+              errors.append(".claude-plugin/plugin.json version != README version")
           if not re.search(rf"^\| \[agentflow\]\([^)]*\) \| {re.escape(str(release))} \|", readme, re.MULTILINE):
               errors.append("README.md: Plugins table row for agentflow missing or stale")
           for market in (".claude-plugin/marketplace.json", ".agents/plugins/marketplace.json"):

@@ -93,10 +93,10 @@ establish live acceptance or authorize outward actions.
 
 ## Install
 
-Since `v0.0.22` the root `plugin.json` is the only manifest. Checked on 2026-11-07
-with Claude Code 2.1.319, Codex 0.166.0, Antigravity 1.5.2: Codex and Antigravity read
-it; Claude Code installs the plugin from the standard layout and the marketplace entry.
-Installation and skill invocation both passed on all three hosts.
+Since `v0.0.24` the three manifests (`.claude-plugin`, `.codex-plugin`, `.antigravity-plugin`)
+are back, because Claude Code does not install a root `plugin.json` as a plugin. Checked on
+2026-11-07 with Claude Code 2.1.319, Codex 0.166.0, Antigravity 1.5.2 that installation and
+skill invocation passed on all three hosts with the root manifest.
 
 Version `0.0.15` renames the plugin from `aw` to `agentflow` after the separate
 root-layout release. The repository remains `sentimony/agentic-workflow`. Native

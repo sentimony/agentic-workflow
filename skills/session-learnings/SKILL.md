@@ -199,20 +199,20 @@ as step 8 says; content its instructions keep inside it is described generically
 
 When nothing qualifies, say so. Name the root and why it was chosen (the session's
 starting directory, the main checkout of its worktree, or the worktree itself, which loses
-the notes when it is removed). List the notes written (rule, target, rung, confidence), the
-candidates dropped with the reason, and the setup edits made, marked as uncommitted
+the notes when it is removed). List the notes written (rule, target, rung, confidence),
+the candidates dropped with the reason, and the setup edits made, marked as uncommitted
 tracked changes. Say how the folder is ignored (`.gitignore`, the local exclude file, or
 tracked) and how the notes are wired: `import`, `mention only`, or `not wired`; the last
 two mean the next session will not load them. When the project limits the size of its
-instruction files, give the number and how it was taken: `project check`, `skill
-recipe` ([notes](references/notes.md)), or `not measured` with the reason; name the heaviest leaf beside it, and do not report an
-ignored or `evals`/`workspace` leaf as a budget overrun. Say that the
-notes count toward it when the host imports them (Claude Code), and whether a triage is due. Besides size, name a triage as due when the notes have
-grown many, when notes conflict or have gone stale, or when a lesson repeats despite its
-rule; there are no fixed thresholds, and triage stays a separate operation that needs
-approval. The report marks the boundary for
-a repeat run. Its last line before `Next step` is, with the absolute path of the notes
-file:
+instruction files, give the number and how it was taken: `project check`, `skill recipe`
+([notes](references/notes.md)), or `not measured` with the reason; name the heaviest leaf
+beside it, and do not report an ignored or `evals`/`workspace` leaf as a budget overrun.
+Say that the notes count toward it when the host imports them (Claude Code), and whether a
+triage is due. Besides size, name a triage as due when the notes have grown many, when
+notes conflict or have gone stale, or when a lesson repeats despite its rule; there are no
+fixed thresholds, and triage stays a separate operation that needs approval. The report
+marks the boundary for a repeat run. Its last line before `Next step` is, with the
+absolute path of the notes file:
 
 ```text
 Learnings: <n> -> <file>

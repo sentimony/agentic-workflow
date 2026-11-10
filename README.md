@@ -5,13 +5,13 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.
 
-Version: `v0.0.23`
+Version: `v0.0.24`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [agentflow](.) | 0.0.23 | resolve-issue, specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
+| [agentflow](.) | 0.0.24 | resolve-issue, specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
 
 ## Skills
 
@@ -22,10 +22,10 @@ Version: `v0.0.23`
 | [implement](skills/implement/SKILL.md) | 0.0.12 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
 | [verify](skills/verify/SKILL.md) | 0.0.11 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
 | [cr-request](skills/cr-request/SKILL.md) | 0.0.17 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; preserve the full report, evidence, and reviewer provenance. |
-| [cr-received](skills/cr-received/SKILL.md) | 0.0.12 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
+| [cr-received](skills/cr-received/SKILL.md) | 0.0.13 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
 | [finalize](skills/finalize/SKILL.md) | 0.0.11 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
 | [resolve-issue](skills/resolve-issue/SKILL.md) | 0.0.3 | `/resolve-issue` | Run issue intake through configured delivery with durable recovery and fresh host authority. |
-| [session-learnings](skills/session-learnings/SKILL.md) | 0.0.11 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
+| [session-learnings](skills/session-learnings/SKILL.md) | 0.0.12 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 
 `specify` and `plan-craft` use the separately installed
 [`doc-preview`](https://github.com/sentimony/skills/tree/main/skills/doc-preview) skill

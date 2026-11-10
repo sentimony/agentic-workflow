@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.13] - 2026-11-10
+
+1. Name unexpected tracked or untracked changes left by a check, such as an updated
+   snapshot or a formatter autofix, instead of accepting or reverting them silently, and
+   treat a generic external API failure as unproven until the job, phase, operation, and
+   durable readback are known (`20261029-2036`).
+
 ## [0.0.12] - 2026-11-09
 
 1. Point Auto Reviewer transport references to the central contract.

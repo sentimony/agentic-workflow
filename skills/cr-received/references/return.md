@@ -115,14 +115,14 @@ independently reads back the canonical review, issue, reply, and thread before r
 progress as yngwald. Resolve readback accepts earlier actors too; source review, issue,
 and reply author checks remain yngwald. The credential boundary and API guards are
 defined in
-[Auto Reviewer transport](https://github.com/sentimony/github-workflows/blob/v0.0.1/AUTO_REVIEWER_TRANSPORT.md). Without CI, the host
-decides from evidence and authorization and uses the configured repository account for
-those actions. An accepted Minor or Important defer creates one issue in the code
-repository with thread link, origin ID, severity, reason, and owner. Record the
-`DEFERRED #<issue>` and API evidence of issue, reply, and resolve in the existing host
-before the gate closes. Pending or failed writes block; retry reuses the issue and
-completes only missing actions. Critical findings cannot use this mechanism. `DECLINED`
-declines defer and leaves the finding unresolved.
+[Auto Reviewer transport](https://github.com/sentimony/github-workflows/blob/v0.0.5/AUTO_REVIEWER_SHARED_TRANSPORT.md).
+Without CI, the host decides from evidence and authorization and uses the configured
+repository account for those actions. An accepted Minor or Important defer creates one
+issue in the code repository with thread link, origin ID, severity, reason, and owner.
+Record the `DEFERRED #<issue>` and API evidence of issue, reply, and resolve in the
+existing host before the gate closes. Pending or failed writes block; retry reuses the
+issue and completes only missing actions. Critical findings cannot use this mechanism.
+`DECLINED` declines defer and leaves the finding unresolved.
 
 The host may also reply REJECT only in the current PR/head's yngwald finding thread.
 Use the host CLI from the skill package (run `--help` for its full interface):
@@ -145,18 +145,18 @@ It returns JSON: `posted`, `use_existing`, `marker_conflict` with both states an
 conflict as a synchronized new disposition. The helper is the only executable recipe
 for this reply; it posts no issue, edit, or resolve action.
 
-Include human-readable evidence and the schema-valid `cr-received-disposition:v1`
-marker defined in [Auto Reviewer transport](https://github.com/sentimony/github-workflows/blob/v0.0.1/AUTO_REVIEWER_TRANSPORT.md): repository, PR, origin
-review ID, original finding ID, reviewed SHA, disposition, reason, and remaining
-required fields. The API reader takes actor and time from the comment container,
-never marker JSON. REJECT is distinct from DECLINED and does not resolve a thread or
-create an issue. Before writing, check PR/head, root author, finding key, and all
-existing markers; matching disposition, reason, and reviewed head reuse the existing
-reply. A changed marker or head fails closed as `marker_conflict`, pending
+Include human-readable evidence and the schema-valid `cr-received-disposition:v1` marker
+defined in
+[Auto Reviewer transport](https://github.com/sentimony/github-workflows/blob/v0.0.5/AUTO_REVIEWER_SHARED_TRANSPORT.md):
+repository, PR, origin review ID, original finding ID, reviewed SHA, disposition,
+reason, and remaining required fields. The API reader takes actor and time from the
+comment container, never marker JSON. REJECT is distinct from DECLINED and does not
+resolve a thread or create an issue. Before writing, check PR/head, root author, finding
+key, and all existing markers; matching disposition, reason, and reviewed head reuse the
+existing reply. A changed marker or head fails closed as `marker_conflict`, pending
 reconciliation, without write or treating an old disposition as the new one. Recheck
-head before POST; after an ambiguous POST read back rather than blindly retry.
-Serialize host writers per finding. These guards do not grant a write token to the
-reviewer.
+head before POST; after an ambiguous POST read back rather than blindly retry. Serialize
+host writers per finding. These guards do not grant a write token to the reviewer.
 
 ## Stage transition ownership
 

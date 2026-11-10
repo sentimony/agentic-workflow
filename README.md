@@ -134,8 +134,9 @@ plugin as shown below.
 
 agentflow replaces these sentimony/skills devflow skills; remove them from a workspace
 that installs agentflow, or they intercept the same requests: `scope-triage`,
-`plan-crafting`, `plan-execution`, `plan-orchestration`, `verification-gate`,
-`branch-finish`, `review-request`, `review-resolution`, and `cross-review`.
+`plan-crafting`, `plan-execution` (earlier `inline-plan-dev`), `plan-orchestration`
+(earlier `subagent-plan-dev`), `verification-gate`, `branch-finish`, `review-request`,
+`review-resolution`, and `cross-review`.
 Install standalone `cross-agent` separately for cross-model delegation.
 
 Claude Code:

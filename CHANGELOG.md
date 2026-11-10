@@ -14,7 +14,7 @@ Git commit subjects. Skill changelogs retain the detailed skill history.
    `maintaining-agent-context` to `agent-instructions` and `context-transfer` to
    `transfer-context`.
 4. The devflow replacement list names `plan-execution` and `plan-orchestration`, the new names of
-   `inline-plan-dev` and `subagent-plan-dev` in skills 0.0.102.
+   `inline-plan-dev` and `subagent-plan-dev` in skills 0.0.102, together with the earlier names.
 5. cr-request 0.0.17 and cr-received 0.0.12: Auto Reviewer presentation, footer, ledger,
    and transport rules move to `sentimony/github-workflows`; cr-request keeps the generic
    review contract and follows caller-specified output requirements.

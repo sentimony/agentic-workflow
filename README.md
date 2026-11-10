@@ -161,7 +161,7 @@ npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify
 ## Review operations
 
 The caller delegates to
-`sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@v0.0.4`
+`sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@v0.0.5`
 using the `validate` CI job adapter. Publish that tag before merging this consumer.
 Later upgrades update the caller and its contract test together; published tags never
 move. The preceding review phase reached Ready through `auto-reviewer.yaml@v0.0.3`;

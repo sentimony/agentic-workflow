@@ -12,4 +12,4 @@ __pycache__/
 .opencode/
 skills-lock.json
 .sdd/
-.auto-review/
+.auto-reviewer/

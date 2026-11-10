@@ -7,7 +7,7 @@ import subprocess
 import unittest
 
 WORKFLOW = Path(__file__).resolve().parents[1] / '.github/workflows/auto-reviewer.yaml'
-PIN = 'v0.0.4'
+PIN = 'v0.0.5'
 NAME = 'Auto Reviewer'
 CI_JOB = 'validate'
 

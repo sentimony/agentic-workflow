@@ -6,7 +6,7 @@
 - `skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
   The caller delegates to
-  `sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@v0.0.4`
+  `sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@v0.0.5`
   using the `validate` CI job adapter. The tag must be published before this consumer
   merges; see README's Review operations for the release order.
   The shared workflow owns the engine and its tests;
@@ -41,7 +41,7 @@
   checklist in the `skills-aiassist` workbench): `rc-verifier` approves the tree, then
   `releaser` commits, squash-merges the PR, and pushes the annotated tag.
 - `auto-reviewer.yaml` changes in a PR reach `workflow_run` only after merge (it uses the default
-  branch copy); `pull_request` runs use the PR branch copy. `.auto-review/` is reserved for the
+  branch copy); `pull_request` runs use the PR branch copy. `.auto-reviewer/` is reserved for the
   review job and must not be tracked.
   To test a changed workflow on its own PR, push, wait for green CI, then open the PR or request
   yngwald: on the first head the `main` copy's `workflow_run` shares the review job's per-PR

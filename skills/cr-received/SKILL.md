@@ -245,8 +245,9 @@ For a fix that changes rule or contract wording, include the repository search c
 for the old wording and its result in the resolution evidence.
 
 Only a check that passed resolves a finding. A failing check is classed as
-`caused by fix`, `pre-existing`, `environment`, `flaky`, or `tool unavailable`, with the
-evidence for the class; none of them resolves the finding.
+`caused by fix`, `pre-existing`, `environment`, `flaky`, `tool unavailable`, or
+`unknown`, with the evidence for the class (for `unknown`, the report names the missing
+evidence); none of them resolves the finding.
 
 A generic failure of an external API does not prove a contract defect by itself. First
 establish the job, the phase, the actual operation, and a durable readback of its state.

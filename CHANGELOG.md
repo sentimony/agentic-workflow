@@ -6,8 +6,10 @@ Git commit subjects. Skill changelogs retain the detailed skill history.
 ## [0.0.24] - 2026-11-10
 
 1. The three manifests (`.claude-plugin`, `.codex-plugin`, `.antigravity-plugin`) replace
-   the root `plugin.json`, because Claude Code does not install a root manifest as a
-   plugin; `check_plugin_layout.py` requires all three and rejects a root `plugin.json`.
+   the root `plugin.json` (standard layout). A `git-subdir` marketplace source with
+   `path: "."` installs only top-level files in Claude Code 2.1.322, so the marketplace
+   pins the plugin with a `url` source. `check_plugin_layout.py` requires all three
+   manifests and rejects a root `plugin.json`.
 2. `skills.sh.json` lists `cross-cr` under Renamed skills.
 3. session-learnings 0.0.12: the `argument-hint` is `[triage]`, confidence is separated
    from `Check`, and the report names broader triage-due conditions.

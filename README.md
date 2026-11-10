@@ -94,9 +94,10 @@ establish live acceptance or authorize outward actions.
 ## Install
 
 Since `v0.0.24` the three manifests (`.claude-plugin`, `.codex-plugin`, `.antigravity-plugin`)
-are back, because Claude Code does not install a root `plugin.json` as a plugin. Checked on
-2026-11-07 with Claude Code 2.1.319, Codex 0.166.0, Antigravity 1.5.2 that installation and
-skill invocation passed on all three hosts with the root manifest.
+are back, because Claude Code does not install a root `plugin.json` as a plugin. The host
+checks of 2026-11-07 (Claude Code 2.1.319, Codex 0.166.0, Antigravity 1.5.2) cover the previous
+root-manifest layout only; install checks of the three-manifest layout are pending and run at
+the PR stage.
 
 Version `0.0.15` renames the plugin from `aw` to `agentflow` after the separate
 root-layout release. The repository remains `sentimony/agentic-workflow`. Native

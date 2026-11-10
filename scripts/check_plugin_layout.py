@@ -155,7 +155,7 @@ def main():
     for error in errors:
         print(f'::error::{error}')
     if not errors:
-        print('Root plugin layout PASS')
+        print('Plugin layout PASS')
     return int(bool(errors))
 
 

@@ -8,13 +8,16 @@ Git commit subjects. Skill changelogs retain the detailed skill history.
 1. specify 0.0.11 and plan-craft 0.0.12: the preview handoff names `doc-preview`,
    matching skills 0.0.102, where `scope-check` is renamed to `doc-preview`
    (`20261031-2038`).
-2. `cr-receive` 0.0.1: a migration notice for the old name of `cr-received`, in the
-   new Renamed skills group of `skills.sh.json`.
+2. `skills.sh.json` lists the old name `cr-receive` of `cr-received` in a new Renamed skills
+   group.
 3. session-learnings 0.0.11, implement 0.0.12 and cr-request 0.0.17: follow the renames
    `maintaining-agent-context` to `agent-instructions` and `context-transfer` to
    `transfer-context`.
 4. The devflow replacement list names `plan-execution` and `plan-orchestration`, the new names of
    `inline-plan-dev` and `subagent-plan-dev` in skills 0.0.102.
+5. cr-request 0.0.17 and cr-received 0.0.12: Auto Reviewer presentation, footer, ledger,
+   and transport rules move to `sentimony/github-workflows`; cr-request keeps the generic
+   review contract and follows caller-specified output requirements.
 
 ## [0.0.22] - 2026-11-07
 

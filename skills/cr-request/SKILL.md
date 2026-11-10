@@ -104,7 +104,7 @@ the entire `.cross-review/` archive from snapshots, briefs, and attached context
 Fill the template in [brief.md](references/brief.md) and dispatch a fresh reviewer
 (subagent or new session) with no implementation history. Name the reviewer model
 explicitly in the dispatch and in the brief; never let it fall back to an unnamed
-default. In a non-interactive run (`claude -p`, a CI action, any run that ends with the
+default. In a non-interactive run (`claude -p`, any run that ends with the
 final message), dispatch the reviewer in the foreground, wait for its result, and write
 any required output file before the final message; never end the turn while the
 reviewer still runs. When the harness cannot isolate a reviewer, run the pass yourself,
@@ -159,15 +159,7 @@ Accept the result only when it contains:
 - a "set aside" list of behaviors considered and left out, each with a reason;
 - open questions about intent, kept separate from findings.
 
-For CI action proposals, also validate the agent draft against
-[review-actions.md](references/review-actions.md): current unpublished source IDs are
-`null`; previous findings carry confirmed origin IDs, `status`, and a separate
-`defer_decision`. A reviewer reports evidence and defer decisions; the trusted host
-records dispositions. `REJECT` of a finding and `DECLINED` of a defer proposal are
-different events. CI keeps yngwald as review/issue/reply/ledger author; a separate
-API-only resolver closes verified threads as `github-actions[bot]`, and completion
-independently reads back the evidence before recording success. The reference defines
-the credential boundary and source-author checks. An unfavorable verdict with no
+An unfavorable verdict with no
 findings stays unfavorable: report the evidence gap and ask for the user's ruling,
 without inventing fixes or a PASS.
 
@@ -216,16 +208,15 @@ finding, with `R<n>` the current review and `R<m>-F<k>` the finding it answers, 
 count only distinct automatic origins against the automatic budget. Local numbering and
 external review counts are not that budget. On older records with unknown provenance,
 reconstruct it from evidence or escalate instead of guessing or resetting the count.
-Never rewrite existing lines. After the reviewer
-finishes, the trusted host saves the complete local result and target identity to
-`~/.sentimony/agentflow/cr-request/<project>/<run-id>/review.md` and `identity.json`, using
-[review-actions.md](references/review-actions.md). Directories are `0700`, files are
-`0600`, and the archive lies outside the repository, so nothing is added to Git. An archive failure
-makes the handoff `INCOMPLETE`; name the failed write and retain any temporary result
-for recovery. Show the compact result with a link to the saved full review, following
-[compact.md](references/compact.md). CI uses its caller's output files and the same
-compact contract; its draft is transport, and only publish writes the durable ledger
-in its own review body. Before dispatch, take the round number from the record
+Never rewrite existing lines. After the reviewer finishes, preserve the complete report
+and target identity in the caller-specified destination, or use the default local archive
+`~/.sentimony/agentflow/cr-request/<project>/<run-id>/review.md` and `identity.json`
+under [review-actions.md](references/review-actions.md). An archive failure makes the
+handoff `INCOMPLETE`; name the failed write and retain temporary results for recovery.
+Show the compact result with a link to the saved full review, following
+[compact.md](references/compact.md). When a caller specifies an output format or
+destination, follow its instructions while preserving the complete review evidence.
+Before dispatch, take the round number from the record
 (`Round <loop> <n>`, loop `review`) so a fresh session continues:
 
 ```text
@@ -284,41 +275,11 @@ standalone `cross-agent` round, and `plan-craft` after a clean document review o
 `REVIEWER UNAVAILABLE` on its plan. The external-review owner retains its round and
 reviewer continuity; `plan-craft` then starts `implement` instead of `verify`.
 
-When the caller requires a closing line, that line goes right before the `Next step`
-line, in its exact text, and the `Next step` line stays the very last one. The CI
-auto-review (`claude-review.yml`) requires the signature
-``Reviewed with: `/cr-request` <version> skill``, backticks included, where `<version>`
-is this skill's `metadata.version`, and requires the `Next step` line after it. In that
-line each skill is inline code with a leading slash, its arguments inside the code
-span, and ` · ` goes before a reason:
-
-| Result | CI `Next step` line |
-| --- | --- |
-| Findings, or a re-review leaves a previous finding `NOT ADDRESSED` | `` Next step: `/cr-received PR #<n>` `` |
-| Clean | ``Next step: `/verify <plan path>` -> `/finalize` squash`` |
-| `REVIEWER UNAVAILABLE` | `Next step: none · choose another reviewer or retry` |
-
-A clean CI review always gives the chain line: it reads no `Verify` line it can match,
-since the record host is outside the repository or, inside it, `Verify` lines name a
-fingerprint without the host that the CI `Tree` (`HEAD^{tree}`) never equals; `verify`
-then finds a `PASS` that exists. The findings line names the pull request and carries no
-reason. The plan path comes from the PR description or a `docs/plans/` file in the diff;
-with none found the line is ``Next step: `/verify` -> `/finalize` squash``. `squash`
-recommends the merge method; it is not an argument. Any other line keeps
-``Next step: `/<skill>` · <reason>``, and `none` stays plain text
-(`Next step: none · <reason>`). The skill writes the signature without a duration; the
-workflow may append the review duration to it afterwards as ` · In <m> min <s> sec`,
-with `In 0 min 42 sec` under a minute. Only these two CI lines use ` · ` and ` -> `;
-every other `Next step` line keeps the local ``Next step: `/<skill>` - <reason>`` form that
-`--auto` and the chain read. The exact grammar of both lines, as regular expressions a
-workflow validator uses, and the accepted and rejected samples are in
-[brief.md](references/brief.md) "CI footer grammar"; the grammar is part of the
-contract. Both local and CI presentations follow
-[compact.md](references/compact.md): a one-row verdict and count table and a `Readiness`
-line. Locally, link the full archive; CI uses one collapsed `<details>` block with the
-findings, target, axis verdicts, and gaps, then the two closing lines. An incomplete
-archive ends with `Next step: none - restore the full review archive before handoff`;
-under `--auto` it stops before starting the next skill.
+The default `Next step` line is last. Place any caller-required extra closing line
+immediately before it, unless the caller explicitly specifies another output format.
+Follow caller-specified presentation and closing requirements. An incomplete archive ends with
+`Next step: none - restore the full review archive before handoff`; under `--auto` it
+stops before starting the next skill.
 
 ## When not to use
 
@@ -356,10 +317,8 @@ review gap. Preserve others' working trees without rollback or cleanup.
 The trusted host edits the record host's record (the plan's `## Execution record` or the
 spec's `## Verification record`), writes the private local archive after the reviewer
 finishes. The reviewer never writes that archive.
-The skill does not edit code, commit, push, or publish. CI publish is a separate trusted
-host capability, described in [review-actions.md](references/review-actions.md). Its
-separate API-only resolver alone gets the short-lived write GITHUB_TOKEN; model-output
-parsers never receive that token, and the reviewer never receives the yngwald PAT.
+The skill does not edit code, commit, push, or publish. External actions require
+authorized host capabilities; reviewer output alone never authorizes a write.
 `--auto` follows the shared current-invocation transition contract. It grants no
 reviewer write capability; orchestrated results return to their owner, which checks
 the actual authority and delivery gates before any external action.
@@ -379,5 +338,5 @@ of read isolation.
 - [Tree fingerprint](references/tree-fingerprint.md)
 - [Reviewer brief and result contract](references/brief.md)
 - [Compact result](references/compact.md)
-- [Review actions, identity, and archive](references/review-actions.md)
+- [Review identity and archive](references/review-actions.md)
 - [Review lenses](references/lenses.md)

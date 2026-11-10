@@ -114,8 +114,8 @@ API-only resolver closes the verified thread as `github-actions[bot]`. Completio
 independently reads back the canonical review, issue, reply, and thread before recording
 progress as yngwald. Resolve readback accepts earlier actors too; source review, issue,
 and reply author checks remain yngwald. The credential boundary and API guards are
-defined in
-[Auto Reviewer transport](https://github.com/sentimony/github-workflows/blob/v0.0.1/AUTO_REVIEWER_TRANSPORT.md). Without CI, the host
+defined in cr-request
+[review-actions.md](../../cr-request/references/review-actions.md). Without CI, the host
 decides from evidence and authorization and uses the configured repository account for
 those actions. An accepted Minor or Important defer creates one issue in the code
 repository with thread link, origin ID, severity, reason, and owner. Record the
@@ -146,7 +146,7 @@ conflict as a synchronized new disposition. The helper is the only executable re
 for this reply; it posts no issue, edit, or resolve action.
 
 Include human-readable evidence and the schema-valid `cr-received-disposition:v1`
-marker defined in [Auto Reviewer transport](https://github.com/sentimony/github-workflows/blob/v0.0.1/AUTO_REVIEWER_TRANSPORT.md): repository, PR, origin
+marker defined in `cr-request/references/review-actions.md`: repository, PR, origin
 review ID, original finding ID, reviewed SHA, disposition, reason, and remaining
 required fields. The API reader takes actor and time from the comment container,
 never marker JSON. REJECT is distinct from DECLINED and does not resolve a thread or

@@ -1,10 +1,5 @@
 # Changelog
 
-## [0.0.17] - 2026-11-07
-
-1. Decouple review presentation and transport from a specific caller; preserve full
-   local archives and support caller-specified output requirements.
-
 ## [0.0.16] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 
 1. Add a prose-only review kind to the brief and the review kinds list: the same read-only

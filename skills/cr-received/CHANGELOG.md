@@ -1,9 +1,5 @@
 # Changelog
 
-## [0.0.12] - 2026-11-09
-
-1. Point Auto Reviewer transport references to the central contract.
-
 ## [0.0.11] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 
 1. Name the skill in the `Next step` line as inline code in the host's invocation form

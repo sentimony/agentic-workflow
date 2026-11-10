@@ -5,24 +5,26 @@
 - `plugin.json` - the full manifest: it carries `skills: "./skills/"` and the Codex `interface` under `extensions.com.openai`. A hidden manifest exists only for a host listed in `KEPT_HIDDEN` of `scripts/check_plugin_layout.py`.
 - `skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
-  `claude-review.yml` separates the gate, read-only reviewer, trusted publish, API-only
-  thread resolver, completion, and merged summary. The reviewer uses `cr-request` from
-  the newest `vX.Y.Z` tag unless
-  `REVIEW_SKILLS_REF` pins a full SHA. The embedded schema and transport remain compatible
-  with older released skills; changing a pin does not bypass the compatibility check.
-  Model and effort come from repository variables, so changing them needs no PR; the step
-  `Resolve review model and effort` validates both and fails with `::error` before the agent runs:
-  1. `CLAUDE_REVIEW_MODEL` - model id, default `claude-sonnet-5-5`; shape
-     `[a-z0-9][a-z0-9._:/-]*` with an optional `[1m]` suffix, up to 100 characters.
-  2. `CLAUDE_REVIEW_EFFORT` - `low`, `medium` or `high`, default `medium`.
-  Automatic triggers review a head with no yngwald review, or a new head after a review
-  with new or unresolved prior Critical or Important findings while the total yngwald
-  review count is below 5.
-  CI eligibility uses a successful push or workflow_dispatch run on the full head SHA;
-  the `validate` job includes the review fixtures.
-  One `auto-review-rounds-N` label, with integer N >= 1, overrides that threshold;
-  malformed or multiple threshold labels fail before inference. Explicit yngwald requests
-  and dispatch bypass the count while retaining the other guards.
+  The caller delegates to
+  `sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@v0.0.5`
+  using the `validate` CI job adapter. The tag must be published before this consumer
+  merges; see README's Review operations for the release order.
+  The shared workflow owns the engine and its tests;
+  local `scripts/test_auto_reviewer.py` checks the caller contract. Run it with
+  `python3 -m unittest discover -s scripts -p 'test_auto_reviewer.py'`.
+
+  Repository variables configure the review: `CLAUDE_REVIEW_MODEL` defaults to
+  `claude-sonnet-5-5`, `CLAUDE_REVIEW_EFFORT` to `medium`, and
+  `CLAUDE_REVIEW_MAX_ROUNDS` to 10 when empty. Invalid values fail before inference.
+  `REVIEW_SKILLS_REF` can pin a full SHA instead of the latest released `cr-request`.
+  One `auto-review-rounds-N` label overrides the configured round limit; malformed or
+  multiple labels fail validation. An explicit yngwald request or dispatch bypasses the
+  count while retaining the other guards. The count includes manual reviews. CI
+  eligibility uses a successful push or workflow_dispatch run on the full head SHA.
+  Automatic triggers start the first review of an eligible PR; repeats require a new
+  head and new or unresolved prior Critical or Important findings. The shared schema
+  and transport retain compatibility with older released
+  skills; changing the pin does not bypass the compatibility check.
 
 ## Rules
 
@@ -38,8 +40,8 @@
 - Releases go through the `rc-verifier` and `releaser` roles (contracts and the release
   checklist in the `skills-aiassist` workbench): `rc-verifier` approves the tree, then
   `releaser` commits, squash-merges the PR, and pushes the annotated tag.
-- `claude-review.yml` changes in a PR reach `workflow_run` only after merge (it uses the default
-  branch copy); `pull_request` runs use the PR branch copy. `.auto-review/` is reserved for the
+- `auto-reviewer.yaml` changes in a PR reach `workflow_run` only after merge (it uses the default
+  branch copy); `pull_request` runs use the PR branch copy. `.auto-reviewer/` is reserved for the
   review job and must not be tracked.
   To test a changed workflow on its own PR, push, wait for green CI, then open the PR or request
   yngwald: on the first head the `main` copy's `workflow_run` shares the review job's per-PR
@@ -47,7 +49,7 @@
   not the PR head: wait for `gh run list --commit <full head SHA> --workflow CI` and then for
   `gh run list --event workflow_run --limit 1` to complete before requesting yngwald. The
   `/cr-request` version in the review footer shows which workflow copy posted it.
-- `claude-review.yml` keeps one run per head SHA (workflow-level concurrency), so automatic
+- The shared workflow keeps one run per head SHA (workflow-level concurrency), so automatic
   runs for one head no longer race, and a late CI run for an older head cannot cancel the review
   of a newer one; the review job's per-PR group lets a newer head's review cancel an older one,
   which publish reports as superseded. A `workflow_dispatch` run and an event-driven run for the
@@ -63,13 +65,13 @@
   choice: an accepted trade-off, not a defect for review. The chain form
   (``Next step: `/verify <plan>` -> `/finalize` squash``) and the findings form
   (`` Next step: `/cr-received PR #<n>` ``) carry no reason and stay whole.
-  CI executes the workflow's actual shell/Python blocks through
-  `scripts/test_claude_review.py`, including footer grammar, Summary parsing, gate labels,
-  ledger publication, partial-action recovery, and merged-summary fixtures. Run
-  `python3 -m unittest discover -s scripts -p 'test_claude_review.py'` after changes;
-  direct execution and unittest discovery both collect all test classes. CI also runs
-  `python3 -m unittest discover -s skills/cr-received/scripts -p 'test_*.py'`
-  and `python3 -m unittest discover -s skills/cr-request/scripts -p 'test_*.py'`.
+  The shared repository tests the engine, including footer grammar, gates, ledgers,
+  recovery, and merged summaries. Local tests check the caller contract.
+  CI validates both review helpers:
+
+  1. `python3 -m unittest discover -s skills/cr-received/scripts -p 'test_*.py'`
+  2. `python3 -m unittest discover -s skills/cr-request/scripts -p 'test_*.py'`
+
   Paired owner/core tests require an explicit `CROSS_AGENT_TEST_SOURCE`; without one
   CI reports that case skipped and makes no compatibility-pair claim.
 - The reviewer writes `review-actions.json` without a write PAT. Trusted publish
@@ -100,8 +102,6 @@
   deferrals are bound to the snapshot prepared before inference; a proposal changed after that
   snapshot stops the action. The publish finalizer ends only its own pending status after a
   failure and leaves a newer run's status alone.
-  The workflow is self-contained: there is no shared package with other repositories. Run
-  `python3 -m unittest discover -s scripts -p 'test_claude_review.py'` after changes.
 - The merged-only summary reads GitHub history without checkout or inference, validates
   yngwald ledgers and source markers, and updates one own summary comment. REJECT counts
   rejected findings; DECLINED defer does not. Later structured evidence determines each
@@ -171,12 +171,9 @@
    despite snapshot exclusion: an accepted trade-off, not a defect for review,
    because stronger OS containment remains a separate design.
 
-- A change to the cr-request output contract (closing lines, footer order, separators) goes
-  into `SKILL.md`, `references/brief.md` (the `Result contract` paragraph and
-  `### CI footer grammar`), the `claude-review.yml` prompt and `next_re`, and the top
-  `CHANGELOG.md` entry in one commit and in the same terms; find them all with
-  ``git grep -n 'Next step: `/'``. Each place left behind comes back as a separate review
-  finding.
+1. Generic cr-request review output belongs to the skill. Auto Reviewer presentation,
+  footer validation, transport, and their fixtures belong to `sentimony/github-workflows`;
+  preserve compatibility with the generic review result when changing either contract.
 - A review fix that rewords a skill's `SKILL.md` also updates the same wording in that skill's
   unreleased top `CHANGELOG.md` entry, in the same commit.
 - License: MIT, Ihor Orlovskyi.

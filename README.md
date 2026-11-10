@@ -1,5 +1,7 @@
 # Agentflow
 
+[![Auto Reviewer](https://github.com/sentimony/agentic-workflow/actions/workflows/auto-reviewer.yaml/badge.svg)](https://github.com/sentimony/agentic-workflow/actions/workflows/auto-reviewer.yaml)
+
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.
 
@@ -158,9 +160,29 @@ npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify
 
 ## Review operations
 
-Automatic yngwald reviews use Sonnet 5.5 medium and a default limit of five reviews.
-One `auto-review-rounds-N` label overrides the limit for that PR. Inspect its review
-jobs with:
+The caller delegates to
+`sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@v0.0.5`
+using the `validate` CI job adapter. Publish that tag before merging this consumer.
+Later upgrades update the caller and its contract test together; published tags never
+move. The preceding review phase reached Ready through `auto-reviewer.yaml@v0.0.3`;
+that review checked the proposed diff and does not prove the new engine's runtime.
+The shared workflow owns the engine and its tests; local `scripts/test_auto_reviewer.py`
+checks the caller contract. Run it with
+`python3 -m unittest discover -s scripts -p 'test_auto_reviewer.py'`.
+
+Live reviews require repository secrets `AUTO_REVIEWER_YNGWALD` and
+`CLAUDE_CODE_OAUTH_TOKEN`, mapped to callee inputs with the same names.
+Use separate token values for each repository.
+
+Repository variables configure the review: `CLAUDE_REVIEW_MODEL` defaults to
+`claude-sonnet-5-5`, `CLAUDE_REVIEW_EFFORT` to `medium`, and
+`CLAUDE_REVIEW_MAX_ROUNDS` to 10 when empty. Invalid values fail before inference.
+`REVIEW_SKILLS_REF` can pin a full SHA instead of the latest released `cr-request`.
+One `auto-review-rounds-N` label overrides the configured round limit; malformed or
+multiple labels fail validation. An explicit yngwald request or dispatch bypasses the
+count while retaining the other guards. The count includes manual reviews.
+
+Inspect the review jobs with:
 
 ```bash
 gh pr checks <number> --repo sentimony/agentic-workflow

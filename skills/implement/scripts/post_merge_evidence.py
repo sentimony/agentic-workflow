@@ -140,7 +140,7 @@ def project_key(repo):
 
 
 def slug(path):
-    """Same algorithm as slug() in context-transfer; every skill carries its own copy."""
+    """Same algorithm as slug() in transfer-context; every skill carries its own copy."""
     resolved = str(Path(path).resolve())
     digest = hashlib.sha256(os.fsencode(resolved)).hexdigest()[:12]
     name, size = "", 0

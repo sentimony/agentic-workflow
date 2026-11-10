@@ -147,8 +147,11 @@
   committed work: the uncommitted paths are listed as not integrated, and committing them is
   the user's call under the commit policy. This is an accepted trade-off, not a defect for
   review.
-- Renaming a released skill: the new name starts at `0.0.1`, its CHANGELOG names the old one,
-  and README Install says to remove the old skill or reinstall.
+- Renaming a released skill moves `skills/<old>/` to `skills/<new>/` like a directory rename:
+  no file of the old skill remains. Its files change only in the name and its mentions; the
+  version continues with a patch bump, and the CHANGELOG entry names the old name. The old
+  name goes to the last `Renamed skills` group of `skills.sh.json`, and README Install says to
+  remove the old skill or reinstall. Content changes go in a separate PR and version.
 1. `resolve-issue` owns issue orchestration. Stage skills remain usable standalone.
    Without auto, finish a meaningful stage and ask for the next transition. With auto,
    continue within current verified authority and pass the flag to every invoked skill.
@@ -160,7 +163,7 @@
    production acceptance remains unverified by synthetic tests. The installed review
    adapter remains owner of review policy; ordinary consultations use the generic core.
 - agentflow skills replace their sentimony/skills devflow counterparts (scope-triage,
-  plan-crafting, inline-plan-dev, subagent-plan-dev, verification-gate, branch-finish,
+  plan-crafting, plan-execution, plan-orchestration, verification-gate, branch-finish,
   review-request, review-resolution, cross-review): a description opens with
   `You MUST use this when`, as devflow's do, and names the skill it replaces.
 1. The installed cross-agent owner adapter reads its own `brief.md` and `lenses.md`

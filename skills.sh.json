@@ -1,0 +1,28 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "top",
+  "groupings": [
+    {
+      "title": "Skills",
+      "description": "Agentic Workflow, one change from request to merge (resolve-issue, specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings).",
+      "skills": [
+        "resolve-issue",
+        "specify",
+        "plan-craft",
+        "implement",
+        "verify",
+        "cr-request",
+        "cr-received",
+        "finalize",
+        "session-learnings"
+      ]
+    },
+    {
+      "title": "Renamed skills",
+      "description": "Earlier names of renamed skills. No files remain under these names.",
+      "skills": [
+        "cr-receive"
+      ]
+    }
+  ]
+}

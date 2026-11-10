@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Print the cr-request archive root for a project (nothing is created).
 
-The slug algorithm is the same as slug() in context-transfer; every skill carries its own copy.
+The slug algorithm is the same as slug() in transfer-context; every skill carries its own copy.
 """
 
 import argparse

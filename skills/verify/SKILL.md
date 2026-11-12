@@ -3,7 +3,7 @@ name: verify
 description: You MUST use this when anyone - you, a subagent, or the user - is about to state that work is done, fixed, ready, or mergeable, and before a merge, opening a pull request, or a handoff report, including work that has no plan. Covers every promise behind the claim - spec criteria, plan tasks, record entries, accepted review fixes, and the caller's words - proven with fresh checks on the committed tree and given one verdict, without editing code. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-or-spec-path>] [--auto]"
 metadata:
-  version: "0.0.11"
+  version: "0.0.12"
 license: MIT
 ---
 
@@ -104,6 +104,11 @@ checkout. These are not evidence:
 - a report by the implementer, a subagent, or a reviewer;
 - a `Verify:` line recorded on a different tree.
 
+In a `working` run, whitespace is checked through a private index, not with plain
+`git diff --check`, which skips untracked files and mixes in hunks that were already in the
+working tree; a path from `Initial dirty state` without a captured original is
+`not verified`, never checked against `HEAD` ([whitespace.md](references/whitespace.md)).
+
 For a hostless ready PR, identify project checks from the actual project contract and
 run them freshly against the current committed head/fingerprint with isolated mutable
 dependencies. Include commands, results, head/base, and fingerprint in the report for
@@ -134,8 +139,14 @@ no plan, from the base the caller names, else from `HEAD^` (the working tree aga
 `HEAD` in a `working` run, untracked files included). Look for changes
 that lower the bar instead of meeting it: tests skipped, deleted, or marked
 expected-to-fail; assertions removed or loosened; lint, type, or security suppressions
-added; coverage or performance thresholds lowered; catch blocks that swallow errors. Each one is reported with path and line. One that no `Ruling` or user
-decision covers makes the related claim `failed`.
+added; coverage or performance thresholds lowered; catch blocks that swallow errors. Each one is reported with path and line. One that no `Ruling` or user decision covers
+has two outcomes. When it breaks a requirement (a claim relies on the assertion, test or
+threshold that was lowered), the related claim is `failed`. When it breaks no claim and
+only lacks a decision (a narrowed assertion the implementer disclosed, a removed test of
+behavior that no longer exists), the bar-check line reads
+`needs ruling: <path:line> - <what was weakened>`, the related row is
+`not verified: needs ruling`, and the verdict is
+`INCOMPLETE (user - approve or reject <path:line>)`.
 
 Treat a success that came too easily as a defect to explain: zero tests collected, a
 suite that finished in no time, a filter that matched nothing, a script that exits 0
@@ -151,8 +162,8 @@ Then pick `PASS`, `FAIL`, `INCOMPLETE`, or `BLOCKED` by the definitions in
 `INCOMPLETE` names the owner and the next action; `BLOCKED` says what stops the
 verification itself.
 
-Any `not verified`, any `failed`, any unreported weakening, or any open review blocker
-rules out `PASS`. A `PASS` grants no right to commit, push, or merge; those stay with the
+Any `not verified`, any `failed`, any unreported weakening, any weakening that still
+`needs ruling`, or any open review blocker rules out `PASS`. A `PASS` grants no right to commit, push, or merge; those stay with the
 user and `finalize`.
 
 The full matrix is required before `cr-request` and `finalize`; the compact report fits
@@ -202,6 +213,12 @@ with findings and none accepted stop the loop.
 For `verify`, `R<n>` in that `Ruling` is the number of the `Round verify` line it follows,
 and the report says the round ran past the limit.
 
+An `INCOMPLETE` whose owner is the user, such as a weakening that `needs ruling`, is a
+question and not a fix cycle: it writes the `Verify` line and no `Round verify` line.
+After the answer, append `Ruling: weakening <path:line> approved - <user's words> - <cost if wrong>`
+and derive the verdict again from it. When the user rejects the weakening, the change goes
+to `implement`, which changes the tree.
+
 When the rule stops the loop, the verdict stays `FAIL` and the next step goes to the
 user. After `cr-received`, compare the fingerprint yourself with the tree of the last
 `Verify` line; its `Previous verification` field is a signal, not proof:
@@ -209,7 +226,8 @@ user. After `cr-received`, compare the fingerprint yourself with the tree of the
 - tree changed (or `stale`): run the `Checks to rerun` it names first, as the checks of
   the finding claims, then the whole matrix once on the new tree;
 - tree unchanged: the earlier rows stand, but redo step 3 against the new `Received`
-  lines and derive the verdict and the next step again.
+  lines and derive the verdict and the next step again. The same holds after a `Ruling`
+  on a weakening: no matrix is repeated.
 
 ## 9. Without a plan
 
@@ -316,3 +334,4 @@ network gives `not verified`.
 - [Report format, statuses, verdicts, blockers, record lines](references/report.md)
 - [Tree fingerprint recipes and validity](references/tree-fingerprint.md)
 - [Clean clone of `HEAD`](references/clean-clone.md)
+- [Whitespace of a working-tree target](references/whitespace.md)

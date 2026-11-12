@@ -28,7 +28,7 @@ C5 | <check command> | `not verified: <reason>`
 C6 | <check command> | `deferred to Task <n>`
 C7 | <check command> | `n/a: superseded`
 
-Bar check: <weakening found, with path and line, or none>
+Bar check: <weakening found, with path and line, or none; one without a ruling that breaks no claim: needs ruling: <path:line> - <what was weakened>>
 Review blockers: <IDs with severity and disposition, or none>
 Verdict: PASS | FAIL | INCOMPLETE (<owner> - <next action>) | BLOCKED (<what stops the check>)
 Record: Verify: <verdict> full tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
@@ -98,7 +98,7 @@ that only reading can decide. "Looked fine" is not a command.
 - `PASS` - every row is `passed`, `n/a`, or `deferred to Task <n>`, the bar check found
   nothing unreported, and no review blocker is open.
 - `FAIL` - at least one row is `failed`.
-- `INCOMPLETE` - no row failed, but a row is `not verified` or a review blocker is open.
+- `INCOMPLETE` - no row failed, but a row is `not verified`, a bar-check line `needs ruling`, or a review blocker is open.
   Name the owner (the user, `implement`, `cr-received`, CI, a named person) and the next
   action that would decide it.
 - `BLOCKED` - the verification itself cannot move: the tree cannot be read, the project
@@ -108,7 +108,7 @@ that only reading can decide. "Looked fine" is not a command.
   `BLOCKED (tree keeps changing: <paths or commits>)` when the fingerprint changed during a
   run and in both restarts after it (SKILL.md step 7).
 
-Any `not verified`, any `failed`, or any open review blocker rules out `PASS`.
+Any `not verified`, any `failed`, any weakening that `needs ruling`, or any open review blocker rules out `PASS`.
 
 ## Review blockers
 

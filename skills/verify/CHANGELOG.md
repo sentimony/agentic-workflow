@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.12] - 2026-11-12
+
+1. A weakening of a test or threshold that no `Ruling` or user decision covers and that
+   breaks no claim is no longer a `FAIL`: the bar-check line reads `needs ruling`, the
+   verdict is `INCOMPLETE` owned by the user, no `Round verify` line is written, and an
+   unchanged tree is re-evaluated from the new `Ruling` without repeating the matrix
+   (`20261024-2324`).
+2. Whitespace of a `working` run is checked through a private index with an explicit
+   inventory that includes untracked files; a path that was dirty before the work is
+   checked against its captured original after a hash check, and without one it is
+   `not verified` instead of being compared with `HEAD` (`20261101-1158`).
+
 ## [0.0.11] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 
 1. Name the skill in the `Next step` line as inline code in the host's invocation form

@@ -1,8 +1,11 @@
 # Spec template
 
 Path: the spec folder the project already uses (named in its instructions or visible
-from existing files); otherwise `docs/specs/YYYYMMDD-HHMM-<topic>.md`. The plan later
-reuses the same topic.
+from existing files); otherwise `docs/specs/YYMMDDTHHMM-<topic>.md`: the time is the
+local creation time from `date +%y%m%dT%H%M` and `<topic>` is a kebab-case topic of at
+most 24 characters. Check that no file has the chosen name and never overwrite one; files
+in the older `YYYYMMDD-HHMM-<topic>.md` form keep their names and stay valid. The plan
+later reuses the same topic.
 
 Header field keys and values stay literal English tokens even when the rest of the spec
 is in another language. Section headings follow the language of the project's existing

@@ -26,6 +26,8 @@ Look past the diff to what it touches.
   success return must not turn it into a pass. Collect observations in the callback and
   assert after it returns, or check the error signal explicitly; if reading leaves the
   doubt, break the observed condition in the one allowed focused test and confirm it fails.
+  A test written to expect the operational error is fine; the finding is the strength of the
+  evidence, so do not ask to remove runtime error handling only to make a test pass or fail.
 - **Concurrency and order** - shared mutable state, races, reentrancy, ordering
   assumptions.
 - **Feedback loops** - caches, retries, queues, and background jobs that amplify a small

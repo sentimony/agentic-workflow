@@ -3,7 +3,7 @@ name: plan-craft
 description: You MUST use this when a spec the user approved, an accepted design, or requirements already agreed in the conversation have to be turned into an ordered, multi-step implementation plan before any code is written - including a spec from specify, work with no spec yet, and a plan revision after a document review. Replaces devflow plan-crafting. Covers whether a plan is needed, task order, acceptance-criteria coverage, and the execution choice. Not for open design (specify) or executing a plan (implement).
 argument-hint: "[<spec-path>] [<plan-path>] [--auto]"
 metadata:
-  version: "0.0.12"
+  version: "0.0.13"
 license: MIT
 ---
 
@@ -112,7 +112,10 @@ risk (a migration, a deletion, a public interface).
 ## 3. Choose the file
 
 Path: the project's plan folder when instructions or existing files define one, else
-`docs/plans/YYYYMMDD-HHMM-<topic>.md`, with the same topic as the spec.
+`docs/plans/YYMMDDTHHMM-<topic>.md`. The time is the local creation time from
+`date +%y%m%dT%H%M`; `<topic>` is the topic of the spec, in kebab-case, at most 24
+characters. Check that no file has the chosen name and never overwrite one. Files in the
+older `YYYYMMDD-HHMM-<topic>.md` form keep their names and stay valid.
 
 Before writing, look for an existing plan on the same topic (the plan passed in, or one
 whose `Spec` names this spec) and read its `## Execution record`. An argument path or a
@@ -220,7 +223,10 @@ Content:
   dimension that does not apply gets `n/a: <reason>` once in `Architecture`, not an
   empty section;
 - credentials appear in `RED`, `GREEN`, and `Check` commands only as placeholder names
-  such as `<API_TOKEN>`, never as values.
+  such as `<API_TOKEN>`, never as values;
+- a `Check` that a phrase is gone, or that a sentence is present in Markdown, uses the
+  forms in [the template](references/plan-template.md) ("Check templates"); a brief for a
+  wave of subagents says to describe a removed phrase in `CHANGELOG.md`, not to quote it.
 
 Before the execution record, add a localized `Short conclusion` with two or three
 numbered points and a localized `Next step` section with a fenced, copyable prompt.
@@ -300,19 +306,28 @@ Read the saved plan once more against the spec and fix what fails:
 
 ## 7. Save and choose execution
 
-Ask how to execute. Use the harness's interactive question tool when it has one,
-otherwise a numbered list:
+Ask how to execute with a numbered list in the reply text, never through an interactive
+question tool: right after the plan is saved the user may switch to another agent or run
+`/compact`, and a modal window blocks both. A free-form answer is accepted. A single open
+question, such as the commit policy, is also asked as a line of text. Keep this order:
 
 1. `implement` with subagents - the default: this session orchestrates and a fresh
    agent runs each task, in waves where `Depends on` allows; state why it fits or not
    (many independent tasks, long plan, context budget);
 2. `implement` inline - this session runs the tasks one by one; offered with its reason
    when that fits better (one or two tasks, tightly coupled edits, needs the
-   conversation's context).
+   conversation's context);
+3. `/compact`, then `implement <plan path>` - the plan and its record are committed, so
+   execution starts from the file and not from the conversation; `Execution` stays
+   `unset` and `implement` takes the mode in its step 2;
+4. hand the plan to another agent CLI (Codex from Claude Code, Claude Code from Codex):
+   give the line that starts `implement` there with the plan path; `Execution` gets
+   `inline` or `subagents`, whichever that agent will run, and no new value is added.
 
 Put the recommendation inside the description of the option it favors, with its reason;
 no separate "(Recommended)" tag. Write the answer into the header as `Execution: inline`
-or `Execution: subagents`. Without an explicit
+or `Execution: subagents` (options 1 and 2, and option 4 by the mode the other agent will
+run). Without an explicit
 choice, `Execution` stays `unset` and execution does not start. A revision keeps the
 existing `Execution` and does not ask again.
 
@@ -334,8 +349,13 @@ commit policy in the user's and project's instruction files in force; the strict
 A policy that asks first gets one question for the whole chain (this stops `--auto`); a
 policy that forbids commits means no commit, and the report says so.
 
-Commit the plan once `Execution` is written, as `Plan <topic>`, and each later revision
-separately, as `Revise plan <topic>: <reason>`.
+When a document review of the plan will run (`--auto` starts it, or the user chose it),
+commit the plan as `Plan <topic>` right after its first save, even while `Execution` is
+`unset`, before asking how to execute: the first review then has a `Head` and every
+re-review gets the diff `<previous head>..<current head>`. The execution choice is its own
+commit, `Revise plan <topic>: execution choice`. When no review will run, commit the plan
+once `Execution` is written, as `Plan <topic>`. Each later revision is a separate commit,
+`Revise plan <topic>: <reason>`.
 
 A review of the plan is `cr-request` in document mode: it takes the plan file and reports
 findings by section. Without `--auto`, offer it for plans with high-risk tasks and do not

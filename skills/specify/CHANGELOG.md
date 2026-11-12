@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.12] - 2026-11-12
+
+1. Decisions are asked as a numbered list in the reply text, each with a recommended answer
+   that a plain yes accepts when one applies; an interactive question tool is used only when the user asks
+   for buttons (`20261024-2327`).
+2. The default spec file is `docs/specs/YYMMDDTHHMM-<topic>.md` (local `date +%y%m%dT%H%M`,
+   kebab-case topic of at most 24 characters, no overwrite); the older
+   `YYYYMMDD-HHMM-<topic>.md` names stay valid (`20261112-0305`).
+
 ## [0.0.11] - 2026-11-07
 
 1. Preview handoff names `doc-preview`, the new name of `scope-check` in skills 0.0.102.

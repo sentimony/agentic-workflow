@@ -3,6 +3,23 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.25] - 2026-11-12
+
+1. cr-request 0.0.18: the owner adapter embeds the review diff for a reviewer without a
+   shell when the host asks (size, hash, left-out paths, 262144-byte limit, reverse-apply
+   check), `--exclude` and `previous_tree`; narrower re-review briefs and a re-review diff
+   for a reviewer in an isolated clone; review budgets per phase (document and code);
+   whitespace of a prepared target through a private index; a note on planned error tests
+   in the failure-paths lens.
+2. cr-received 0.0.14: review budgets per phase.
+3. verify 0.0.12: an unruled weakening that breaks no claim gives `INCOMPLETE` owned by the
+   user without a `Round verify` line; whitespace of a `working` run through a private index.
+4. plan-craft 0.0.13: the execution choice is a numbered list in the reply text (with
+   `/compact` and a hand-off to another agent CLI), `Check` templates, the plan is committed
+   before its first document review, and new plan files are `YYMMDDTHHMM-<topic>.md`.
+5. specify 0.0.12: decisions are asked as a numbered list in the reply text, and new spec
+   files are `YYMMDDTHHMM-<topic>.md`.
+
 ## [0.0.24] - 2026-11-10
 
 1. The three manifests (`.claude-plugin`, `.codex-plugin`, `.antigravity-plugin`) replace

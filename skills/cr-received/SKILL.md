@@ -3,7 +3,7 @@ name: cr-received
 description: You MUST use this when findings from a code review, pull request comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix - a cr-request result, a spec or plan review, or a reviewer's message - in any programming language. Verifies each finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, records the decisions in the plan's execution record or the spec's verification record, commits each round's fixes locally, and routes back to verify. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.13"
+  version: "0.0.14"
 license: MIT
 ---
 
@@ -285,6 +285,14 @@ owner and tracking; Critical or unsafe deferral escalates. Fixes require explici
 permission; they stale verification and still require the appropriate re-review,
 even when the budget is exhausted. When the rule stops the loop, escalate with what
 kept failing and a proposal to simplify.
+
+The automatic budget is kept per phase, `document` (spec, plan, prose and their
+re-reviews) and `code` (implementation and its re-reviews). Write
+`Round review <n>: [document|code] <cause>`, count each phase apart, and do not reset a
+count when the reviewer, model or mode changes. A line without a phase takes the phase of
+the nearest `Review` line above it, or counts against both when there is none. One round
+count the user gave explicitly covers both phases together. `R<n>` IDs keep counting.
+The full rule and its scenarios are in `cr-request` (`references/round-budgets.md`).
 
 ## 9. Journal
 

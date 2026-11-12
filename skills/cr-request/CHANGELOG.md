@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.0.18] - 2026-11-12
+
+1. A re-review brief is narrow by default: the fix diff, the `Received` and `Ruling` lines
+   of the round, the sections the diff touches and the repository files needed to check a
+   fact; a whole document is read again only when no diff exists, and the result says so
+   (`20261030-0851`).
+2. Review budgets are kept per phase, `document` and `code`: a new journal form
+   `Round review <n>: [document|code] <cause>`, no reset when the reviewer, model or mode
+   changes, `R<n>` IDs keep counting, and one explicit user round count covers both phases
+   (`20261030-0851`).
+3. The failure-paths lens separates a test that plans the operational error from a check
+   of the success conditions and does not ask to remove runtime error handling only for the
+   test (`20261031-2048`).
+4. Whitespace of a prepared target is checked through a private index with an explicit
+   inventory that includes untracked files (`scripts/target_whitespace.py`, with tests);
+   a path that was dirty before the work is compared with its captured original after a
+   hash check, and a missing or unreadable before-snapshot is `unverified` instead of being
+   assumed to be `HEAD` (`20261101-1158`).
+5. A re-review for a reviewer in an isolated clone receives the diff between the recorded
+   trees as unchanged `git diff` stdout, checked with `git apply --check --reverse`, and
+   reads files in a clone of the current commit instead of resolving a tree ID that may
+   exist only in the host repository (`20261101-1208`).
+6. The owner adapter embeds the diff of the committed boundary for a reviewer without a
+   shell when the host sets `embed_diff`: byte count and SHA-256, the left-out paths
+   (possible secret by name, lockfile, binary file), a 262144-byte limit that blocks with
+   a reason instead of cutting, a reverse-apply check against the target tree, a block
+   when the diff is not valid UTF-8, and quoted names for paths with control characters
+   (`20261107-0020`).
+7. `--exclude <path>` names untracked files outside the change as a coverage gap and lets
+   them pass the clean-target check, and `previous_tree` gives a re-review only the fix
+   diff, with a note and the full diff when that tree is missing (`20261107-0020`,
+   `20261101-1208`).
+
 ## [0.0.17] - 2026-11-07
 
 1. Comments name `transfer-context`, the new name of `context-transfer`.

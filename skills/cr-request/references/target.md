@@ -117,6 +117,25 @@ fall back to the previous `Head` and say so in the brief. For a document re-revi
 if neither the previous tree nor the previous `Head` provides a usable diff, review
 the whole document and say in the result that the diff was unavailable.
 
+A re-review brief carries the fix diff, the `Received` and `Ruling` lines of the round, the
+sections of the document that the diff touches, and the repository files needed to check
+a fact; it does not send the whole spec and plan again. The whole document is read only
+when no diff exists, and the result says so.
+
+When the reviewer works outside the host repository (a fresh clone, another host), the
+previous `Tree` may not exist there: a `Committed tree` with the record host excluded is a
+synthetic tree that lives only in the host repository. The host then computes
+`git diff --no-ext-diff --no-textconv <previous tree> <current tree>` itself and passes its
+stdout unchanged as a file of the review package (no `strip`: a trimmed trailing context
+line makes `git apply` fail with `corrupt patch`). The brief names that file as the target
+of the re-review and tells the reviewer to read files in a clone of the commit the current
+tree comes from, and not to run `git diff` with a tree ID. Before sending, check that the
+diff reverse-applies to the current tree: `git apply --check --reverse <diff>` exits 0 in a
+clone of that commit, or, without a clone, `GIT_INDEX_FILE=<tmp> git read-tree <current tree>`
+followed by `GIT_INDEX_FILE=<tmp> git apply --cached --check --reverse <diff>`. The owner
+adapter does this itself when the host passes `previous_tree` (see
+[cross-agent-adapter.md](cross-agent-adapter.md)).
+
 ## Prepared target
 
 A caller that cannot grant Git access, such as a CI job with a narrow allowlist, can
@@ -129,6 +148,30 @@ allowed, run the `Committed tree` recipe in [tree-fingerprint.md](tree-fingerpri
 with `'<head>'` in place of `HEAD`, so the record host stays out;
 `git rev-parse '<head>^{tree}'` gives the same ID only when the host is not committed.
 Else write `Tree: unknown - <reason>`.
+
+## Whitespace and origin of a prepared target
+
+`git diff --check` skips untracked files, and a diff from `HEAD` counts hunks that were
+already in the working tree. Check the whitespace of a prepared target through a private
+index with an explicit inventory that includes untracked files; the real index and the
+working files are never touched:
+
+```sh
+idx="$(mktemp -d)/index"
+GIT_INDEX_FILE="$idx" git read-tree HEAD
+GIT_INDEX_FILE="$idx" git add -A -- . ':(exclude)<host-path>'
+git diff --check HEAD "$(GIT_INDEX_FILE="$idx" git write-tree)" -- . ':(exclude)<dirty path>'
+```
+
+Add one `':(exclude)<dirty path>'` for every path of `Initial dirty state`; those paths are
+handled below and never compared with `HEAD`.
+
+For a path from `Initial dirty state`, the own delta is the diff from the captured original
+(the bytes taken before the change, with their sha256) to the current file; check the hash
+first. Others' hunks stay context under `Others' changes in scope (not assessed)`. A
+missing, unreadable or mismatching before-snapshot makes the path `unverified`: `HEAD` is
+never assumed to be its "before". The final `Tree` and the origin of each hunk are recorded separately.
+`scripts/target_whitespace.py` implements this (`check_whitespace`).
 
 ## Base discovery
 

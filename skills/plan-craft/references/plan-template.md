@@ -115,7 +115,8 @@ placeholders, and when a record is unfinished are rules of SKILL.md steps 1-5.
 - `Execution` stays `unset` until the user chooses; then it becomes `inline` or
   `subagents` and nothing else. Under `--auto` SKILL.md step 7 picks the value without a
   question and adds its reason after it (`inline - two tasks`); the value stays the
-  first word.
+  first word. Handing the plan to another agent CLI or choosing `/compact` first adds no
+  value of its own.
 - `Produces` and `Consumes` of neighboring tasks must name the same signature or format
   with the same spelling.
 - `Covers` lists only criteria this task makes observable. A criterion no task covers is
@@ -137,6 +138,30 @@ placeholders, and when a record is unfinished are rules of SKILL.md steps 1-5.
   tasks cover is `deferred to Task <n>` in the `verify` report and does not block `PASS`.
   Already authorized defer issue/reply actions and the bounded REJECT reply in
   `cr-received` may proceed under `--auto`; other outward gates remain in force.
+
+## Check templates
+
+Two checks written from memory fail on a correct tree. Use these forms:
+
+1. A phrase that must be gone from a skill:
+
+   ```sh
+   grep -rn --exclude=CHANGELOG.md '<phrase>' skills/<skill>
+   awk '/^## \[/{n++} n==1' skills/<skill>/CHANGELOG.md | grep -n '<phrase>'
+   ```
+
+   Both print nothing. Released `CHANGELOG.md` entries keep the old phrase, so the first
+   command skips them; the second looks only at the top, unreleased entry. A new entry
+   that quotes the removed phrase breaks the second command, so the entry describes the
+   removal without quoting it.
+2. A sentence that must be present in a Markdown file, which may be wrapped across lines:
+
+   ```sh
+   python3 -c "import sys; t=' '.join(open(sys.argv[1]).read().split()); print('<sentence>' in t)" <file>
+   ```
+
+   It prints `True`; plain `grep -c '<sentence>'` gives `0` when a moved paragraph splits
+   the sentence between lines.
 
 ## Execution record format
 

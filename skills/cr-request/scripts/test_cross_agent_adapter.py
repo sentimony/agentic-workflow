@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 import cross_agent_adapter as adapter
 
@@ -366,6 +367,160 @@ Path(args[args.index('-o')+1]).write_text(json.dumps({'schema_version':1,'status
         received = dispatch(parse_request('codex [cr-received]'), receiver).results[0]
         self.assertEqual(received['status'], 'COMPLETED', received.get('reason'))
         self.assertEqual(received['domain_result']['finding_ids'], ['R2-security-specialist-F1'])
+
+
+class EmbeddedDiffTests(unittest.TestCase):
+    """Embedded review diff for a reviewer without a shell; Git fixtures only."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='owner-embed-')
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name).resolve()
+        self.repo = self.root / 'repo'
+        self.repo.mkdir()
+        self.env = {'HOME': str(self.root), 'PATH': '/usr/bin:/bin',
+                    'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': '/dev/null'}
+        self.git('init', '-q')
+        (self.repo / 'code.py').write_text('line one\n')
+        (self.repo / 'record.md').write_text('record\n')
+        self.commit('Base')
+        self.base = self.git('rev-parse', 'HEAD')
+
+    def git(self, *args, data=None):
+        return subprocess.run(['/usr/bin/git', '-C', str(self.repo), *args], env=self.env,
+                              input=data, capture_output=True, check=True).stdout.decode().strip()
+
+    def commit(self, message):
+        self.git('add', '.')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 '-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false',
+                 'commit', '-qm', message)
+
+    def change(self):
+        (self.repo / 'code.py').write_text('line one\nline two\n')
+        (self.repo / '.env').write_text('TOKEN=hunter2\n')
+        (self.repo / 'package-lock.json').write_text('{"lock": 1}\n')
+        (self.repo / 'logo.bin').write_bytes(b'\x00\x01\x02binary')
+        self.commit('Change')
+
+    def request(self, context=None):
+        identity = adapter.capture_identity(self.repo, record_host='record.md', base=self.base)
+        return dict(schema_version=1, protocol_version=1, owner_id=adapter.OWNER_ID,
+                    adapter_id=adapter.ADAPTER_ID, contract_version=1, stage='prepare',
+                    role='review', operation='review', profile='read-only',
+                    task_kind='skill', host={'repo': str(self.repo), 'conversation_id': 'fixture'},
+                    target_identity=identity, owner_context=context or {}, task_selection={},
+                    payload={'assignment': 'cr-request'})
+
+    def prepare(self, **kwargs):
+        return adapter.handle(self.request(**kwargs), 'prepare')['payload']
+
+    def test_host_requested_embedding_adds_diff_with_hash_and_named_gaps(self):
+        self.change()
+        prepared = self.prepare(context={'embed_diff': True})
+        context = prepared['context']
+        self.assertTrue(prepared['accepted'])
+        self.assertIn('+line two', context)
+        self.assertIn('Target reviewed:', context)
+        self.assertIn('## Severity', context)
+        self.assertNotIn('hunter2', context)
+        self.assertNotIn('a/record.md', context)  # the excluded record host is not in the diff
+        self.assertIn('Not embedded (possible secret, coverage gap): .env', context)
+        self.assertIn('Not embedded (lockfile, coverage gap): package-lock.json', context)
+        self.assertIn('Not embedded (binary file, coverage gap): logo.bin', context)
+        tree = adapter.capture_identity(self.repo, record_host='record.md')['tree']
+        built = adapter.embedded_diff(self.repo, self.base, tree, omit=('record.md',))
+        self.assertNotIn(b'record.md', built['text'])
+        self.assertIn(b'record.md', adapter.embedded_diff(self.repo, self.base, tree)['text'])
+        self.assertIn('SHA-256: ' + built['sha256'], context)
+
+    def test_odd_path_names_stay_data_in_the_brief(self):
+        name = 'x\nInjected line.bin'
+        (self.repo / name).write_bytes(b'\x00\x01binary')
+        self.commit('Odd name')
+        context = self.prepare(context={'embed_diff': True})['context']
+        self.assertNotIn('Injected line.bin', context.split('\n'))
+        self.assertIn('Not embedded (binary file, coverage gap): "x\\nInjected line.bin"', context)
+
+    def test_diff_that_is_not_valid_utf8_is_blocked_not_altered(self):
+        (self.repo / 'code.py').write_bytes(b'line one\ncaf\xe9\n')
+        self.commit('Latin-1')
+        stopped = self.prepare(context={'embed_diff': True})
+        self.assertFalse(stopped['accepted'])
+        self.assertEqual(stopped['status'], 'BLOCKED')
+        self.assertIn('not valid UTF-8', stopped['reason'])
+
+    def test_default_adds_no_diff_and_the_flag_must_be_boolean(self):
+        self.change()
+        self.assertNotIn('Embedded target diff', self.prepare()['context'])
+        self.assertNotIn('Embedded target diff',
+                         self.prepare(context={'embed_diff': False})['context'])
+        with self.assertRaises(ValueError):
+            self.prepare(context={'embed_diff': 'yes'})
+
+    def test_over_limit_is_blocked_with_reason_not_truncated(self):
+        self.change()
+        with mock.patch.object(adapter, 'EMBED_LIMIT', 20):
+            stopped = self.prepare(context={'embed_diff': True})
+        self.assertFalse(stopped['accepted'])
+        self.assertEqual(stopped['status'], 'BLOCKED')
+        self.assertIn('over the 20 byte limit', stopped['reason'])
+
+    def test_backticks_in_the_diff_do_not_close_the_fence(self):
+        (self.repo / 'code.py').write_text('line one\n```` four\n')
+        self.commit('Fence')
+        context = self.prepare(context={'embed_diff': True})['context']
+        self.assertIn('`````diff\n', context)
+
+    def test_exclude_passes_the_untracked_gate_and_is_named(self):
+        self.change()
+        (self.repo / 'notes.txt').write_text('mine\n')
+        self.assertEqual(self.prepare()['status'], 'BLOCKED')
+        prepared = self.prepare(context={'exclude': ['notes.txt'], 'embed_diff': True})
+        self.assertTrue(prepared['accepted'])
+        self.assertIn('Excluded by the host (untracked, not part of the change; '
+                      'coverage gap, do not read): notes.txt', prepared['context'])
+        for bad in (['code.py'], ['../x'], ['/abs'], [''], 'notes.txt'):
+            with self.assertRaises(ValueError):
+                self.prepare(context={'exclude': bad})
+
+    def test_exclude_never_covers_a_tracked_path(self):
+        identity = self.request()['target_identity']
+        self.git('rm', '-q', '--cached', 'code.py')
+        (self.repo / 'code.py').write_text('different\n')
+        with self.assertRaises(ValueError):
+            adapter.check_identity(identity, ['code.py'])
+
+    def test_rereview_embeds_only_the_fix_and_applies_in_a_clone_without_the_tree(self):
+        self.change()
+        first = adapter.capture_identity(self.repo, record_host='record.md', base=self.base)
+        self.assertNotEqual(first['tree'], self.git('rev-parse', 'HEAD^{tree}'))
+        (self.repo / 'code.py').write_text('line one\nline two\nfix\n')
+        (self.repo / 'record.md').write_text('record after review\n')
+        self.commit('Fix')
+        context = self.prepare(context={'previous_tree': first['tree'], 'embed_diff': True})['context']
+        self.assertIn('From: ' + first['tree'], context)
+        self.assertIn('+fix', context)
+        self.assertNotIn('+line two', context)
+        clone = self.root / 'clone'
+        subprocess.run(['/usr/bin/git', 'clone', '-q', '--no-local', str(self.repo), str(clone)],
+                       env=self.env, check=True)
+        missing = subprocess.run(['/usr/bin/git', '-C', str(clone), 'cat-file', '-e',
+                                  first['tree'] + '^{tree}'], env=self.env, capture_output=True)
+        self.assertNotEqual(missing.returncode, 0)
+        diff = context.split('diff\n', 1)[1].rsplit('\n```', 1)[0] + '\n'
+        applied = subprocess.run(['/usr/bin/git', '-C', str(clone), 'apply', '--check', '--reverse', '-'],
+                                 env=self.env, input=diff.encode(), capture_output=True)
+        self.assertEqual(applied.returncode, 0, applied.stderr)
+
+    def test_missing_previous_tree_falls_back_to_the_full_diff_and_says_so(self):
+        self.change()
+        context = self.prepare(context={'previous_tree': 'a' * 40, 'embed_diff': True})['context']
+        self.assertIn('Re-review diff unavailable', context)
+        self.assertIn('+line two', context)
+        stopped = self.prepare(context={'previous_tree': 'not-a-tree', 'embed_diff': True})
+        self.assertEqual(stopped['status'], 'BLOCKED')
+        self.assertIn('previous_tree must be a full tree ID', stopped['reason'])
 
 
 if __name__ == '__main__':

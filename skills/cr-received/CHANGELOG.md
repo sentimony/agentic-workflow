@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.14] - 2026-11-12
+
+1. The automatic review budget is kept per phase, `document` (spec, plan, prose and their
+   re-reviews) and `code` (implementation and its re-reviews), with the journal form
+   `Round review <n>: [document|code] <cause>`; one explicit user round count covers both
+   phases (`20261030-0851`).
+
 ## [0.0.13] - 2026-11-10
 
 1. Name unexpected tracked or untracked changes left by a check, such as an updated

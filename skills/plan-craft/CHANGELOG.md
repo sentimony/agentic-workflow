@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.0.13] - 2026-11-12
+
+1. The execution choice is a numbered list in the reply text, never an interactive
+   question tool: after a saved plan the user may switch agent or run `/compact`. The
+   options are `implement` with subagents, `implement` inline, `/compact` and then
+   `implement <plan>`, and handing the plan to another agent CLI; `Execution` gets no new
+   value. A single open question, such as the commit policy, is asked as a line of text
+   (`20261024-2327`).
+2. `Check` templates for a phrase that must be gone (skipping released changelog entries,
+   with a separate look at the top entry) and for a sentence that must be present in
+   Markdown (whitespace normalized), plus a brief line for subagent waves to describe a
+   removed phrase instead of quoting it (`20261030-0349`).
+3. The default plan file is `docs/plans/YYMMDDTHHMM-<topic>.md` (local `date +%y%m%dT%H%M`,
+   kebab-case topic of at most 24 characters, no overwrite); the older
+   `YYYYMMDD-HHMM-<topic>.md` names stay valid (`20261112-0305`).
+4. When a document review of the plan will run, the plan is committed as `Plan <topic>`
+   before the first review even while `Execution` is `unset`, and the execution choice is
+   a separate `Revise plan` commit, so every re-review has a diff (`20261030-0851`).
+
 ## [0.0.12] - 2026-11-07
 
 1. Preview handoff names `doc-preview`, the new name of `scope-check` in skills 0.0.102.

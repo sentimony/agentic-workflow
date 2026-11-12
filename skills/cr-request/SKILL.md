@@ -1,9 +1,9 @@
 ---
 name: cr-request
 description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
-argument-hint: "[<base-ref>] [<spec-path>] [--auto]"
+argument-hint: "[<base-ref>] [<spec-path>] [--exclude <path>] [--auto]"
 metadata:
-  version: "0.0.17"
+  version: "0.0.18"
 license: MIT
 ---
 
@@ -30,6 +30,17 @@ plan, intent comes from the conversation and commit messages; no journal is writ
    validates the complete review before domain completion.
 2. Target selection, fingerprints, findings and intake remain owned by this workflow.
    Missing adapters or partial reports cannot turn transport success into valid review.
+3. A review dispatched through `cross-agent` uses its `read-only` mode. For a reviewer
+   without a shell (Claude read-only has no Bash), the host sets `embed_diff: true` in
+   `owner_context`, and `prepare` adds the diff of the committed boundary to the brief with
+   its size and hash and the paths it leaves out; a change over the size limit is blocked
+   with the reason and never cut. `--exclude <path>` (repeatable) names untracked files
+   that are not part of the change: the host passes them as `exclude` at every stage, the
+   brief names them as a coverage gap, and the reviewer does not read them. A re-review
+   passes the `Tree` of the previous round as `previous_tree` and gets only the fix diff.
+   The host passes the complete owner target identity (with `base`) in its host JSON; the
+   launcher's automatic identity does not fit this adapter. Details:
+   [owner adapter](references/cross-agent-adapter.md), item 13.
 
 ## 1. Pin the target
 
@@ -134,6 +145,10 @@ Lenses for each axis, language-agnostic, are in [lenses.md](references/lenses.md
   raise a rejected finding again without new evidence. Outside the fix diff it reports
   only a regression the fix caused, tagged `[regression]`, with evidence that links it to
   the fix; older code outside the fix diff stays out of scope.
+  The brief is narrow by default: the fix diff, the `Received` and `Ruling` lines of the
+  round, the sections of a document that the diff touches, and the repository files needed
+  to check a fact. A whole document is read again only when no diff exists, and the result
+  says so ([target.md](references/target.md), "Re-review diff").
 - **Document** - a spec or plan file, identified by its `sha256`; findings point to
   `§<heading>`. The three axes stay: Intent (it answers the request), System (it agrees
   with the repository and neighboring documents), Craft (every acceptance criterion is
@@ -235,6 +250,15 @@ the required re-review still needs authorization after the budget is exhausted. 
 `Next step: none - round limit reached, awaiting user`. A user-started round past the
 limit is dispatched once; its `Ruling` line goes into the record before its `Review` line,
 and the result says the round ran past the limit.
+
+Budgets are kept per phase: `document` for a spec, a plan or prose and their re-reviews,
+`code` for an implementation and its re-reviews. Each phase counts its own automatic
+rounds under the Round rule, written as `Round review <n>: [document|code] <cause>`; a
+line without a phase takes the phase of the nearest `Review` line above it, or counts
+against both when there is none. A new reviewer, model or mode does not reset a count, and
+`R<n>` IDs keep counting across phases. One round count the user gave explicitly covers
+both phases together: say before the first document review how many rounds that leaves
+for code ([round-budgets.md](references/round-budgets.md)).
 
 The last line of the result is the next step:
 
@@ -340,3 +364,4 @@ of read isolation.
 - [Compact result](references/compact.md)
 - [Review identity and archive](references/review-actions.md)
 - [Review lenses](references/lenses.md)
+- [Review budgets by phase](references/round-budgets.md)

@@ -58,4 +58,19 @@
     `a37b6e47a8ba388b28870cac80d90f4d8e3fb113`, under
     `plugins/aw/skills/cross-agent/scripts/`. The older cross-cr donor path in the brief
     was incorrect. Legacy cross-cr is retired only in this later integration candidate,
-    preserving the separate preparation, structural and rename release boundaries.
+13. Embedded review diff. `owner_context` may also carry `embed_diff` (boolean, default
+    `false`), `exclude` (repository-relative untracked paths, repeated by the host at
+    `prepare`, `validate` and `intake`) and `previous_tree` (full tree ID of the previous
+    round). The `prepare` envelope carries no model or family, so the host sets `embed_diff`
+    for a reviewer without a shell. With it, in `implementation` mode and with a `base` in
+    the target identity, `prepare` appends the diff `base..tree` (or `previous_tree..tree`
+    when that object exists, else the full diff with a note) as data: byte count and SHA-256,
+    the paths left out and why (possible secret by name, lockfile, binary file), and the
+    diff in a fence longer than any backtick run inside it. A diff that does not reverse-apply
+    to the target tree, a diff over 262144 bytes, a diff that is not valid UTF-8 or an
+    invalid `previous_tree` returns
+    `accepted: false`, `status: BLOCKED` and a reason; nothing is cut. `exclude` admits
+    only untracked paths and lets them pass the clean-target check; they are named as a
+    coverage gap. A path with a newline or another control character is written as a quoted
+    JSON string, so a file name stays data. Without `embed_diff` the brief is unchanged. Untracked file content is
+    never embedded: the target stays a committed tree.

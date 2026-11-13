@@ -84,7 +84,7 @@ the PR, a named reviewer, mergeable) gets `deferred to finalize` and does not bl
 its local part, when the spec splits one, is an ordinary claim. Before deferring, read the
 forge once: after `git fetch`, when `git rev-parse origin/<branch>` equals `HEAD`, take CI
 and reviews for the full SHA (`gh run list --commit <sha>`, `gh pr checks`) as fresh
-evidence; only a branch that is really not pushed is `deferred to finalize`. A state the
+evidence; only a branch that is not pushed, or has no open PR for this `HEAD`, is `deferred to finalize`. A state the
 caller names ("push pending", "CI green") is a claim to check, not proof.
 
 The caller's words alone are never the full list when a spec or plan exists. A `Task`

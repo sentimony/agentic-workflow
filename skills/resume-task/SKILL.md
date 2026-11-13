@@ -29,7 +29,8 @@ with `implement`; this skill finds out where the cycle actually stands.
 5. Report the state found (stage, head, stale lines, open questions), then start the chosen
    stage, or ask for the transition without `--auto`.
 
-The last line of the result is `Next step: <skill> - <what>`, or
+The last line of the result is ``Next step: `/<skill>` - <what>`` (the skill name as inline
+code in the host's invocation form: `/<skill>` in Claude Code, `$<skill>` in Codex), or
 `Next step: none - <owner or reason>`.
 
 ## Security Model

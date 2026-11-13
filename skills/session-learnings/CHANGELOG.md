@@ -2,7 +2,7 @@
 
 ## [0.0.14] - 2026-11-13
 
-1. Recording measures the chain with the draft before appending and ends with `Next step: session-learnings - triage, chain over limit by <n> B` when the chain is over the limit or the margin is small; triage does the same when it stays over (`20261024-0224`).
+1. Recording measures the chain with the draft before appending and ends with ``Next step: `/session-learnings` - triage, chain over limit by <n> B`` when the chain is over the limit or the margin is small; triage does the same when it stays over (`20261024-0224`).
 2. The Codex chain measurement includes `~/.codex/AGENTS.md` or `$CODEX_HOME/AGENTS.md`.
 
 ## [0.0.13] - 2026-11-13

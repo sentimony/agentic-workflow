@@ -225,7 +225,7 @@ When nothing was written, that line is `Learnings: 0 -> none`.
 
 When the chain with the notes is over the limit, or its margin is smaller than a typical
 record, name the bytes over the limit and end with
-`Next step: session-learnings - triage, chain over limit by <n> B` (or `... margin <n> B`)
+``Next step: `/session-learnings` - triage, chain over limit by <n> B`` (or `... margin <n> B`)
 instead of `none - chain complete`.
 
 ## Triage the notes
@@ -276,7 +276,7 @@ file that holds others' uncommitted changes, stage only your own lines.
 
 The last line of the result in triage is `Next step: none - chain complete`; when the
 heaviest chain is still over the limit after the approved edits, it is
-`Next step: session-learnings - triage, chain over limit by <n> B`. Recording ends as
+``Next step: `/session-learnings` - triage, chain over limit by <n> B``. Recording ends as
 step 10 says.
 
 ## When not to use

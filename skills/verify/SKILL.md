@@ -3,7 +3,7 @@ name: verify
 description: Proves every promise behind a completion claim with fresh checks on the committed tree and gives one verdict, without editing code. Use when anyone is about to say work is done, fixed, ready, or mergeable, and before a merge, pull request, or handoff report, including work with no plan. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-or-spec-path>] [--auto]"
 metadata:
-  version: "0.0.14"
+  version: "0.0.15"
 license: MIT
 ---
 
@@ -34,10 +34,10 @@ hostless integration semantics remain unchanged.
 
 Record `HEAD` (full SHA), the branch, and every uncommitted path from
 `git status --porcelain`. Compute the fingerprint with the `## Committed tree` recipe in
-[tree-fingerprint.md](references/tree-fingerprint.md): `HEAD^{tree}` without the record
+[tree-fingerprint.md](tree-fingerprint.md): `HEAD^{tree}` without the record
 host, even when the host is not committed. Uncommitted paths other than the host are
 outside the verdict: the report lists them, and the checks run in a clean clone of
-`HEAD` ([clean-clone.md](references/clean-clone.md)) whenever there is one, whether or
+`HEAD` ([clean-clone.md](clean-clone.md)) whenever there is one, whether or
 not it looks related.
 
 When the work under verification is itself uncommitted - the record's latest `Commits`
@@ -58,7 +58,7 @@ touched.
 Before long checks for a PR delivery target, read its full head/base and mergeability.
 Conflicts or an outdated base stop the expensive run; UNKNOWN has a finite deadline.
 Use `finalize`
-[boundary guards](../finalize/references/squash.md#local-gate-contract) for current
+[boundary guards](../finalize/squash.md#local-gate-contract) for current
 observations. After a head/base change, rerun applicable verification and review for
 that target. Re-pin both identities after checks; a changed target invalidates the run
 even when the content fingerprint stays equal. A standalone local verification with
@@ -71,7 +71,7 @@ from every source present - the spec's `AC<n>` (via `Spec:` in the plan header, 
 spec that hosts the record), the plan's tasks with `Produces` and `Covers`, the record's
 `Task`, `Ruling`, and `Deferred` lines, each `ACCEPT` or `PARTIAL` finding of any review
 round, and the caller's words; the list and source tags are in
-[report.md](references/report.md). The marker
+[report.md](report.md). The marker
 `Ruling: plan revised after spec re-approval - <spec path>` is checked as a claim this
 way: the plan's `Spec` names that path, and that spec reads `Status: approved`.
 
@@ -99,7 +99,7 @@ conversation, the `Blocking:` field of the `cr-received` return block. A blocker
 `Received` line rules on yet, or any `ESCALATE` until a
 `Ruling: R<n>-F<k> escalation decided - ...` line closes it; a new round does not close
 an old finding. `ACCEPT` and `PARTIAL` fixes are proven as claims (step 2). Read
-[report.md](references/report.md) for the exact reading whenever the record has a
+[report.md](report.md) for the exact reading whenever the record has a
 `Review` line. An open blocker rules out `PASS` whatever the matrix shows.
 
 ## 4. Fresh evidence only
@@ -119,7 +119,7 @@ checkout. These are not evidence:
 In a `working` run, whitespace is checked through a private index, not with plain
 `git diff --check`, which skips untracked files and mixes in hunks that were already in the
 working tree; a path from `Initial dirty state` without a captured original is
-`not verified`, never checked against `HEAD` ([whitespace.md](references/whitespace.md)).
+`not verified`, never checked against `HEAD` ([whitespace.md](whitespace.md)).
 
 For a hostless ready PR, identify project checks from the actual project contract and
 run them freshly against the current committed head/fingerprint with isolated mutable
@@ -170,7 +170,7 @@ Compute the fingerprint again with the same recipe. If it changed while checking
 results belong to no single tree: start over from step 1, at most twice. A third change
 gives `BLOCKED (tree keeps changing: <paths or commits>)`; a verdict never mixes trees.
 Then pick `PASS`, `FAIL`, `INCOMPLETE`, or `BLOCKED` by the definitions in
-[report.md](references/report.md), read before every verdict: any `failed` row is `FAIL`;
+[report.md](report.md), read before every verdict: any `failed` row is `FAIL`;
 `INCOMPLETE` names the owner and the next action; `BLOCKED` says what stops the
 verification itself.
 
@@ -179,7 +179,7 @@ Any `not verified`, any `failed`, any unreported weakening, any weakening that s
 user and `finalize`.
 
 The full matrix is required before `cr-request` and `finalize`; the compact report fits
-an intermediate check. Both shapes are in [report.md](references/report.md).
+an intermediate check. Both shapes are in [report.md](report.md).
 
 ## 8. Record and loop
 
@@ -193,7 +193,7 @@ Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
 
 `working` is there only for a working-tree run (step 1). A spec without the section gets
 it as its last section, a ```` ```text ```` block whose first line is `Branch: <name>`
-(shape in [report.md](references/report.md)); this append is not a material change to
+(shape in [report.md](report.md)); this append is not a material change to
 the spec and does not reset its approval. With no host, the line is printed in the
 report only.
 
@@ -293,7 +293,7 @@ A fix after a review changes the tree, so the order of the record's code `Review
 When the Round rule stops the loop, the line is `Next step: none - <cause> needs the
 user`.
 
-1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+1. Follow the shared [stage transition contract](../resolve-issue/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition;
    internal commands and tasks of the current authorized plan need no extra approval.
 2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
@@ -355,7 +355,7 @@ network gives `not verified`.
 
 ## References
 
-- [Report format, statuses, verdicts, blockers, record lines](references/report.md)
-- [Tree fingerprint recipes and validity](references/tree-fingerprint.md)
-- [Clean clone of `HEAD`](references/clean-clone.md)
-- [Whitespace of a working-tree target](references/whitespace.md)
+- [Report format, statuses, verdicts, blockers, record lines](report.md)
+- [Tree fingerprint recipes and validity](tree-fingerprint.md)
+- [Clean clone of `HEAD`](clean-clone.md)
+- [Whitespace of a working-tree target](whitespace.md)

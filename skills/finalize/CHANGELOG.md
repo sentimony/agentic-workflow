@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.14] - 2026-11-13
+
+1. Flat layout: reference files moved next to SKILL.md; no content change.
+
 ## [0.0.13] - 2026-11-13
 
 1. Forge identity preflight before a batch push or PR: repository ID per target, same-ID targets merged only after comparing blobs and trees, effective account and rights checked before the first push (`20261101-0351`).

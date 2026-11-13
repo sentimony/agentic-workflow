@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.15] - 2026-11-13
+
+1. Flat layout: reference files moved next to SKILL.md; no content change.
+
 ## [0.0.14] - 2026-11-13
 
 1. New status `deferred to finalize` for criteria the spec marks `(after finalize)`: no dead `INCOMPLETE` before push; a pushed `HEAD` is checked first against the forge by full SHA, and a state named by the caller is only a claim (`20261029-2232`).

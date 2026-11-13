@@ -29,7 +29,7 @@ local diff drivers from rewriting the output.
 `<host-path>` is the record host relative to the root; drop the `-- . ':(exclude)...'`
 part when there is no host in the repository. Leaving the host out keeps the record lines
 that `cr-request` appends after a review from changing the uncommitted state. The last two
-commands are the `Uncommitted state` recipe of `cr-request` `references/target.md`, word
+commands are the `Uncommitted state` recipe of `cr-request` `target.md`, word
 for word, so the two values compare. `--stdin-paths` unquotes the C-quoted names that
 `ls-files` prints under `core.quotePath`, so untracked names with non-ASCII bytes, quotes,
 tabs, or newlines hash as they are.

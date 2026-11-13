@@ -23,7 +23,7 @@ OWNER_ID = 'sentimony.agentic-workflow'
 ADAPTER_ID = 'review'
 VERSION = 1
 CAPABILITIES = ('prepare', 'validate', 'intake')
-REFS = Path(__file__).resolve().parents[1] / 'references'
+REFS = Path(__file__).resolve().parents[1]
 IDENTITY_FIELDS = {'schema_version', 'repository', 'head', 'tree', 'boundary',
                    'base', 'record_host', 'document'}
 
@@ -624,7 +624,7 @@ def handle(request, stage):
             except ValueError as exc:
                 response = _stop('USER_INPUT_REQUIRED' if str(exc).startswith('clarify') else 'BLOCKED', str(exc))
             else:
-                body = (REFS.parent.parent / 'cr-received' / 'SKILL.md').read_text('utf-8')
+                body = (REFS.parent / 'cr-received' / 'SKILL.md').read_text('utf-8')
                 body += '\n\nCurrent review path and identity (host-selected data):\n'
                 body += json.dumps({'review_path': chosen['review_path'],
                                     'identity': chosen.get('identity', chosen.get('target_identity'))})

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.21] - 2026-11-13
+
+1. Flat layout: reference files moved next to SKILL.md; no content change.
+
 ## [0.0.20] - 2026-11-13
 
 1. `Next step` inside a review loop needs no user decision under `--auto`; agreed independent work starts in the same turn while a transition awaits the user (`20261024-2324`).

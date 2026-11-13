@@ -3,7 +3,7 @@ name: specify
 description: Turns a request into an evidence-backed spec with checkable acceptance criteria behind an explicit approval, then starts plan-craft. Use when work has to be designed before any code - a new feature, product, UX, or architecture change, unclear success criteria, or a choice between materially different approaches - including a spec revision after a document review. Not for a fully specified mechanical change or a fix with known expected behavior. Replaces devflow scope-triage.
 argument-hint: "[<request>] [--auto]"
 metadata:
-  version: "0.0.13"
+  version: "0.0.14"
 license: MIT
 ---
 
@@ -156,7 +156,11 @@ Fill [spec-template.md](references/spec-template.md):
 - the spec describes behavior and contracts, never implementation file paths: those
   belong to the plan;
 - every criterion is one numbered-list item `AC<n>: <checkable predicate>`, numbered
-  from 1 with no gaps, and says what can be observed rather than what was done.
+  from 1 with no gaps, and says what can be observed rather than what was done;
+- a criterion about state that exists only on an open PR or forge (CI on the PR, a named
+  reviewer's review, mergeable) ends with `(after finalize)`, or is split into a local part
+  (the same checks on the tree) and a separate `(after finalize)` criterion; `verify`
+  defers such a criterion to `finalize` instead of ending in a dead `INCOMPLETE`.
 
 Before saving, run the template's `Acceptance criteria coverage` check. For `design`,
 every material behavior and contract item has a criterion, and every criterion traces to

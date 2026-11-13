@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.16] - 2026-11-13
+
+1. `Next step` inside a review loop needs no user decision under `--auto`; agreed independent work starts in the same turn while a transition awaits the user (`20261024-2324`).
+2. `## Scoped tree` recipe added to the shared `tree-fingerprint.md` copy.
+
 ## [0.0.15] - 2026-11-13
 
 1. Description rewritten as a thesis followed by `Use when ...` without `You MUST`, cutting

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.14] - 2026-11-13
+
+1. New status `deferred to finalize` for criteria the spec marks `(after finalize)`: no dead `INCOMPLETE` before push; a pushed `HEAD` is checked first against the forge by full SHA, and a state named by the caller is only a claim (`20261029-2232`).
+2. `## Scoped tree` recipe and scoped run for a task subagent on a shared dirty tree; a controller-kept journal gets the `Verify` line in the report as `Record: pending` (`20261027-0338`).
+3. Planless runs read a clean code review of the same tree from the conversation instead of routing to `cr-request` again (`20261026-2320`).
+4. Independent agreed work is started in the same turn while a transition awaits the user (`20261024-2324`).
+
 ## [0.0.13] - 2026-11-13
 
 1. Description rewritten as a thesis followed by `Use when ...` without `You MUST`, cutting

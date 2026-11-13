@@ -17,13 +17,13 @@ Version: `v0.0.27`
 
 | Skill | Version | Command | Description |
 | --- | --- | --- | --- |
-| [specify](skills/specify/SKILL.md) | 0.0.13 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
+| [specify](skills/specify/SKILL.md) | 0.0.14 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
 | [plan-craft](skills/plan-craft/SKILL.md) | 0.0.14 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
 | [implement](skills/implement/SKILL.md) | 0.0.13 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
-| [verify](skills/verify/SKILL.md) | 0.0.13 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
-| [cr-request](skills/cr-request/SKILL.md) | 0.0.19 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; preserve the full report, evidence, and reviewer provenance. |
-| [cr-received](skills/cr-received/SKILL.md) | 0.0.15 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
-| [finalize](skills/finalize/SKILL.md) | 0.0.12 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
+| [verify](skills/verify/SKILL.md) | 0.0.14 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
+| [cr-request](skills/cr-request/SKILL.md) | 0.0.20 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; preserve the full report, evidence, and reviewer provenance. |
+| [cr-received](skills/cr-received/SKILL.md) | 0.0.16 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
+| [finalize](skills/finalize/SKILL.md) | 0.0.13 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
 | [resolve-issue](skills/resolve-issue/SKILL.md) | 0.0.4 | `/resolve-issue` | Run issue intake through configured delivery with durable recovery and fresh host authority. |
 | [session-learnings](skills/session-learnings/SKILL.md) | 0.0.13 | `/session-learnings` | Record reusable learnings from the current session without asking in gitignored project notes, then triage them into the right instruction file after approval. |
 

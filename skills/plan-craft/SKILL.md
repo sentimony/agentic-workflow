@@ -3,7 +3,7 @@ name: plan-craft
 description: Turns settled requirements into an ordered, multi-step implementation plan covering task order, acceptance-criteria coverage, and the execution choice. Use when an approved spec, accepted design, or requirements agreed in the conversation need a plan before any code, including a plan revision after a document review. Not for open design (specify) or executing a plan (implement). Replaces devflow plan-crafting.
 argument-hint: "[<spec-path>] [<plan-path>] [--auto]"
 metadata:
-  version: "0.0.14"
+  version: "0.0.15"
 license: MIT
 ---
 
@@ -167,6 +167,8 @@ Fill the header from [the template](references/plan-template.md):
 - `Global constraints` - copied word for word from the spec's `Decisions`, `Out of scope`,
   and `Security Model` sections (a `note` spec has only `Decisions`), never summarized;
 - `Review focus` - inputs and failure modes the spec expects that no planned test covers;
+- `Base check` - the command `implement` runs on `Base`, plus every reference-comparing
+  `Check` of step 5;
 - `Execution: unset` - step 7 fills it;
 - the file map: every path the plan touches, what changes, and which task owns it.
 
@@ -198,6 +200,12 @@ orchestrated auto invocation; otherwise it waits. Session prohibitions always wi
 A `Check` that acts outward moves into its own task with `Outward`. A criterion only such tasks cover is
 reported by `verify` as `deferred to Task <n>` and does not block `PASS`.
 
+Never create a task for pushing, opening the PR, or reading its CI or review state: that
+is `finalize`. A criterion that holds only on an open PR (CI on the PR, an automatic
+review, mergeable) gets no task and keeps the spec's `(after finalize)` mark and no task, with
+its local part (the same CI steps on the tree) covered by an ordinary task. `verify`
+reports such a criterion as `deferred to finalize`, and `finalize` checks it on the PR.
+
 Order:
 
 - the riskiest unknown first, so a wrong assumption fails before work piles on it;
@@ -222,6 +230,9 @@ Content:
 - waves, independent tasks, and shared state are marked only where they exist; a
   dimension that does not apply gets `n/a: <reason>` once in `Architecture`, not an
   empty section;
+- a `Check` that compares a result with a reference outside the branch (a stored baseline,
+  snapshots, an export) is listed with its command in the header's `Base check`, so that
+  `implement` runs it on `Base` before the first task;
 - credentials appear in `RED`, `GREEN`, and `Check` commands only as placeholder names
   such as `<API_TOKEN>`, never as values;
 - a `Check` that a phrase is gone, or that a sentence is present in Markdown, uses the
@@ -301,6 +312,22 @@ Read the saved plan once more against the spec and fix what fails:
 - every project script or alias is checked against its definition (`package.json`,
   `Makefile`, config); `--help` or the documentation only for syntax the definition does
   not show; a command that cannot be confirmed is marked `check during execution`;
+- the graph is acyclic: follow `Depends on` together with every contract in `Consumes`,
+  including contracts produced by other plans, and name the concrete cycle or the missing
+  producer when one is found (for example a loop task consuming a transition contract
+  that a later task creates);
+- a delivery gate and a local prerequisite stay apart: permission to prepare locally does
+  not turn an absent API or adapter into an existing output, and a task never consumes
+  something only a later or blocked task produces;
+- a task that takes part of an older task states the included states, the excluded
+  transitions, and its actual dependencies; it does not copy the whole old `Check` when
+  that needs a deferred delivery contract (a resume check before delivery must not
+  require a merge or deploy);
+- structure survived the edit: when a section was replaced or edited, its boundary is the
+  next heading of the same or a higher level, and the inventory of headings (ignoring
+  code spans and fenced blocks) before and after differs only by the intended change; the
+  required headings come from [the template](references/plan-template.md), and a lost
+  intermediate `##` fails the check even when constraints and criteria are intact;
 - proportion: a plan far longer than its spec usually already contains the code; move
   that back into behavior and invariants.
 

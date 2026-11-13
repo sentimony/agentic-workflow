@@ -3,7 +3,7 @@ name: verify
 description: Proves every promise behind a completion claim with fresh checks on the committed tree and gives one verdict, without editing code. Use when anyone is about to say work is done, fixed, ready, or mergeable, and before a merge, pull request, or handoff report, including work with no plan. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-or-spec-path>] [--auto]"
 metadata:
-  version: "0.0.13"
+  version: "0.0.14"
 license: MIT
 ---
 
@@ -46,6 +46,11 @@ with no host, the caller's change exists only in the working tree - use the
 `## Working tree` recipe instead and run the checks in the working tree. The `Verify`
 line then ends with `working`, and the report says the verdict is bound to no commit.
 
+Scoped run: when the caller is a task subagent on a shared tree with foreign uncommitted
+changes (task `Files` known, work uncommitted), use the `## Scoped tree` recipe with those
+paths. The verdict then covers only them: the `Verify` line ends with `scoped <paths>` and the report names them,
+and the checks run on the working tree.
+
 A recipe that exits non-zero or prints no ID gives
 `BLOCKED (fingerprint failed: <step>)`; there is no fallback. The real index is never
 touched.
@@ -74,6 +79,13 @@ A claim that a `Ruling: R<n>-F<k> superseded by <Task <n> | R<m>-F<k> | marker> 
 line covers gets the status `n/a: superseded`; the `Ruling` itself becomes the claim: the
 task, finding, or marker it names exists in the plan or the record. A criterion that only
 tasks with an `Outward` field cover gets `deferred to Task <n>` and does not block `PASS`.
+A criterion the spec marks `(after finalize)` (state that exists only on an open PR: CI on
+the PR, a named reviewer, mergeable) gets `deferred to finalize` and does not block `PASS`;
+its local part, when the spec splits one, is an ordinary claim. Before deferring, read the
+forge once: after `git fetch`, when `git rev-parse origin/<branch>` equals `HEAD`, take CI
+and reviews for the full SHA (`gh run list --commit <sha>`, `gh pr checks`) as fresh
+evidence; only a branch that is not pushed, or has no open PR for this `HEAD`, is `deferred to finalize`. A state the
+caller names ("push pending", "CI green") is a claim to check, not proof.
 
 The caller's words alone are never the full list when a spec or plan exists. A `Task`
 line with evidence is a claim to recheck, not proof: nobody confirms their own work.
@@ -185,6 +197,10 @@ it as its last section, a ```` ```text ```` block whose first line is `Branch: <
 the spec and does not reset its approval. With no host, the line is printed in the
 report only.
 
+When the caller says the controller keeps the journal (a task subagent of `implement` in
+subagents mode, or a brief that forbids editing the record), do not write the line: return
+it in the report as `Record: pending - Verify: ...` for the controller to append.
+
 The time is the output of `date '+%Y-%m-%d %H:%M'`, run right after the re-pin of step 7;
 never write it from memory or estimate it.
 
@@ -246,7 +262,12 @@ review of the implementation in this table. A `Review` line with `mode document`
 or plan review) and the `Finding` and `Received` lines of that round count as no
 implementation review yet: when the record has no code review after `Base`, the `PASS`
 row is the first one, whatever document reviews it holds. Step 3 still reads every round,
-document ones included, for open blockers.
+document ones included, for open blockers. With no record host, a code review finished in
+this conversation counts when its `review.md` or the `cr-received` return block names a
+tree equal to the current fingerprint: its `Review`, `Finding`, and `Received` lines are
+read from that file like record lines, so a clean review of this tree is not asked
+for again. Only a saved `review.md` read from its archive path counts; a review known only from
+the conversation is a claim and leaves the `cr-request` row.
 
 When the record holds the marker line
 `Ruling: plan revised after spec re-approval - <spec path>` (written by `plan-craft`
@@ -288,6 +309,9 @@ user`.
    and permissions. Tags, releases, infrastructure/data changes and force operations need
    their own applicable authority. Delivery requires the installed G3 helpers,
    current host action authority and verified project-specific contracts. `finalize --auto` without a chosen action must ask for that choice.
+
+While the next transition waits for the user's answer, start agreed independent work from
+the session queue in the same turn; stop only when there is none.
 
 An outward row ends the turn when its action lacks current verified authority.
 An orchestrator-supplied finalize action does not prompt again; its gates still apply.

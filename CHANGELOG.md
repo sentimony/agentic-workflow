@@ -3,6 +3,20 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.28] - 2026-11-13
+
+1. verify 0.0.14, finalize 0.0.13, specify 0.0.14, cr-request 0.0.20, cr-received 0.0.16:
+   `deferred to finalize` status and `(after finalize)` criteria, forge identity preflight,
+   squash gate with named reviewers, scoped tree fingerprint for task subagents, planless
+   verify reads clean reviews, review loops continue without pauses.
+2. plan-craft 0.0.15, implement 0.0.14, session-learnings 0.0.14: dependency-graph and
+   document-structure checks, `Base check` with reference gates, measured task time and
+   actionable blocker reports, chain size measured before approve and before recording.
+3. New entry-point skills resolve-pr, resolve-ci and resume-task 0.0.1.
+4. Requests: `20261029-2232`, `20261026-2320`, `20261027-0338`, `20261029-2037`,
+   `20261024-2324`, `20261101-0351`, `20261029-2038`, `20261101-0343`, `20261101-1158`,
+   `20261025-1712`, `20261030-0953`, `20261003-0944`, `20261024-0224`, `20261031-1944`.
+
 ## [0.0.27] - 2026-11-13
 
 1. specify 0.0.13, plan-craft 0.0.14, implement 0.0.13, resolve-issue 0.0.4,

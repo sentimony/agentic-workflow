@@ -3,7 +3,7 @@ name: finalize
 description: Decides how verified work leaves the branch. Use when verified work awaits merge, push, a pull request (PR), keeping or discarding the branch, or worktree cleanup. Not for unverified work (verify), open review findings (cr-received), a plain commit, or release work with its own checklist. Replaces devflow branch-finish.
 argument-hint: "[merge|pr|squash|keep|discard|pause] [--draft] [--auto]"
 metadata:
-  version: "0.0.12"
+  version: "0.0.13"
 license: MIT
 ---
 
@@ -65,7 +65,11 @@ Collect facts before offering anything:
 - staged, unstaged, and untracked files;
 - whether this run, an earlier step of the chain, the user, or the harness created the
   current workspace (worktree or clone);
-- an open PR for the branch, and whether the branch is already merged.
+- an open PR for the branch, and whether the branch is already merged;
+- before a batch push or PR for several local clones: the canonical forge identity of each
+  target (GitHub: `gh api repos/<slug> --jq .id` under the project account guard), the
+  effective API account, and its permission to push or open a PR (a fork workflow needs no
+  collaborator right).
 
 Show this overview to the user. Read the state again right before every action in
 step 5, since an earlier action, another session, or the forge may have changed it:
@@ -256,7 +260,17 @@ For the chosen option:
    URL exists, the base contains the commits, the branch is gone where it should be.
 
 For `pr`: read [pr-body.md](references/pr-body.md) before opening the PR and after
-every push to a branch with an open PR.
+every push to a branch with an open PR. Before the first push, targets with one repository
+ID are one delivery target: keep the canonical slug and each checkout, compare their own
+blobs and needed trees, and when the changes differ keep both sets and settle the
+integration before pushing; never overwrite a foreign ref or reuse an existing branch name
+blindly. An unavailable API does not prove different IDs: say so and ask. A missing or
+ambiguous account is asked before publication, not after the branch is pushed. Every route that
+publishes or integrates (`pr`, `merge`, `squash`) first reads the criteria `verify`
+deferred to `finalize`: after the PR opens, check them against its CI on the full head SHA;
+`merge` and `squash` refuse while one is unchecked or red, and a red check returns to
+`verify`. A local `merge` has no PR or CI: it needs the user's explicit waiver of that
+criterion, or goes through `pr` or `squash` instead.
 
 ## 6. Clean up behind two barriers
 

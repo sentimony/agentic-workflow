@@ -27,11 +27,12 @@ C4 | <check command> | `passed`
 C5 | <check command> | `not verified: <reason>`
 C6 | <check command> | `deferred to Task <n>`
 C7 | <check command> | `n/a: superseded`
+C8 | <check command> | `deferred to finalize`
 
 Bar check: <weakening found, with path and line, or none; one without a ruling that breaks no claim: needs ruling: <path:line> - <what was weakened>>
 Review blockers: <IDs with severity and disposition, or none>
 Verdict: PASS | FAIL | INCOMPLETE (<owner> - <next action>) | BLOCKED (<what stops the check>)
-Record: Verify: <verdict> full tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
+Record: Verify: <verdict> full tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 Next step: `/<skill>` - <one-line reason>
 ```
 
@@ -40,11 +41,11 @@ Next step: `/<skill>` - <one-line reason>
 ```text
 Verdict: <verdict>   Tree: <full tree ID>
 <only rows whose status is not passed, in the matrix form>
-Record: Verify: <verdict> compact tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
+Record: Verify: <verdict> compact tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 Next step: `/<skill>` - <one-line reason>
 ```
 
-A compact `PASS` lists no rows. A compact report never stands in for the full matrix:
+A compact `PASS` lists no rows. A scoped run ends its `Verify` line with `scoped <paths>` (the named paths, comma-separated); such a line never counts as a full `Verify: PASS` for `finalize` or `cr-request`. A compact report never stands in for the full matrix:
 `finalize` and a clean `cr-request` look for a full `Verify: PASS` on the current tree.
 With no record host, the `Record:` line reads `Record: none - Verify: ...` and nothing is
 written.
@@ -86,6 +87,10 @@ Each status sits in a code span:
   `Outward: <what and where>` field, which run after a full `PASS` and a closed review
   with the user's own confirmation. The check column names that task; the row does not
   block `PASS`.
+- `deferred to finalize` - the spec marks the criterion `(after finalize)`: it concerns
+  state that exists only on an open PR and the branch is not pushed or has no open PR for
+  this `HEAD` (a pushed `HEAD` with a PR is read from the forge by full SHA first). The row does not block `PASS` and is listed in the
+  report; `finalize` checks it before it publishes or integrates and returns to `verify` when CI is red.
 - `not verified: <reason>` - no check ran, or its output does not decide the claim. A
   missing tool, missing access, missing credentials, or a check outside the session's
   reach is always `not verified`, never `n/a`.
@@ -95,7 +100,7 @@ that only reading can decide. "Looked fine" is not a command.
 
 ## Verdicts
 
-- `PASS` - every row is `passed`, `n/a`, or `deferred to Task <n>`, the bar check found
+- `PASS` - every row is `passed`, `n/a`, `deferred to Task <n>`, or `deferred to finalize`, the bar check found
   nothing unreported, and no review blocker is open.
 - `FAIL` - at least one row is `failed`.
 - `INCOMPLETE` - no row failed, but a row is `not verified`, a bar-check line `needs ruling`, or a review blocker is open.
@@ -146,7 +151,7 @@ Append at the end of the plan's `## Execution record` or the spec's
 when it has one; never rewrite an existing line:
 
 ```text
-Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
+Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 Round <loop> <n>: <cause>
 Ruling: round R<n> started by the user past the limit - <user's words> - <cost if wrong>
 ```
@@ -178,7 +183,7 @@ A spec without `## Verification record` gets it as its last section on the first
 
 ```text
 Branch: <name>
-Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
+Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 ```
 ````
 

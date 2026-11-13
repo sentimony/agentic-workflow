@@ -3,7 +3,7 @@ name: session-learnings
 description: Records lasting learnings from the session in the project's gitignored docs/session-learnings/AGENTS.md without asking, and on a separate request triages the notes into AGENTS.md, CLAUDE.md, global instructions, or a stronger enforcement such as a check or test, applying only approved edits. Use when pitfalls, user corrections, conventions, or commands that finally worked should reach future agents, whatever the conversation language, including after finalize at the end of the agentflow chain. Not for auditing instruction files (agent-instructions) or general memory and skill improvement requests.
 argument-hint: "[triage]"
 metadata:
-  version: "0.0.13"
+  version: "0.0.14"
 license: MIT
 ---
 
@@ -194,6 +194,9 @@ and shell hooks or expansion reject or run that text. Never rewrite or reorder e
 notes: a correction is a new note with `Supersedes:`, and only this run's notes may be
 edited before its report. A learning about another repository goes into the root's notes
 as step 8 says; content its instructions keep inside it is described generically.
+When the project limits instruction size, measure the chain with this run's draft before
+appending ([notes](references/notes.md)); when it does not fit, shorten the quotes and
+checks of this run's notes, never older ones.
 
 ## 10. Report
 
@@ -219,6 +222,11 @@ Learnings: <n> -> <file>
 ```
 
 When nothing was written, that line is `Learnings: 0 -> none`.
+
+When the chain with the notes is over the limit, or its margin is smaller than a typical
+record, name the bytes over the limit and end with
+``Next step: `/session-learnings` - triage, chain over limit by <n> B`` (or `... margin <n> B`)
+instead of `none - chain complete`.
 
 ## Triage the notes
 
@@ -266,11 +274,10 @@ Then, for each note:
 Stage, commit, or push only when the user asks; then commit these edits alone, and in a
 file that holds others' uncommitted changes, stage only your own lines.
 
-The last line of the result, in either mode, is always:
-
-```text
-Next step: none - chain complete
-```
+The last line of the result in triage is `Next step: none - chain complete`; when the
+heaviest chain is still over the limit after the approved edits, it is
+``Next step: `/session-learnings` - triage, chain over limit by <n> B``. Recording ends as
+step 10 says.
 
 ## When not to use
 

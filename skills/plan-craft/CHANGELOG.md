@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.15] - 2026-11-13
+
+1. A criterion that holds only on an open PR gets no push or PR task and is marked `finalize` (`20261029-2232`).
+2. The check before handoff verifies that `Depends on` and `Consumes` (also across plans) form no cycle, keeps delivery gates apart from local prerequisites, bounds a part of an older task, and checks that heading structure survived a section edit (`20261101-0343`, `20261101-1158`).
+3. The header gains `Base check`, listing the reference-comparing `Check` commands that `implement` runs on `Base` (`20261025-1712`).
+
 ## [0.0.14] - 2026-11-13
 
 1. Description rewritten as a thesis followed by `Use when ...` without `You MUST`, cutting

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.13] - 2026-11-13
+
+1. Forge identity preflight before a batch push or PR: repository ID per target, same-ID targets merged only after comparing blobs and trees, effective account and rights checked before the first push (`20261101-0351`).
+2. Squash gate reads all checks of the head and verifies named reviewers through the reviews API on the full head SHA; a missing review is never completion (`20261029-2038`).
+3. Every publishing or integrating route first reads the criteria `verify` deferred to `finalize`; after the PR opens they are checked against CI on the head SHA, and `merge` and `squash` refuse while one is unchecked or red (a local `merge` needs the user's waiver or goes through `pr`) (`20261029-2232`).
+4. `## Scoped tree` recipe added to the shared `tree-fingerprint.md` copy; agreement test of the four copies in CI (`20261029-2037`).
+
 ## [0.0.12] - 2026-11-13
 
 1. Description rewritten as a thesis followed by `Use when ...` without `You MUST`, cutting

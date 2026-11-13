@@ -189,6 +189,13 @@ forbid it there, or it needs dependencies the root lacks), measure with the reci
 with the root `AGENTS.md` as the target, and report the number as measured by the skill
 recipe, not by the project check. A plain sum of two files is not a chain size.
 
+For a Codex chain, `project_doc_max_bytes` also counts the home file
+`~/.codex/AGENTS.md` (or `$CODEX_HOME/AGENTS.md`): add its size to every measurement, and
+for a target in the home file measure the heaviest Codex chain of the current repository
+with it, showing the number next to the project's own figure in the approval item.
+Before recording, measure with the draft of this run's notes added, so that a write that
+crosses the limit is seen before it happens.
+
 In triage, an edit to a file changes every chain that passes through it: the file plus
 each nested instruction file below it. Measure the heaviest of those chains before and
 after the edit. Prefer the project's own check script; otherwise, for `AGENTS.md` chains,

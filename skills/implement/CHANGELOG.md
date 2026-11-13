@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.14] - 2026-11-13
+
+1. Step 3 runs reference-comparing `Check` gates on `Base` as a control, optionally in the background (`20261025-1712`).
+2. The task checklist shows measured wall-clock time, `not measured` or a lower bound; a blocker report separates the missing output, what is already allowed and the one owner decision that opens a local route (`20261030-0953`).
+3. `references/subagents.md` states when a separate task review may be skipped and a proportional state (`20261003-0944`).
+
 ## [0.0.13] - 2026-11-13
 
 1. Description rewritten as a thesis followed by `Use when ...` without `You MUST`, cutting

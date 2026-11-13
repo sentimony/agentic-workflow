@@ -202,7 +202,7 @@ reported by `verify` as `deferred to Task <n>` and does not block `PASS`.
 
 Never create a task for pushing, opening the PR, or reading its CI or review state: that
 is `finalize`. A criterion that holds only on an open PR (CI on the PR, an automatic
-review, mergeable) gets no task and is marked `finalize` in the plan's `Covers` map, with
+review, mergeable) gets no task and keeps the spec's `(after finalize)` mark and no task, with
 its local part (the same CI steps on the tree) covered by an ordinary task. `verify`
 reports such a criterion as `deferred to finalize`, and `finalize` checks it on the PR.
 

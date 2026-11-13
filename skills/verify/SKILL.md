@@ -266,7 +266,8 @@ document ones included, for open blockers. With no record host, a code review fi
 this conversation counts when its `review.md` or the `cr-received` return block names a
 tree equal to the current fingerprint: its `Review`, `Finding`, and `Received` lines are
 read from the conversation like record lines, so a clean review of this tree is not asked
-for again.
+for again. Read the saved `review.md` from its archive path when it exists; otherwise the
+report labels the review `claimed in conversation`, so its basis is visible.
 
 When the record holds the marker line
 `Ruling: plan revised after spec re-approval - <spec path>` (written by `plan-craft`

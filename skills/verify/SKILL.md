@@ -48,7 +48,7 @@ line then ends with `working`, and the report says the verdict is bound to no co
 
 Scoped run: when the caller is a task subagent on a shared tree with foreign uncommitted
 changes (task `Files` known, work uncommitted), use the `## Scoped tree` recipe with those
-paths. The verdict then covers only them: the `Verify` line and the report name the paths,
+paths. The verdict then covers only them: the `Verify` line ends with `scoped <paths>` and the report names them,
 and the checks run on the working tree.
 
 A recipe that exits non-zero or prints no ID gives

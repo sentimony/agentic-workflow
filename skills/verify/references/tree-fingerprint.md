@@ -73,7 +73,7 @@ GIT_INDEX_FILE="$tmp" git add -A -- '<path-1>' '<path-2>' &&
 GIT_INDEX_FILE="$tmp" git write-tree
 ```
 
-The verdict or review is valid only for those paths and names them in its record line;
+The verdict or review is valid only for those paths and names them in its record line as `scoped <paths>`;
 a change elsewhere does not stale it, and it never stands in for a full verdict.
 
 ## Validity

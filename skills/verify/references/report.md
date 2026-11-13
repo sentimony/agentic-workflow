@@ -32,7 +32,7 @@ C8 | <check command> | `deferred to finalize`
 Bar check: <weakening found, with path and line, or none; one without a ruling that breaks no claim: needs ruling: <path:line> - <what was weakened>>
 Review blockers: <IDs with severity and disposition, or none>
 Verdict: PASS | FAIL | INCOMPLETE (<owner> - <next action>) | BLOCKED (<what stops the check>)
-Record: Verify: <verdict> full tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
+Record: Verify: <verdict> full tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 Next step: `/<skill>` - <one-line reason>
 ```
 
@@ -41,11 +41,11 @@ Next step: `/<skill>` - <one-line reason>
 ```text
 Verdict: <verdict>   Tree: <full tree ID>
 <only rows whose status is not passed, in the matrix form>
-Record: Verify: <verdict> compact tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
+Record: Verify: <verdict> compact tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 Next step: `/<skill>` - <one-line reason>
 ```
 
-A compact `PASS` lists no rows. A compact report never stands in for the full matrix:
+A compact `PASS` lists no rows. A scoped run ends its `Verify` line with `scoped <paths>` (the named paths, comma-separated); such a line never counts as a full `Verify: PASS` for `finalize` or `cr-request`. A compact report never stands in for the full matrix:
 `finalize` and a clean `cr-request` look for a full `Verify: PASS` on the current tree.
 With no record host, the `Record:` line reads `Record: none - Verify: ...` and nothing is
 written.
@@ -151,7 +151,7 @@ Append at the end of the plan's `## Execution record` or the spec's
 when it has one; never rewrite an existing line:
 
 ```text
-Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
+Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 Round <loop> <n>: <cause>
 Ruling: round R<n> started by the user past the limit - <user's words> - <cost if wrong>
 ```
@@ -183,7 +183,7 @@ A spec without `## Verification record` gets it as its last section on the first
 
 ```text
 Branch: <name>
-Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
+Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 ```
 ````
 

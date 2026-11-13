@@ -1,9 +1,9 @@
 ---
 name: plan-craft
-description: You MUST use this when a spec the user approved, an accepted design, or requirements already agreed in the conversation have to be turned into an ordered, multi-step implementation plan before any code is written - including a spec from specify, work with no spec yet, and a plan revision after a document review. Replaces devflow plan-crafting. Covers whether a plan is needed, task order, acceptance-criteria coverage, and the execution choice. Not for open design (specify) or executing a plan (implement).
+description: Turns settled requirements into an ordered, multi-step implementation plan covering task order, acceptance-criteria coverage, and the execution choice. Use when an approved spec, accepted design, or requirements agreed in the conversation need a plan before any code, including a plan revision after a document review. Not for open design (specify) or executing a plan (implement). Replaces devflow plan-crafting.
 argument-hint: "[<spec-path>] [<plan-path>] [--auto]"
 metadata:
-  version: "0.0.13"
+  version: "0.0.14"
 license: MIT
 ---
 

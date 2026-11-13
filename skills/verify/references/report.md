@@ -90,7 +90,7 @@ Each status sits in a code span:
 - `deferred to finalize` - the spec marks the criterion `(after finalize)`: it concerns
   state that exists only on an open PR and the branch is not pushed (a pushed `HEAD` is read
   from the forge by full SHA first). The row does not block `PASS` and is listed in the
-  report; `finalize` (`pr`) checks it after the PR opens and returns to `verify` when CI is red.
+  report; `finalize` checks it before it publishes or integrates and returns to `verify` when CI is red.
 - `not verified: <reason>` - no check ran, or its output does not decide the claim. A
   missing tool, missing access, missing credentials, or a check outside the session's
   reach is always `not verified`, never `n/a`.

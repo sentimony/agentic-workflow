@@ -269,7 +269,8 @@ ambiguous account is asked before publication, not after the branch is pushed. E
 publishes or integrates (`pr`, `merge`, `squash`) first reads the criteria `verify`
 deferred to `finalize`: after the PR opens, check them against its CI on the full head SHA;
 `merge` and `squash` refuse while one is unchecked or red, and a red check returns to
-`verify`.
+`verify`. A local `merge` has no PR or CI: it needs the user's explicit waiver of that
+criterion, or goes through `pr` or `squash` instead.
 
 ## 6. Clean up behind two barriers
 

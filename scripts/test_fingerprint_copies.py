@@ -8,7 +8,7 @@ SKILLS = ("verify", "finalize", "cr-request", "cr-received")
 class FingerprintCopies(unittest.TestCase):
     def test_copies_are_identical(self):
         texts = {
-            s: (ROOT / "skills" / s / "references" / "tree-fingerprint.md").read_bytes()
+            s: (ROOT / "skills" / s / "tree-fingerprint.md").read_bytes()
             for s in SKILLS
         }
         reference = texts["verify"]

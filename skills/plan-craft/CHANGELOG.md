@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.16] - 2026-11-13
+
+1. Flat layout: reference files moved next to SKILL.md; no content change.
+
 ## [0.0.15] - 2026-11-13
 
 1. A criterion that holds only on an open PR gets no push or PR task and is marked `finalize` (`20261029-2232`).

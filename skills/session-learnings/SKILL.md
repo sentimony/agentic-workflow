@@ -3,7 +3,7 @@ name: session-learnings
 description: Records lasting learnings from the session in the project's gitignored docs/session-learnings/AGENTS.md without asking, and on a separate request triages the notes into AGENTS.md, CLAUDE.md, global instructions, or a stronger enforcement such as a check or test, applying only approved edits. Use when pitfalls, user corrections, conventions, or commands that finally worked should reach future agents, whatever the conversation language, including after finalize at the end of the agentflow chain. Not for auditing instruction files (agent-instructions) or general memory and skill improvement requests.
 argument-hint: "[triage]"
 metadata:
-  version: "0.0.14"
+  version: "0.0.15"
 license: MIT
 ---
 
@@ -25,7 +25,7 @@ session; it needs no artifact from an earlier skill. Recording asks no questions
 edits only gitignored notes plus a one-time setup. The argument `triage` (or the user
 asking to sort the accumulated learnings) runs the triage mode instead.
 
-1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+1. Follow the shared [stage transition contract](../resolve-issue/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition;
    internal commands and tasks of the current authorized plan need no extra approval.
 2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
@@ -53,13 +53,13 @@ Take candidates from what actually happened, not from intentions: a command that
 and the form that worked, a correction from the user, a wrong assumption, a decision the
 user made, a path or tool found only after searching.
 
-Every candidate is recorded in the shape from [candidates](references/candidates.md),
+Every candidate is recorded in the shape from [candidates](candidates.md),
 with two fields required from the start:
 
 - **Quote** - a verbatim excerpt from the session that shows the event, with who
   produced it. No quote, no candidate. After a context compaction, take it from the
   session transcript file, not from the compaction summary
-  ([candidates](references/candidates.md)).
+  ([candidates](candidates.md)).
 - **Confidence** - `high`, `medium`, or `low`, with what it rests on.
 
 Only text a person typed counts as a user correction or decision. Hook output, system
@@ -101,7 +101,7 @@ structure -> type -> check or lint -> test -> prose
 A mechanical rule is proposed as a check or a hook. A learning that recurs although a
 prose rule already covers it moves up a rung instead of being reworded. Recording never
 builds the higher rung: the note carries the proposal, and triage builds it only after
-approval. Details: [placement](references/placement.md).
+approval. Details: [placement](placement.md).
 
 ## 5. Name the target
 
@@ -112,7 +112,7 @@ Give each learning the narrowest scope where it holds, as its `Target` field:
 - every project, or the user's environment (shell, Git, tools, accounts): the user's
   global file;
 - a file read during review, a glossary, a decision record, or a "why" comment beside the
-  code ([placement](references/placement.md));
+  code ([placement](placement.md));
 - a defect or gap of a skill: `skill <name> (<repository>)`, never a file of an installed
   copy, which a reinstall overwrites.
 
@@ -135,7 +135,7 @@ this session wrote: a defect filed there as a request is not recorded again.
 ## 7. Draft
 
 Write each note as the rule itself, in the form the failure calls for: a prohibition, a
-recipe, a template slot, or a condition ([placement](references/placement.md)). Write the
+recipe, a template slot, or a condition ([placement](placement.md)). Write the
 rule, not the story of the session: no branch names or narration in the rule line. Write
 in the language of the root instruction file, which the notes header follows too. One
 rule per note: the trigger, the action, and the reason when it is not obvious.
@@ -155,10 +155,10 @@ did all its work in a worktree of another repository. When that directory is a l
 worktree, the root is its main checkout (`git worktree list`; when none is found, the
 worktree itself). A note about another repository goes into the root's notes with `Target`
 naming that repository, never into a notes folder there, even one that already exists.
-Recipe: [notes](references/notes.md).
+Recipe: [notes](notes.md).
 
 In the root, make sure, each item only when missing (recipe and file contents:
-[notes](references/notes.md)):
+[notes](notes.md)):
 
 - `.gitignore` ignores `docs/session-learnings/`;
 - `docs/session-learnings/CLAUDE.md` holds the single line `@AGENTS.md`;
@@ -187,7 +187,7 @@ own.
 ## 9. Append
 
 Right before writing, read the notes file again: another session may have appended since.
-Append one section for this run, in the shape from [notes](references/notes.md), with no
+Append one section for this run, in the shape from [notes](notes.md), with no
 approval step. Write it, and every setup line of step 8, with the file edit or write tool
 (Edit, Write, `apply_patch`), never a shell heredoc or `echo >>`: notes quote commands,
 and shell hooks or expansion reject or run that text. Never rewrite or reorder earlier
@@ -195,7 +195,7 @@ notes: a correction is a new note with `Supersedes:`, and only this run's notes 
 edited before its report. A learning about another repository goes into the root's notes
 as step 8 says; content its instructions keep inside it is described generically.
 When the project limits instruction size, measure the chain with this run's draft before
-appending ([notes](references/notes.md)); when it does not fit, shorten the quotes and
+appending ([notes](notes.md)); when it does not fit, shorten the quotes and
 checks of this run's notes, never older ones.
 
 ## 10. Report
@@ -208,7 +208,7 @@ tracked changes. Say how the folder is ignored (`.gitignore`, the local exclude 
 tracked) and how the notes are wired: `import`, `mention only`, or `not wired`; the last
 two mean the next session will not load them. When the project limits the size of its
 instruction files, give the number and how it was taken: `project check`, `skill recipe`
-([notes](references/notes.md)), or `not measured` with the reason; name the heaviest leaf
+([notes](notes.md)), or `not measured` with the reason; name the heaviest leaf
 beside it, and do not report an ignored or `evals`/`workspace` leaf as a budget overrun.
 Say that the notes count toward it when the host imports them (Claude Code), and whether a
 triage is due. Besides size, name a triage as due when the notes have grown many, when
@@ -234,7 +234,7 @@ Runs only on a separate request, usually in a new session. First list the notes 
 each `docs/session-learnings/AGENTS.md` that exists in the current root (step 8), in the
 roots of repositories its instruction files name, and in the roots of repositories this
 session opened (clones, worktrees), with the number of notes in each
-([notes](references/notes.md), Counting notes); never scan the file system for others. Triage every non-empty file; when the current
+([notes](notes.md), Counting notes); never scan the file system for others. Triage every non-empty file; when the current
 one is empty and another is not, say so first. A notes folder in another repository is
 offered as a move item: append its notes to the current root's notes, remove that
 repository's pointer and ignore line, and delete the folder, all only after approval.
@@ -251,7 +251,7 @@ Then, for each note:
    target's language, headings, bullet shape, line width, and tone; a higher rung as the
    check, hook, or test itself. When a file only imports another, edit the source.
 3. When the project limits instruction size, measure the heaviest chain that passes
-   through the target before and after the edit ([notes](references/notes.md)) and show
+   through the target before and after the edit ([notes](notes.md)) and show
    both numbers in the item. Over the limit already: propose tightening or a narrower
    target together with the edit, never only an append.
 4. Show the items numbered with target, rung, quote, confidence, and the size numbers;
@@ -317,6 +317,6 @@ pushes only on the user's request.
 
 ## References
 
-- [Candidate records, quotes, confidence, and repeat runs](references/candidates.md)
-- [Enforcement ladder, rule forms, and placement surfaces](references/placement.md)
-- [Notes root, setup, note shape, declined notes, and chain size](references/notes.md)
+- [Candidate records, quotes, confidence, and repeat runs](candidates.md)
+- [Enforcement ladder, rule forms, and placement surfaces](placement.md)
+- [Notes root, setup, note shape, declined notes, and chain size](notes.md)

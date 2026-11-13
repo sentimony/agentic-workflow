@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.15] - 2026-11-13
+
+1. Flat layout: reference files moved next to SKILL.md; no content change.
+
 ## [0.0.14] - 2026-11-13
 
 1. Step 3 runs reference-comparing `Check` gates on `Base` as a control, optionally in the background (`20261025-1712`).

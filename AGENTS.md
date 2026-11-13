@@ -3,7 +3,7 @@
 ## Layout
 
 - `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.antigravity-plugin/plugin.json` - the three manifests with identical `name` and `version`; there is no root `plugin.json`. Only the Codex manifest carries `skills: "./skills/"` and `interface`; the Antigravity one carries `$schema`, `displayName`, `suggestedPrompts`, and `category`.
-- `skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, `references/`.
+- `skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, reference files next to `SKILL.md`.
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
   The caller delegates to
   `sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@v0.0.5`
@@ -115,9 +115,9 @@
    This supersedes the old exemption for ready PRs only. Other hostless integration
    semantics remain an accepted trade-off, not a defect for review, because the
    approved delivery scope revises ready verification without redesigning those routes.
-2. Delivery contracts live in `skills/finalize/references/squash.md`,
-   `skills/implement/references/post-merge.md` and
-   `skills/finalize/references/cleanup.md`. Read the applicable contract before ready,
+2. Delivery contracts live in `skills/finalize/squash.md`,
+   `skills/implement/post-merge.md` and
+   `skills/finalize/cleanup.md`. Read the applicable contract before ready,
    merge, post-merge evidence or cleanup. Canonical completion uses an authorized own
    PR comment with readback; unavailable publication remains evidence-pending in a
    private store under `~/.sentimony`. Post-merge tasks leave tracked plan/spec files on the base

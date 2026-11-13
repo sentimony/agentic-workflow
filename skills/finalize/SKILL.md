@@ -3,7 +3,7 @@ name: finalize
 description: Decides how verified work leaves the branch. Use when verified work awaits merge, push, a pull request (PR), keeping or discarding the branch, or worktree cleanup. Not for unverified work (verify), open review findings (cr-received), a plain commit, or release work with its own checklist. Replaces devflow branch-finish.
 argument-hint: "[merge|pr|squash|keep|discard|pause] [--draft] [--auto]"
 metadata:
-  version: "0.0.13"
+  version: "0.0.14"
 license: MIT
 ---
 
@@ -22,7 +22,7 @@ The optional argument names the option: `merge`, `pr` (with `--draft` for a draf
 instruction the user already gave in the conversation counts as the choice; do not ask
 again.
 
-1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+1. Follow the shared [stage transition contract](../resolve-issue/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition;
    internal commands and tasks of the current authorized plan need no extra approval.
 2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
@@ -52,7 +52,7 @@ After a successful `merge`, `squash`, `pr`, `keep`, or `discard` under `--auto`,
 orchestrator, once no confirmation of step 6 is pending; with one pending, the turn ends
 on it, and `session-learnings` follows the user's answer. Post-merge `evidence-pending`
 also keeps the cycle incomplete; preserve its artifact and follow
-[post-merge.md](../implement/references/post-merge.md) without editing the tracked host
+[post-merge.md](../implement/post-merge.md) without editing the tracked host
 on the base.
 
 ## 1. Read the state
@@ -96,7 +96,7 @@ Before `pr` and `squash`, check that the remote base holds the branch's fork poi
 not, the PR diff would carry commits of another unmerged branch: integrate nothing, report
 how many (`git rev-list --count origin/<base>..$(git merge-base HEAD <base>)`), and advise
 pushing the base first, or targeting the branch of the stacked PR instead, with the line
-`Stacked on #<n>` in the PR body ([pr-body.md](references/pr-body.md)). Work on the base
+`Stacked on #<n>` in the PR body ([pr-body.md](pr-body.md)). Work on the base
 branch itself (step 4) skips this check, and so does the branch step 4 moved that work onto,
 when this conversation says so or the user confirms it after the list
 `git log --oneline origin/<base>..$(git merge-base HEAD <base>)`: those commits are the
@@ -120,7 +120,7 @@ The gate guards the integrating options `merge`, `squash`, and a ready `pr`; `pr
    Items 2-4 apply to a hostless ready PR using its report evidence; host-only review
    and record checkpoint requirements apply only when a host exists.
 2. Compute the current fingerprint with the recipe `## Committed tree` in
-   [tree-fingerprint.md](references/tree-fingerprint.md), leaving the host out. A failed
+   [tree-fingerprint.md](tree-fingerprint.md), leaving the host out. A failed
    recipe prints no ID and fails the gate.
 3. Take the latest line of the form
    `Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working]`.
@@ -177,7 +177,7 @@ ready while merge remains blocked. Unknown policy stays unknown and grants no me
 permission. Explicit red checks, actual conflicts, stale targets and incomplete or
 invalid observations still block ready. Merge requires all applicable remote jobs to
 satisfy their policy; ready never records a merge PASS. Use the callable guards in
-[squash.md](references/squash.md#local-gate-contract) at each boundary. For a local
+[squash.md](squash.md#local-gate-contract) at each boundary. For a local
 `merge`, reread the local branch/base refs instead; changed refs require rechecking the
 applicable evidence before the fast-forward.
 
@@ -190,7 +190,7 @@ Unfinished plan tasks with an `Outward: <what and where>` field do not block
 integration: the report and the PR body's `Deferred` list them, and this skill never runs
 them. Before integration, the tracked host also identifies repo/PR, stable task IDs,
 and the PR completion destination for post-merge tasks. Their completion goes to
-[post-merge evidence](../implement/references/post-merge.md), with a local pending
+[post-merge evidence](../implement/post-merge.md), with a local pending
 copy first; do not append or checkpoint their results in the tracked host on the base.
 
 ## 4. Offer the options
@@ -201,8 +201,8 @@ line (no remote, no forge CLI, detached HEAD, nothing to merge).
 | Option | What happens | Available when |
 | --- | --- | --- |
 | `merge` | fast-forward the base locally to the verified branch, then clean up | the base exists locally, the worktree that fast-forwards it is clean, and the work is not on the base itself |
-| `pr` | push the branch and open or update a PR with the body from [pr-body.md](references/pr-body.md); `pr --draft` opens a draft without a verdict | a remote and a forge CLI exist |
-| `squash` | squash merge an open PR on the forge by the recipe in [squash.md](references/squash.md) | an open PR exists and current target/policy evidence satisfies its gate |
+| `pr` | push the branch and open or update a PR with the body from [pr-body.md](pr-body.md); `pr --draft` opens a draft without a verdict | a remote and a forge CLI exist |
+| `squash` | squash merge an open PR on the forge by the recipe in [squash.md](squash.md) | an open PR exists and current target/policy evidence satisfies its gate |
 | `keep` | leave the branch and the workspace as they are and report where they live | always |
 | `discard` | delete the branch and its workspace | only on an explicit request |
 | `pause` | write a wip commit and a continuation note | uncommitted work exists or the user stops mid-task |
@@ -259,7 +259,7 @@ For the chosen option:
 3. Confirm the result from Git or the forge, not from the command's exit code: the PR
    URL exists, the base contains the commits, the branch is gone where it should be.
 
-For `pr`: read [pr-body.md](references/pr-body.md) before opening the PR and after
+For `pr`: read [pr-body.md](pr-body.md) before opening the PR and after
 every push to a branch with an open PR. Before the first push, targets with one repository
 ID are one delivery target: keep the canonical slug and each checkout, compare their own
 blobs and needed trees, and when the changes differ keep both sets and settle the
@@ -276,7 +276,7 @@ criterion, or goes through `pr` or `squash` instead.
 
 Cleanup runs only after a successful `merge`, `squash`, or confirmed `discard`.
 Before transferring own uncommitted hunks, capture the source HEAD, exact raw patches
-and index/worktree state through [cleanup.md](references/cleanup.md). Before removing
+and index/worktree state through [cleanup.md](cleanup.md). Before removing
 a duplicate, repeat its fresh authority, integration and saved-evidence guard inside
 the mutation call. Already integrated HEAD never gets a reverse patch. Changed or
 unsupported state stays in place; partial retries use durable preimages/postimages.
@@ -293,12 +293,12 @@ unsupported state stays in place; partial retries use durable preimages/postimag
 2. **Branch barrier.** Delete a branch only after the user's instruction and fresh
    proof that its current local tip is integrated, or separately confirmed `discard`.
    The forge's merged PR head alone does not prove a later local tip safe. Delivery
-   cleanup uses [cleanup.md](references/cleanup.md) and the tree comparison in
-   [squash.md](references/squash.md), with actual task evidence and preserved data
+   cleanup uses [cleanup.md](cleanup.md) and the tree comparison in
+   [squash.md](squash.md), with actual task evidence and preserved data
    checked before disposal. Never reset a divergent local base to finish cleanup.
 
 For committed-only work and local merges, read the standalone disposal path in
-[cleanup.md](references/cleanup.md): no transfer patch or fabricated PR evidence;
+[cleanup.md](cleanup.md): no transfer patch or fabricated PR evidence;
 explicit trusted task inventory, evidence when applicable, and independent branch/
 workspace guards are required. Unknown inventory blocks. Duplicate-hunk removal keeps
 its stronger bound-journal guard.
@@ -346,7 +346,7 @@ These never run, whatever the state or the request:
   `git worktree remove --force` runs only for a worktree this session created, after the
   confirmation in step 6 names its paths; `git branch -D` runs only after a confirmed
   `discard`, or after a squash once the tree comparison in
-  [squash.md](references/squash.md) proves the content is on the base;
+  [squash.md](squash.md) proves the content is on the base;
 - force push in any form;
 - `--admin` or any other bypass of required checks or branch protection;
 - `reset --hard`.
@@ -390,9 +390,9 @@ this option choice grants no evidence-comment or production permission.
 
 ## References
 
-- [Tree fingerprint](references/tree-fingerprint.md)
-- [Squash merge on the forge](references/squash.md)
-- [PR title and body](references/pr-body.md)
-- [Post-merge evidence and recovery](../implement/references/post-merge.md)
+- [Tree fingerprint](tree-fingerprint.md)
+- [Squash merge on the forge](squash.md)
+- [PR title and body](pr-body.md)
+- [Post-merge evidence and recovery](../implement/post-merge.md)
 - Next step: `session-learnings`, `verify` when the gate fails, or `cr-request` when a
   review or a re-review is still needed

@@ -16,7 +16,7 @@ a cleanup permission.
    including any staged ones. Existing foreign staged and adjacent worktree changes
    remain outside the selected patches.
 2. Construct `CleanupGuard(repo_root, git=absolute_git, env=reviewed_environment)` from
-   [cleanup_guard.py](../scripts/cleanup_guard.py). Call
+   [cleanup_guard.py](scripts/cleanup_guard.py). Call
    `capture(journal, identity=identity, index_patch=raw_bytes, worktree_patch=raw_bytes)`
    before transfer. Identity is exactly `{repo, pr, task, attempt}`, matching the
    post-merge evidence identity. The journal is a fresh canonical path outside the
@@ -46,7 +46,7 @@ a cleanup permission.
 2. Call `apply_cleanup(journal, authority=authority, observe=fresh_callback)`.
    The callback returns `{repo, pr, task, attempt, merge_sha, destination_sha,
    evidence}`. `evidence` is the full saved `evidence-record-v1` publication record
-   described in [post-merge.md](../../implement/references/post-merge.md). It must
+   described in [post-merge.md](../implement/post-merge.md). It must
    match the local pending envelope, content hash, task/repo/attempt/merge identity,
    published status and canonical HTTPS URL. Evidence grants no permission itself.
 3. The apply call performs its own guard, including on retry and before each write.

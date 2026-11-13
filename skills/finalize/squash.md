@@ -58,7 +58,7 @@ only after the user chose `squash` in this conversation.
    blockers. Report the policy state and the evidence used.
 6. Before the record checkpoint and squash, record repo/PR, stable task IDs, remaining
    post-merge tasks, and the PR completion destination in the tracked host. Their later
-   completion uses [post-merge evidence](../../implement/references/post-merge.md),
+   completion uses [post-merge evidence](../implement/post-merge.md),
    without appending tracked plan/spec lines on the base.
 
 ## Local gate contract
@@ -77,7 +77,7 @@ this helper provides no production policy adapter.
    `blocked`; explicitly red checks return `failed`; satisfied evidence returns
    `passed`. Re-read observations while blocked and before the finite deadline.
 2. The exact `gate-observation-v1` shape is in
-   [required.json](../scripts/fixtures/required.json). Every listed key is required,
+   [required.json](scripts/fixtures/required.json). Every listed key is required,
    unknown keys are rejected, and optional evidence uses `null`. Full lowercase
    40-character SHA-1 or 64-character SHA-256 IDs must share one object format.
    `observed_at` and `deadline` are finite nonnegative numbers with
@@ -228,7 +228,7 @@ order; branch deletion comes last.
 
 3. Hand remaining post-merge tasks to `implement` with repo/PR/task/attempt and the
    confirmed merge identity. Follow
-   [post-merge.md](../../implement/references/post-merge.md) to save local ignored
+   [post-merge.md](../implement/post-merge.md) to save local ignored
    evidence before any authorized publication, then validate the own-comment readback.
    This merge choice authorizes no deployment or evidence publication by itself.
    If publication is unavailable or unauthorized, retain the pending artifact and

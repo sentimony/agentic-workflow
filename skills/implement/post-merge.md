@@ -33,7 +33,7 @@ content unchanged on the base; completion and retries use the records below.
 
 ## Evidence record and publication
 
-The local helper is [post_merge_evidence.py](../scripts/post_merge_evidence.py).
+The local helper is [post_merge_evidence.py](scripts/post_merge_evidence.py).
 It provides no production forge adapter; tests use local fake callbacks. The host
 must authenticate external metadata and serialize publication for one attempt.
 

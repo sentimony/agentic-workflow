@@ -3,7 +3,7 @@ name: cr-request
 description: Pins a change and its tree fingerprint, then dispatches a read-only reviewer for separate verdicts and evidence-backed findings. Use when a finished task, branch, pull request, uncommitted work since a ref, or a spec or plan needs an independent review. Replaces devflow review-request.
 argument-hint: "[<base-ref>] [<spec-path>] [--exclude <path>] [--auto]"
 metadata:
-  version: "0.0.20"
+  version: "0.0.21"
 license: MIT
 ---
 
@@ -26,7 +26,7 @@ plan, intent comes from the conversation and commit messages; no journal is writ
 ## Standalone delegation
 
 1. For explicit delegation through standalone `cross-agent`, use the installed
-   [owner adapter](references/cross-agent-adapter.md). It prepares this contract and
+   [owner adapter](cross-agent-adapter.md). It prepares this contract and
    validates the complete review before domain completion.
 2. Target selection, fingerprints, findings and intake remain owned by this workflow.
    Missing adapters or partial reports cannot turn transport success into valid review.
@@ -40,7 +40,7 @@ plan, intent comes from the conversation and commit messages; no journal is writ
    passes the `Tree` of the previous round as `previous_tree` and gets only the fix diff.
    The host passes the complete owner target identity (with `base`) in its host JSON; the
    launcher's automatic identity does not fit this adapter. Details:
-   [owner adapter](references/cross-agent-adapter.md), item 13.
+   [owner adapter](cross-agent-adapter.md), item 13.
 
 ## 1. Pin the target
 
@@ -57,7 +57,7 @@ A review of the wrong diff is worse than no review. Before anything else:
   the reviewer sees them and does not assess them;
 - scan the `--stat` output and the untracked list for files that may hold secrets
   (env files, keys, credentials); exclude them with that reason before any diff is sent;
-- take the tree fingerprint with [tree-fingerprint.md](references/tree-fingerprint.md)
+- take the tree fingerprint with [tree-fingerprint.md](tree-fingerprint.md)
   (`Committed tree` for a committed boundary, `Working tree` when the boundary holds
   uncommitted changes) and write it as `Tree:` in the identity record, whatever the
   boundary;
@@ -67,7 +67,7 @@ When the caller hands over a prepared target (an identity record with the diff a
 already captured), use it as given instead of running the commands.
 
 Commands, the identity record, the document target, and prepared targets are in
-[target.md](references/target.md). If the boundary is ambiguous and the choice changes
+[target.md](target.md). If the boundary is ambiguous and the choice changes
 the review, ask. Never fall back to reviewing the whole repository.
 
 ## 2. State the intent
@@ -108,11 +108,11 @@ as security or migration safety; a second generic opinion only adds cost.
 
 Before changing directories, the trusted host captures the session repository root for
 the archive; a target repository never replaces it. Follow the archive resolver and
-safe-write rules in [review-actions.md](references/review-actions.md). Keep reviewer
+safe-write rules in [review-actions.md](review-actions.md). Keep reviewer
 working files in private OS temporary storage outside the target repository. Exclude
 the entire `.cross-review/` archive from snapshots, briefs, and attached context.
 
-Fill the template in [brief.md](references/brief.md) and dispatch a fresh reviewer
+Fill the template in [brief.md](brief.md) and dispatch a fresh reviewer
 (subagent or new session) with no implementation history. Name the reviewer model
 explicitly in the dispatch and in the brief; never let it fall back to an unnamed
 default. In a non-interactive run (`claude -p`, any run that ends with the
@@ -133,7 +133,7 @@ The reviewer works through three axes, each with its own verdict:
 - **Craft** - is it readable, tested where it matters, and consistent with the
   project's own standards?
 
-Lenses for each axis, language-agnostic, are in [lenses.md](references/lenses.md).
+Lenses for each axis, language-agnostic, are in [lenses.md](lenses.md).
 
 ## 5. Pick the mode
 
@@ -148,15 +148,15 @@ Lenses for each axis, language-agnostic, are in [lenses.md](references/lenses.md
   The brief is narrow by default: the fix diff, the `Received` and `Ruling` lines of the
   round, the sections of a document that the diff touches, and the repository files needed
   to check a fact. A whole document is read again only when no diff exists, and the result
-  says so ([target.md](references/target.md), "Re-review diff").
+  says so ([target.md](target.md), "Re-review diff").
 - **Document** - a spec or plan file, identified by its `sha256`; findings point to
   `§<heading>`. The three axes stay: Intent (it answers the request), System (it agrees
   with the repository and neighboring documents), Craft (every acceptance criterion is
-  checkable, no placeholders). Fields: [brief.md](references/brief.md),
-  [target.md](references/target.md).
+  checkable, no placeholders). Fields: [brief.md](brief.md),
+  [target.md](target.md).
 - **Prose-only** - a document or article text with code excluded: the same read-only
   reviewer and target identity, recorded as `mode document`, with the scope in
-  [brief.md](references/brief.md) "Prose-only kind".
+  [brief.md](brief.md) "Prose-only kind".
 
 ## 6. Check the result
 
@@ -226,10 +226,10 @@ reconstruct it from evidence or escalate instead of guessing or resetting the co
 Never rewrite existing lines. After the reviewer finishes, preserve the complete report
 and target identity in the caller-specified destination, or use the default local archive
 `~/.sentimony/agentflow/cr-request/<project>/<run-id>/review.md` and `identity.json`
-under [review-actions.md](references/review-actions.md). An archive failure makes the
+under [review-actions.md](review-actions.md). An archive failure makes the
 handoff `INCOMPLETE`; name the failed write and retain temporary results for recovery.
 Show the compact result with a link to the saved full review, following
-[compact.md](references/compact.md). When a caller specifies an output format or
+[compact.md](compact.md). When a caller specifies an output format or
 destination, follow its instructions while preserving the complete review evidence.
 Before dispatch, take the round number from the record
 (`Round <loop> <n>`, loop `review`) so a fresh session continues:
@@ -258,7 +258,7 @@ line without a phase takes the phase of the nearest `Review` line above it, or c
 against both when there is none. A new reviewer, model or mode does not reset a count, and
 `R<n>` IDs keep counting across phases. One round count the user gave explicitly covers
 both phases together: say before the first document review how many rounds that leaves
-for code ([round-budgets.md](references/round-budgets.md)).
+for code ([round-budgets.md](round-budgets.md)).
 
 The last line of the result is the next step:
 
@@ -276,7 +276,7 @@ Claude Code, `$<skill>` in Codex; `none` stays plain text. `<n>` counts the new 
 plus the previous findings left `NOT ADDRESSED`; when both exist, write
 `<n> findings to rule on (<a> new, <b> not addressed)`.
 
-1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+1. Follow the shared [stage transition contract](../resolve-issue/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition;
    internal commands and tasks of the current authorized plan need no extra approval.
    While the next transition waits for the user's answer, start agreed independent work from
@@ -338,7 +338,7 @@ recipe that writes Git objects and a temporary index but never the real index, a
 of a document; it may dispatch one or more reviewer agents. Its only network access is
 reading a linked issue through a tool the user already configured. Reviewers inspect and
 report, and do not dispatch nested reviewers. Before at most one focused test, assess
-its side effects; use the isolated-copy recipe in [brief.md](references/brief.md) for
+its side effects; use the isolated-copy recipe in [brief.md](brief.md) for
 tests that write snapshots, caches, or generated files. Credentials, production access,
 and external writes remain outside this permission; an unsafe or unavailable test is a
 review gap. Preserve others' working trees without rollback or cleanup.
@@ -363,10 +363,10 @@ of read isolation.
 
 ## References
 
-- [Target pinning](references/target.md)
-- [Tree fingerprint](references/tree-fingerprint.md)
-- [Reviewer brief and result contract](references/brief.md)
-- [Compact result](references/compact.md)
-- [Review identity and archive](references/review-actions.md)
-- [Review lenses](references/lenses.md)
-- [Review budgets by phase](references/round-budgets.md)
+- [Target pinning](target.md)
+- [Tree fingerprint](tree-fingerprint.md)
+- [Reviewer brief and result contract](brief.md)
+- [Compact result](compact.md)
+- [Review identity and archive](review-actions.md)
+- [Review lenses](lenses.md)
+- [Review budgets by phase](round-budgets.md)

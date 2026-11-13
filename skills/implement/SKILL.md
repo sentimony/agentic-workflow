@@ -3,7 +3,7 @@ name: implement
 description: Executes a plan task by task with evidence, drift handling, and a resumable execution record. Use when an existing plan is to be run in the current session or through subagents, when resuming an interrupted execution, or when one or two edits with an obvious approach need doing without a plan. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize). Replaces devflow plan-execution and plan-orchestration.
 argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents] [--auto]"
 metadata:
-  version: "0.0.14"
+  version: "0.0.15"
 license: MIT
 ---
 
@@ -12,7 +12,7 @@ license: MIT
 Carry a plan from its first pending task to its last, leaving evidence in the plan
 itself so that any later session can pick the work up from the files and Git alone.
 After integration, task completion goes to canonical PR evidence with a local pending
-copy, following [post-merge.md](references/post-merge.md); the tracked host stays unchanged.
+copy, following [post-merge.md](post-merge.md); the tracked host stays unchanged.
 
 ```text
 plan -> mode -> isolation -> clean start -> task loop -> drift and blockers -> record -> next step
@@ -21,7 +21,7 @@ plan -> mode -> isolation -> clean start -> task loop -> drift and blockers -> r
 Arguments are optional: a path to the plan or to a spec, `--inline` or `--subagents`
 to choose the mode, and `--auto`.
 
-1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+1. Follow the shared [stage transition contract](../resolve-issue/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition;
    internal commands and tasks of the current authorized plan need no extra approval.
 2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
@@ -94,7 +94,7 @@ hostless integration semantics remain unchanged.
 
 Before integration, record repo/PR, stable task IDs, remaining post-merge tasks, and
 their PR completion destination in the host. When resuming an already merged task,
-read that destination and [post-merge.md](references/post-merge.md) before applying
+read that destination and [post-merge.md](post-merge.md) before applying
 the tracked journal rules below. After merge, do not append completion lines or
 checkpoint commits to the tracked host on the base.
 
@@ -102,7 +102,7 @@ Work without a plan creates no file of its own. With a spec, the record lines of
 go into the spec's `## Verification record`, created by this skill when it is the first
 writer; with no spec, the evidence goes into the report only. Credentials and secret
 values never go into a record; use placeholder names such as `<API_TOKEN>` wherever a
-credential would appear. The section's shape is in [journal.md](references/journal.md).
+credential would appear. The section's shape is in [journal.md](journal.md).
 
 ## Step 2. Choose the mode
 
@@ -118,20 +118,20 @@ plan always runs inline.
 - **Subagents** - this session is the controller: it briefs one subagent per task,
   names the subagent model explicitly in each dispatch, rechecks every result, and owns
   the journal. Briefs, statuses, and retries are in
-  [subagents.md](references/subagents.md).
+  [subagents.md](subagents.md).
 
 ## Step 3. Isolation and clean start
 
 Detect isolation that already exists before creating any. Order of preference: work in
 place, then the harness's own isolation mechanism, then a Git worktree. Working in place
 is a full option, not a fallback. Details and limits are in
-[isolation.md](references/isolation.md).
+[isolation.md](isolation.md).
 
 On a fresh start (`Base: unset`), record the starting point before the first task: fill
 the `Base` placeholder with the full object ID of `HEAD`, `Root`, and `Branch`, and add
 `Commits: allowed | ask once | forbidden` under it from the commit policy of step 5, then
 `Initial dirty state`, naming staged paths as well as unstaged and untracked ones (format
-and example in [journal.md](references/journal.md)). Without a plan, the spec's
+and example in [journal.md](journal.md)). Without a plan, the spec's
 `## Verification record` starts with `Branch: <name>` and takes the same lines.
 
 Uncommitted changes listed there, staged ones included, belong to someone else: work
@@ -147,7 +147,7 @@ it finishes before the task that consumes it. A baseline that already fails is r
 reported, not fixed silently: the tasks still go ahead, the report lists the failure,
 and with no other blocker the next step is still `verify`.
 
-On resume (`Base` is set), follow the resume rule in [journal.md](references/journal.md):
+On resume (`Base` is set), follow the resume rule in [journal.md](journal.md):
 a task marked `done` with no trace in the tree or the history goes back to `pending`,
 and a task `blocked - conflicting intent` whose spec reads `Status: approved` again
 goes back to `pending` too. A `done` task whose `Files` overlap a later `done` task
@@ -270,7 +270,7 @@ not reset its approval.
 Step 1 checks the spec's `Status` before any task runs. After the new yes, `plan-craft`
 adds the delta as new `pending` tasks and edits no record line; on resume this skill
 returns each `blocked - conflicting intent` task of that spec to `pending`
-([journal.md](references/journal.md), Resume), so every task can reach `done`.
+([journal.md](journal.md), Resume), so every task can reach `done`.
 
 ## Step 7. Blockers and loops
 
@@ -302,7 +302,7 @@ with findings and none accepted stop the loop.
 A round is one more attempt at a task after the first implementation: another try to make
 a failing check of the task pass, or, in subagent mode, a changed re-dispatch after
 `NEEDS_CONTEXT` or `BLOCKED`. Each round adds a `Round` line to the journal, with the loop
-named after the task (format in [journal.md](references/journal.md)). A mechanical defect
+named after the task (format in [journal.md](journal.md)). A mechanical defect
 with one obvious fix (a typo, a missing import, a wrong path) is fixed and the check rerun
 inside the same round. A defect with several reasonable fixes is decided here when the
 options change neither the spec, a public contract, data, nor security: pick one and write
@@ -389,7 +389,7 @@ merge, deployment, cleanup, or general commenting permission; `--auto` grants no
 
 ## References
 
-- [Execution record, spec record, and resume](references/journal.md)
-- [Subagent mode: briefs, statuses, retries](references/subagents.md)
-- [Post-merge evidence and recovery](references/post-merge.md)
-- [Isolation: detection, order, limits](references/isolation.md)
+- [Execution record, spec record, and resume](journal.md)
+- [Subagent mode: briefs, statuses, retries](subagents.md)
+- [Post-merge evidence and recovery](post-merge.md)
+- [Isolation: detection, order, limits](isolation.md)

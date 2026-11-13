@@ -3,6 +3,12 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.29] - 2026-11-13
+
+1. Flat layout: reference files of cr-received 0.0.17, cr-request 0.0.21, finalize 0.0.14, implement 0.0.15, plan-craft 0.0.16, resolve-issue 0.0.5, session-learnings 0.0.15, specify 0.0.15 and verify 0.0.15 moved next to `SKILL.md` (33 files, no `references/` directories); links, the fingerprint-copies test and the cr-request adapter path updated; no content change.
+2. Fix invalid YAML frontmatter in resolve-issue description, skipped by installers since 0.0.27.
+3. Request: `20261111-2225`.
+
 ## [0.0.28] - 2026-11-13
 
 1. verify 0.0.14, finalize 0.0.13, specify 0.0.14, cr-request 0.0.20, cr-received 0.0.16:

@@ -1,9 +1,9 @@
 ---
 name: resolve-issue
-description: Takes one GitHub issue through the agentflow workflow: intake, clarification, planning, implementation, review, handoff, and resumable orchestration. Use when the user asks to resolve an issue, with manual stage approvals or a single --auto invocation. Delivery uses the installed owner's G3 helpers through explicit project callbacks and proofs; unknown delivery contracts block their actions. Not for a standalone spec, executing a plan without issue orchestration, or bypassing project permissions.
+description: Takes one GitHub issue through the agentflow workflow - intake, clarification, planning, implementation, review, handoff, and resumable orchestration. Use when the user asks to resolve an issue, with manual stage approvals or a single --auto invocation. Delivery uses the installed owner's G3 helpers through explicit project callbacks and proofs; unknown delivery contracts block their actions. Not for a standalone spec, executing a plan without issue orchestration, or bypassing project permissions.
 argument-hint: "<issue-url|#number> [--auto]"
 metadata:
-  version: "0.0.4"
+  version: "0.0.5"
 license: MIT
 ---
 
@@ -27,7 +27,7 @@ orchestrator launch the same next stage.
 
 ## Intake and authority
 
-1. Read [the intake contract](references/intake.md) before accessing an issue or
+1. Read [the intake contract](intake.md) before accessing an issue or
    selecting a workspace. An example URL grants no permission to execute that issue.
 2. Take a GitHub issue URL or `#number` with one known checkout repository. Without
    an issue argument, ask which issue to take and stop; never infer one from the
@@ -44,7 +44,7 @@ orchestrator launch the same next stage.
 
 ## Stage loop
 
-Read [the run and transition contract](references/run-contract.md) before execution.
+Read [the run and transition contract](run-contract.md) before execution.
 
 1. Without `--auto`, finish the current meaningful stage, report its result and next
    stage, and await permission for that transition. Internal commands and all tasks
@@ -61,10 +61,10 @@ Read [the run and transition contract](references/run-contract.md) before execut
 5. Invalidate old results after a head/tree change. Failed checks return to local
    implementation within the saved round limit. A blocked gate never becomes PASS
    merely because the caller supplied `--auto`.
-6. Read [consultation routing](references/consultations.md) before a critical question.
+6. Read [consultation routing](consultations.md) before a critical question.
    Consultation consensus cannot approve requirements. Cancellation stops immediately
    at the host's control boundary and requires no consultation.
-7. Read [delivery](references/delivery.md) before PR/merge/deploy. Supply the installed
+7. Read [delivery](delivery.md) before PR/merge/deploy. Supply the installed
    G3 host bridge, explicit project callbacks, fresh action permissions and durable
    checkpoint. Missing policy, target proofs or production contract block their actions.
    Merge or queued deployment alone never establishes production success.
@@ -77,7 +77,7 @@ Read [the run and transition contract](references/run-contract.md) before execut
 1. Keep task/issue ID, historical mode, current/next stage, workspace, full identity,
    artifacts, scope, blockers and consultation history. Current permissions are
    supplied separately by the live invocation, never recovered from this handoff.
-2. Read [resume](references/resume.md) before continuing saved delivery. A persisted
+2. Read [resume](resume.md) before continuing saved delivery. A persisted
    running stage or action intent has an unknown result: reconcile actual current
    identity/evidence before retrying. Reuse completed PR, merge and deployment receipts.
    A new manual invocation never inherits a prior automatic run's permissions.

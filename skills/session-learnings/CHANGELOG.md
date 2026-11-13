@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.15] - 2026-11-13
+
+1. Flat layout: reference files moved next to SKILL.md; no content change.
+
 ## [0.0.14] - 2026-11-13
 
 1. Recording measures the chain with the draft before appending and ends with ``Next step: `/session-learnings` - triage, chain over limit by <n> B`` when the chain is over the limit or the margin is small; triage does the same when it stays over (`20261024-0224`).

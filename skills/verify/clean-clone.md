@@ -77,7 +77,7 @@ auto-install alone leaves hook, launcher and cache writes possible.
 ### Private environment recipe
 
 The standard-library helper
-[`dependency_isolation.py`](../scripts/dependency_isolation.py) creates a fresh private
+[`dependency_isolation.py`](scripts/dependency_isolation.py) creates a fresh private
 root and returns an allowlisted environment. It starts without inherited credentials,
 provider configuration or host CLI paths. It covers common XDG, npm, Python, uv, Cargo
 and Gradle writable roots. Add reviewed project-specific settings explicitly; inspect

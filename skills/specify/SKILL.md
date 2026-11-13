@@ -3,7 +3,7 @@ name: specify
 description: Turns a request into an evidence-backed spec with checkable acceptance criteria behind an explicit approval, then starts plan-craft. Use when work has to be designed before any code - a new feature, product, UX, or architecture change, unclear success criteria, or a choice between materially different approaches - including a spec revision after a document review. Not for a fully specified mechanical change or a fix with known expected behavior. Replaces devflow scope-triage.
 argument-hint: "[<request>] [--auto]"
 metadata:
-  version: "0.0.14"
+  version: "0.0.15"
 license: MIT
 ---
 
@@ -20,7 +20,7 @@ route -> contract -> evidence -> route check -> rounds -> approaches -> spec -> 
 The optional argument is the request. Without it, take the request from the
 conversation.
 
-1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+1. Follow the shared [stage transition contract](../resolve-issue/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition if it
    is not already authorized; internal commands and tasks of the current authorized plan
    need no extra approval.
@@ -142,7 +142,7 @@ alternatives considered and why each was ruled out, instead of inventing a secon
 
 ## Step 5. Write the spec
 
-Fill [spec-template.md](references/spec-template.md):
+Fill [spec-template.md](spec-template.md):
 
 - header `Status: draft`, `Route: note` or `Route: design`, and `Date`;
 - `design` sections in this order: `Goal`, `Evidence`, `Decisions`, `Behavior`,
@@ -339,6 +339,6 @@ Secrets stay out of the spec and the handoff sentence; only placeholder names ap
 
 ## References
 
-- [Spec template](references/spec-template.md): sections, criteria rules, coverage
+- [Spec template](spec-template.md): sections, criteria rules, coverage
   check, fresh-reader checklist, large requests
 - Next step: `plan-craft` after approval, `implement` for the `direct` route

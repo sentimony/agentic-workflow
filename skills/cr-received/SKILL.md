@@ -3,7 +3,7 @@ name: cr-received
 description: Verifies each review finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, then routes back to verify. Use when code review, PR comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.16"
+  version: "0.0.17"
 license: MIT
 ---
 
@@ -27,7 +27,7 @@ with or without `cr-request`. From the chain it also takes the spec and the plan
 `## Execution record` (without a plan, the spec's `## Verification record`), whose lines
 are signals, not proof.
 
-1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+1. Follow the shared [stage transition contract](../resolve-issue/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition;
    internal commands and tasks of the current authorized plan need no extra approval.
    While the next transition waits for the user's answer, start agreed independent work
@@ -59,7 +59,7 @@ reviewer continuity; `plan-craft` then starts `implement` instead of `verify`.
 
 1. For an explicit standalone `cross-agent` invocation, the installed workflow owner
    selects one current-task unresolved review by path and identity before delegation;
-   see [the owner adapter](../cr-request/references/cross-agent-adapter.md).
+   see [the owner adapter](../cr-request/cross-agent-adapter.md).
 2. Ambiguous intake asks for input before model or registry mutation. Stale or unknown
    reviews stay blocked before execution. The owner binds the selected review and
    immutable evidence before launch; the generic launcher never chooses a random result.
@@ -69,7 +69,7 @@ reviewer continuity; `plan-craft` then starts `implement` instead of `verify`.
 
 ## 0. Repeat call
 
-A review already resolved, per [return.md](references/return.md), gets its decision
+A review already resolved, per [return.md](return.md), gets its decision
 table and return block again and nothing is edited; any mismatch is new input.
 
 ## 1. Intake
@@ -79,7 +79,7 @@ one early can make another wrong. `REVIEWER UNAVAILABLE` carries nothing to deci
 report the coverage gap and end with `Next step: none - awaiting user`.
 
 A `cr-request` result already carries its structure; keep each field in the role
-[records.md](references/records.md) gives it. In short: an `UNASSESSED` axis is a
+[records.md](records.md) gives it. In short: an `UNASSESSED` axis is a
 coverage gap, never a pass; severity is the reviewer's label, not a fact; suggestions
 enter the fix scope only when the user asks; open questions go to the user. Each
 **Set aside** row gets a one-line ruling: it stays out of scope (and why), or the
@@ -108,9 +108,9 @@ rather than pass or invent fixes.
 ## 2. Anchor to the reviewed state
 
 Findings are true or false about a specific revision. Compare the reviewed target with the
-current tree using read-only Git ([records.md](references/records.md)). The identity record
+current tree using read-only Git ([records.md](records.md)). The identity record
 carries `Tree: <fingerprint>` (the `## Committed tree` recipe in
-[tree-fingerprint.md](references/tree-fingerprint.md)); decisions are bound to it, and one
+[tree-fingerprint.md](tree-fingerprint.md)); decisions are bound to it, and one
 made on another tree is checked again. A review of an uncommitted boundary carries a
 `## Working tree` ID, which a committed fingerprint never matches (the recipes differ): its
 identity is the same only when `Reviewed head` equals `HEAD` and the `Uncommitted state` of
@@ -127,7 +127,7 @@ or commit to make inspection easier.
 
 ## 3. One record per finding
 
-Give every item an ID and a record per [records.md](references/records.md). Keep the
+Give every item an ID and a record per [records.md](records.md). Keep the
 reviewer's ID when present: `R<n>-F<k>` from `cr-request`, `R<n>-<reviewer>-F<k>` with
 several reviewers. Items from other sources get `F1`, `F2`, ... with a source prefix when
 there are several. IDs from earlier rounds are never renumbered. Keep apart what the
@@ -153,12 +153,12 @@ evidence as strong as accepting: "I disagree" is not a disposition. When a claim
 be checked with what is available, say what is missing instead of guessing.
 
 Findings on a spec or plan (document review, cited by `§<heading>`) take the evidence
-forms in [records.md](references/records.md) instead of a test.
+forms in [records.md](records.md) instead of a test.
 
 ## 5. Decide
 
 Each record gets an assessment and a disposition, both defined in
-[records.md](references/records.md): `ACCEPT` (fix now), `PARTIAL` (valid concern, your
+[records.md](records.md): `ACCEPT` (fix now), `PARTIAL` (valid concern, your
 own remedy, with the reason), `REJECT` (with the evidence), `DEFER`, or `ESCALATE` (a
 decision only the user or another owner can make: scope, architecture, security posture,
 a public contract, or a conflict with an earlier user decision).
@@ -297,13 +297,13 @@ re-reviews) and `code` (implementation and its re-reviews). Write
 count when the reviewer, model or mode changes. A line without a phase takes the phase of
 the nearest `Review` line above it, or counts against both when there is none. One round
 count the user gave explicitly covers both phases together. `R<n>` IDs keep counting.
-The full rule and its scenarios are in `cr-request` (`references/round-budgets.md`).
+The full rule and its scenarios are in `cr-request` (`round-budgets.md`).
 
 ## 9. Journal
 
 With a known plan, append `Received`, `Ruling`, `Deferred`, and `Round` lines at the end
 of its `## Execution record` (inside its ```` ```text ```` block, before the closing fence,
-when it has one) per [return.md](references/return.md); without a plan, at the end of the
+when it has one) per [return.md](return.md); without a plan, at the end of the
 spec's `## Verification record` when it has one; else only report them.
 
 Then commit the round as `Address R<n> findings: <IDs>`, where `<IDs>` are the
@@ -326,10 +326,10 @@ names the round commit.
 
 ## 10. Report and reply
 
-End with the summary in [records.md](references/records.md): reviewed and current
+End with the summary in [records.md](records.md): reviewed and current
 identities, counts per disposition, each record with its evidence or rationale, open
 questions, uncovered axes, and the re-review decision. Then this return block (field
-notes in [return.md](references/return.md)):
+notes in [return.md](return.md)):
 
 ```text
 Changed paths: <paths or none>
@@ -361,7 +361,7 @@ are shown bare:
 - the Round rule stopped the loop -> `Next step: none - round limit reached, awaiting user`.
 
 Replies to the reviewer (including the narrow authorized automatic actions) follow
-[return.md](references/return.md).
+[return.md](return.md).
 
 ## When not to use
 
@@ -391,10 +391,10 @@ by the ruled line and, for an owner's decision or after the user's yes, a senten
 detached worktree at the pre-fix revision and removes it after the run. It commits each
 round's own paths locally (step 9) and never pushes or merges.
 Network access is limited to reading and authorized review actions through a configured
-tool, including the narrow automatic exception in [return.md](references/return.md).
+tool, including the narrow automatic exception in [return.md](return.md).
 
 ## References
 
-- [Records, states, evidence forms, and the summary](references/records.md)
-- [Return block, journal lines, and the repeat call](references/return.md)
-- [Tree fingerprint](references/tree-fingerprint.md)
+- [Records, states, evidence forms, and the summary](records.md)
+- [Return block, journal lines, and the repeat call](return.md)
+- [Tree fingerprint](tree-fingerprint.md)

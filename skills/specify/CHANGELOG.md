@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.15] - 2026-11-13
+
+1. Flat layout: reference files moved next to SKILL.md; no content change.
+
 ## [0.0.14] - 2026-11-13
 
 1. Criteria about PR or forge state end with `(after finalize)` or are split into a local part and a separate criterion (`20261029-2232`).

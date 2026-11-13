@@ -3,7 +3,7 @@ name: plan-craft
 description: Turns settled requirements into an ordered, multi-step implementation plan covering task order, acceptance-criteria coverage, and the execution choice. Use when an approved spec, accepted design, or requirements agreed in the conversation need a plan before any code, including a plan revision after a document review. Not for open design (specify) or executing a plan (implement). Replaces devflow plan-crafting.
 argument-hint: "[<spec-path>] [<plan-path>] [--auto]"
 metadata:
-  version: "0.0.15"
+  version: "0.0.16"
 license: MIT
 ---
 
@@ -21,7 +21,7 @@ The optional arguments are the path to a spec, the path to a plan to revise, or 
 (`specify` passes both after a re-approval), and `--auto`. Without paths, step 1 finds
 the input.
 
-1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
+1. Follow the shared [stage transition contract](../resolve-issue/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition if it
    is not already authorized; internal commands and tasks of the current authorized plan
    need no extra approval.
@@ -142,7 +142,7 @@ wins:
   lines this skill writes are listed in step 5). It never edits an existing one: a task
   already `done` keeps its line and its change becomes a new task, and a task
   `blocked - conflicting intent` keeps its line; `implement` returns it to `pending` on
-  resume (its `references/journal.md`, Resume). `verify` counts only the code reviews
+  resume (its `journal.md`, Resume). `verify` counts only the code reviews
   after the last marker, so the delta gets its own review.
   Then rerun step 6 on the whole plan; `Execution` keeps its value;
 - no plan, or the existing one is finished (every `Task` line `done`): write a new file;
@@ -159,7 +159,7 @@ wins:
 
 ## 4. Write the header
 
-Fill the header from [the template](references/plan-template.md):
+Fill the header from [the template](plan-template.md):
 
 - `Spec: <path> | none` - the spec ranks above the plan; a conflict is resolved in the
   spec, not around it;
@@ -236,7 +236,7 @@ Content:
 - credentials appear in `RED`, `GREEN`, and `Check` commands only as placeholder names
   such as `<API_TOKEN>`, never as values;
 - a `Check` that a phrase is gone, or that a sentence is present in Markdown, uses the
-  forms in [the template](references/plan-template.md) ("Check templates"); a brief for a
+  forms in [the template](plan-template.md) ("Check templates"); a brief for a
   wave of subagents says to describe a removed phrase in `CHANGELOG.md`, not to quote it.
 
 Before the execution record, add a localized `Short conclusion` with two or three
@@ -326,7 +326,7 @@ Read the saved plan once more against the spec and fix what fails:
 - structure survived the edit: when a section was replaced or edited, its boundary is the
   next heading of the same or a higher level, and the inventory of headings (ignoring
   code spans and fenced blocks) before and after differs only by the intended change; the
-  required headings come from [the template](references/plan-template.md), and a lost
+  required headings come from [the template](plan-template.md), and a lost
   intermediate `##` fails the check even when constraints and criteria are intact;
 - proportion: a plan far longer than its spec usually already contains the code; move
   that back into behavior and invariants.
@@ -451,7 +451,7 @@ does not start execution.
 
 ## References
 
-1. [Plan template, field notes, and execution record format](references/plan-template.md)
+1. [Plan template, field notes, and execution record format](plan-template.md)
 2. Spec input: `specify`
 3. Execution: `implement`
 4. Plan review: `cr-request` in document mode (run under `--auto`); standalone

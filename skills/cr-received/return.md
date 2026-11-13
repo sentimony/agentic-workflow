@@ -160,7 +160,7 @@ host writers per finding. These guards do not grant a write token to the reviewe
 
 ## Stage transition ownership
 
-1. Follow [the shared transition contract](../../resolve-issue/references/run-contract.md).
+1. Follow [the shared transition contract](../resolve-issue/run-contract.md).
    Manual intake finishes before requesting the next stage. Auto carries only current
    verified permissions; product decisions and project/session prohibitions still stop it.
 2. When invoked by resolve-issue, return disposition/evidence and next action to that

@@ -265,9 +265,12 @@ ID are one delivery target: keep the canonical slug and each checkout, compare t
 blobs and needed trees, and when the changes differ keep both sets and settle the
 integration before pushing; never overwrite a foreign ref or reuse an existing branch name
 blindly. An unavailable API does not prove different IDs: say so and ask. A missing or
-ambiguous account is asked before publication, not after the branch is pushed. After the PR
-opens, check the criteria `verify` deferred to `finalize` against its CI on the full head
-SHA; a red check returns to `verify`.
+ambiguous account is asked before publication, not after the branch is pushed. Every route that
+publishes or integrates (`pr`, `merge`, `squash`) first reads the criteria `verify`
+deferred to `finalize`: after the PR opens, check them against its CI on the full head SHA;
+`merge` and `squash` refuse while one is unchecked or red, and a red check returns to
+`verify`. A local `merge` has no PR or CI: it needs the user's explicit waiver of that
+criterion, or goes through `pr` or `squash` instead.
 
 ## 6. Clean up behind two barriers
 

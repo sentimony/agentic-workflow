@@ -164,8 +164,10 @@
    adapter remains owner of review policy; ordinary consultations use the generic core.
 - agentflow skills replace their sentimony/skills devflow counterparts (scope-triage,
   plan-crafting, plan-execution, plan-orchestration, verification-gate, branch-finish,
-  review-request, review-resolution, cross-review): a description opens with
-  `You MUST use this when`, as devflow's do, and names the skill it replaces.
+  review-request, review-resolution, cross-review): a description is a minimal
+  thesis followed by `Use when ...`, without `You MUST`, and ends by naming the devflow skill it
+  replaces. Descriptions not yet rewritten (resolve-issue, specify, plan-craft, implement,
+  session-learnings) still open with `You MUST use this when` until their wave.
 1. The installed cross-agent owner adapter reads its own `brief.md` and `lenses.md`
    headings. Keep Reviewer instructions, Result contract, Severity, Intent, System
    and Craft stable; after edits run the owner adapter fixture suite. The host-only

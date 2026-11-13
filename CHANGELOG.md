@@ -9,7 +9,8 @@ Git commit subjects. Skill changelogs retain the detailed skill history.
    session-learnings 0.0.13: descriptions are a thesis followed by `Use when ...` without
    `You MUST`, which lowers their always-loaded token cost (`20261009-2359`,
    `20261111-2220`).
-2. `AGENTS.md` drops the interim note: every agentflow description now follows the pattern.
+2. `AGENTS.md` drops the interim note: every agentflow description now follows the thesis and
+   `Use when` shape, and those with a devflow counterpart end with `Replaces devflow ...`.
 
 ## [0.0.26] - 2026-11-13
 

@@ -166,7 +166,9 @@
   plan-crafting, plan-execution, plan-orchestration, verification-gate, branch-finish,
   review-request, review-resolution, cross-review): a description is a minimal
   thesis followed by `Use when ...`, without `You MUST`, and ends by naming the devflow skill it
-  replaces. This holds for all nine agentflow skills.
+  replaces. All nine agentflow skills follow the thesis and `Use when` shape; the seven with a
+  devflow counterpart also end with `Replaces devflow <skill>.` (`resolve-issue` and
+  `session-learnings` replace none).
 1. The installed cross-agent owner adapter reads its own `brief.md` and `lenses.md`
    headings. Keep Reviewer instructions, Result contract, Severity, Intent, System
    and Craft stable; after edits run the owner adapter fixture suite. The host-only

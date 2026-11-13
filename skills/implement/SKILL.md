@@ -3,7 +3,7 @@ name: implement
 description: Executes a plan task by task with evidence, drift handling, and a resumable execution record. Use when an existing plan is to be run in the current session or through subagents, when resuming an interrupted execution, or when one or two edits with an obvious approach need doing without a plan. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize). Replaces devflow plan-execution and plan-orchestration.
 argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents] [--auto]"
 metadata:
-  version: "0.0.13"
+  version: "0.0.14"
 license: MIT
 ---
 
@@ -137,8 +137,13 @@ and example in [journal.md](references/journal.md)). Without a plan, the spec's
 Uncommitted changes listed there, staged ones included, belong to someone else: work
 around them, never fold them into task commits, leave staged content staged, and never
 stash, reset, or clean them. Then run the project's
-baseline check (the plan's, else the project's test or build command) so that a later
-failure clearly belongs to a task. A baseline that already fails is recorded and
+baseline check (the plan's `Base check`, else the project's test or build command) so that a later
+failure clearly belongs to a task. Also run on `Base` every `Check` of the plan that compares
+with a reference outside the branch (a stored baseline, snapshots, an export) and record the
+result as a control in a `Ruling` or under `Initial dirty state`; when the control already
+differs from the reference, tasks compare themselves with the control and the drift goes
+into the report as known. A long gate may run in the background beside the first tasks, but
+it finishes before the task that consumes it. A baseline that already fails is recorded and
 reported, not fixed silently: the tasks still go ahead, the report lists the failure,
 and with no other blocker the next step is still `verify`.
 
@@ -221,6 +226,13 @@ After confirming a task is `done`, report the current checklist of all plan task
 execution dependency order, preserving their original Task numbers and short titles.
 Mark done tasks `[x]` and all others `[ ]`; label active tasks `in progress` and
 blocked tasks `blocked`, leaving pending tasks clearly identified as `pending`.
+Add the measured wall-clock time to each task: from the moment the controller marked it
+`in progress` to its own confirmation of `done`, including the check of a subagent's result.
+Retries, model changes and resumes do not reset the measured time, and waiting for the user
+is counted apart. Write it into the `done` evidence as `(<n> min)`. A task without a
+measurement shows `not measured`; a partial one shows a lower bound (`>= <n> min`). Never
+infer a duration from words or test counts, and never use the whole turn's time for one
+task. A reopened task returns to `[ ]` and keeps its earlier time.
 
 ## Step 6. Drift
 
@@ -272,7 +284,11 @@ Only these stop the work:
 
 A failing test, a lint error, or a broken build is work, not a blocker. A blocked task
 gets `Task <n>: blocked - <which of the five>: <what is missing>`; independent tasks
-continue.
+continue. A report on a blocker separates three things: which actual output is missing,
+what is already allowed independently of it, and, when no permission exists yet, the one
+owner decision that would open a realistic local route. An exception to a gate is only a
+concrete change of execution order with a checkable result and the acceptance gates kept;
+the agent never approves it itself, and an already granted permission is not asked again.
 
 ```text
 Round rule: only automatic rounds count. A round count the user gave explicitly allows

@@ -20,6 +20,8 @@ Headings and prose may use that language; the keys may not.
 
 **Stack:** <languages, frameworks, tools, and test runners the tasks rely on>
 
+**Base check:** <the command run on `Base` before the first task, plus each `Check` that compares with a reference outside the branch, with its command | project default>
+
 **Execution:** inline | subagents | unset [- <reason, under `--auto`>]
 
 ## Global constraints
@@ -118,7 +120,11 @@ placeholders, and when a record is unfinished are rules of SKILL.md steps 1-5.
   first word. Handing the plan to another agent CLI or choosing `/compact` first adds no
   value of its own.
 - `Produces` and `Consumes` of neighboring tasks must name the same signature or format
-  with the same spelling.
+  with the same spelling; `Depends on` and `Consumes` (also across plans) form no cycle.
+- `Base check` lists the baseline command and every `Check` against a stored baseline,
+  snapshot, or export outside the branch, so `implement` can run it on `Base`.
+- Editing a section keeps the heading inventory: the boundary is the next heading of the
+  same or a higher level, and headings in code spans or fenced blocks do not count.
 - `Covers` lists only criteria this task makes observable. A criterion no task covers is
   a hole in the plan.
 - An exact expected output in `RED`, `GREEN`, or `Check` that follows from a formatting

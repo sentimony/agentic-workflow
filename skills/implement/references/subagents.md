@@ -65,6 +65,12 @@ resolved before the next wave.
 
 ## Review inside execution
 
-A self-review of a task by the controller is optional. The independent review of the
+A self-review of a task by the controller is optional. A task review by a separate
+reviewer may be skipped when the risk is LOW or MEDIUM, the diff matches word for word the
+code of a plan that already passed review, and the controller records the decision as a
+`Ruling`; the independent review of the whole change stays mandatory, and closing the plan
+reminds of it. Keep the state proportional: a short sequential plan needs only the
+journal's `Task` line per task, while parallel waves, a long plan or a missing way to
+resume a subagent need the fuller per-task notes. The independent review of the
 whole change is `cr-request` after `verify`; reviewing every task as well would review the
 same code twice.

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.4] - 2026-11-13
+
+1. Description rewritten as a thesis followed by `Use when ...` without `You MUST`, cutting
+   its context cost (`20261111-2220`).
+
 ## [0.0.3] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 
 1. State in intake that a missing issue argument makes the skill ask which issue to

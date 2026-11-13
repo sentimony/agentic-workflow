@@ -3,6 +3,14 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.27] - 2026-11-13
+
+1. specify 0.0.13, plan-craft 0.0.14, implement 0.0.13, resolve-issue 0.0.4,
+   session-learnings 0.0.13: descriptions are a thesis followed by `Use when ...` without
+   `You MUST`, which lowers their always-loaded token cost (`20261009-2359`,
+   `20261111-2220`).
+2. `AGENTS.md` drops the interim note: every agentflow description now follows the pattern.
+
 ## [0.0.26] - 2026-11-13
 
 1. cr-request 0.0.19, cr-received 0.0.15, verify 0.0.13, finalize 0.0.12: descriptions are a

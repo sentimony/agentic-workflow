@@ -1,9 +1,9 @@
 ---
 name: specify
-description: You MUST use this when work has to be designed before any code is written - a new feature, a product, UX, or architecture change, unclear success criteria, or a choice between materially different approaches - including a spec revision after a document review. Turns the request into an evidence-backed spec with checkable acceptance criteria behind an explicit approval, then starts plan-craft. Replaces devflow scope-triage. Not for a fully specified mechanical change or a fix whose expected behavior is known.
+description: Turns a request into an evidence-backed spec with checkable acceptance criteria behind an explicit approval, then starts plan-craft. Use when work has to be designed before any code - a new feature, product, UX, or architecture change, unclear success criteria, or a choice between materially different approaches - including a spec revision after a document review. Not for a fully specified mechanical change or a fix with known expected behavior. Replaces devflow scope-triage.
 argument-hint: "[<request>] [--auto]"
 metadata:
-  version: "0.0.12"
+  version: "0.0.13"
 license: MIT
 ---
 

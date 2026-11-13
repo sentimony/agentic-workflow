@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.13] - 2026-11-13
+
+1. Description rewritten as a thesis followed by `Use when ...` without `You MUST`, cutting
+   its context cost (`20261111-2220`).
+
 ## [0.0.12] - 2026-11-07
 
 1. Comment names `transfer-context`, the new name of `context-transfer`.

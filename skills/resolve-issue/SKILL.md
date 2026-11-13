@@ -1,6 +1,6 @@
 ---
 name: resolve-issue
-description: Takes one GitHub issue through the agentflow workflow: intake, clarification, planning, implementation, review, handoff, and resumable orchestration. Use when the user asks to resolve an issue, with manual stage approvals or a single --auto invocation. Delivery uses the installed owner's G3 helpers through explicit project callbacks and proofs; unknown delivery contracts block their actions. Not for a standalone spec, executing a plan without issue orchestration, or bypassing project permissions.
+description: Takes one GitHub issue through the agentflow workflow - intake, clarification, planning, implementation, review, handoff, and resumable orchestration. Use when the user asks to resolve an issue, with manual stage approvals or a single --auto invocation. Delivery uses the installed owner's G3 helpers through explicit project callbacks and proofs; unknown delivery contracts block their actions. Not for a standalone spec, executing a plan without issue orchestration, or bypassing project permissions.
 argument-hint: "<issue-url|#number> [--auto]"
 metadata:
   version: "0.0.5"

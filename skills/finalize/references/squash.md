@@ -40,6 +40,15 @@ only after the user chose `squash` in this conversation.
    with explicit applicable policy semantics; a project convention cannot loosen a
    forge requirement. Fixes belong to `implement` or `cr-received`; a new tree goes
    through `verify` again.
+   Read all checks of the current head after the required ones: a pending external review
+   is not hidden by green CI. When the user or the repo rules name a reviewer (Copilot,
+   for example), read the reviews API: author, full `commit_id` equal to the head, result,
+   and unresolved findings. A green job, an older review, a successful request command, or
+   another reviewer's clean review does not replace it. No request and no review on this
+   head, though the command exited 0, leads to an availability check or the user's explicit
+   waiver, never to completion. After a push with a new SHA request the review again;
+   changing only the draft state or description keeps the SHA. Re-read head, CI and the
+   named reviews right before merge.
 5. Evaluate the snapshot using the local contract below. Only `CLEAN` and `HAS_HOOKS`
    permit merge. Poll `UNKNOWN` within the same deadline; `UNSTABLE`, `BLOCKED`,
    `DIRTY`, `BEHIND`, and `DRAFT` block. Under `unknown` policy, green visible checks

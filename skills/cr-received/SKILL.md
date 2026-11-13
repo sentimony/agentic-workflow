@@ -3,7 +3,7 @@ name: cr-received
 description: Verifies each review finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, then routes back to verify. Use when code review, PR comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.15"
+  version: "0.0.16"
 license: MIT
 ---
 
@@ -30,6 +30,11 @@ are signals, not proof.
 1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition;
    internal commands and tasks of the current authorized plan need no extra approval.
+   While the next transition waits for the user's answer, start agreed independent work
+   from the session queue in the same turn; stop only when there is none. Inside a review
+   loop (`cr-request` -> `cr-received` -> `verify`), a `Next step` that names such a skill
+   needs no user decision under `--auto`; in manual mode the line stays the request of the
+   transition.
 2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
    skill. When invoked by `resolve-issue`, return the result, next action and evidence to
    that orchestrator; do not also launch the next stage yourself. A standalone invocation

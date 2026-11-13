@@ -3,7 +3,7 @@ name: cr-request
 description: Pins a change and its tree fingerprint, then dispatches a read-only reviewer for separate verdicts and evidence-backed findings. Use when a finished task, branch, pull request, uncommitted work since a ref, or a spec or plan needs an independent review. Replaces devflow review-request.
 argument-hint: "[<base-ref>] [<spec-path>] [--exclude <path>] [--auto]"
 metadata:
-  version: "0.0.19"
+  version: "0.0.20"
 license: MIT
 ---
 
@@ -279,6 +279,11 @@ plus the previous findings left `NOT ADDRESSED`; when both exist, write
 1. Follow the shared [stage transition contract](../resolve-issue/references/run-contract.md).
    Without `--auto`, finish this meaningful stage and request its next transition;
    internal commands and tasks of the current authorized plan need no extra approval.
+   While the next transition waits for the user's answer, start agreed independent work from
+   the session queue in the same turn; stop only when there is none. Inside a review loop
+   (`cr-request` -> `cr-received` -> `verify`), a `Next step` that names such a skill needs
+   no user decision under `--auto`; in manual mode the line stays the request of the
+   transition.
 2. With `--auto`, continue permitted stage transitions and pass the flag to every invoked
    skill. When invoked by `resolve-issue`, return the result, next action and evidence to
    that orchestrator; do not also launch the next stage yourself. A standalone invocation

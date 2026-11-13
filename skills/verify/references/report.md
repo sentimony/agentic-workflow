@@ -27,6 +27,7 @@ C4 | <check command> | `passed`
 C5 | <check command> | `not verified: <reason>`
 C6 | <check command> | `deferred to Task <n>`
 C7 | <check command> | `n/a: superseded`
+C8 | <check command> | `deferred to finalize`
 
 Bar check: <weakening found, with path and line, or none; one without a ruling that breaks no claim: needs ruling: <path:line> - <what was weakened>>
 Review blockers: <IDs with severity and disposition, or none>
@@ -86,6 +87,10 @@ Each status sits in a code span:
   `Outward: <what and where>` field, which run after a full `PASS` and a closed review
   with the user's own confirmation. The check column names that task; the row does not
   block `PASS`.
+- `deferred to finalize` - the spec marks the criterion `(after finalize)`: it concerns
+  state that exists only on an open PR and the branch is not pushed (a pushed `HEAD` is read
+  from the forge by full SHA first). The row does not block `PASS` and is listed in the
+  report; `finalize` (`pr`) checks it after the PR opens and returns to `verify` when CI is red.
 - `not verified: <reason>` - no check ran, or its output does not decide the claim. A
   missing tool, missing access, missing credentials, or a check outside the session's
   reach is always `not verified`, never `n/a`.
@@ -95,7 +100,7 @@ that only reading can decide. "Looked fine" is not a command.
 
 ## Verdicts
 
-- `PASS` - every row is `passed`, `n/a`, or `deferred to Task <n>`, the bar check found
+- `PASS` - every row is `passed`, `n/a`, `deferred to Task <n>`, or `deferred to finalize`, the bar check found
   nothing unreported, and no review blocker is open.
 - `FAIL` - at least one row is `failed`.
 - `INCOMPLETE` - no row failed, but a row is `not verified`, a bar-check line `needs ruling`, or a review blocker is open.

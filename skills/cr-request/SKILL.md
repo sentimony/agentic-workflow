@@ -1,9 +1,9 @@
 ---
 name: cr-request
-description: You MUST use this when a change needs an independent review before it moves on - a finished task, a feature branch, a pull request, work-in-progress or uncommitted changes since a given ref, or a spec or plan document that needs review - in any programming language. Replaces devflow review-request. Pins the exact target and its tree fingerprint, gathers intent and constraints, and dispatches a read-only reviewer that returns separate verdicts and evidence-backed findings.
+description: Pins a change and its tree fingerprint, then dispatches a read-only reviewer for separate verdicts and evidence-backed findings. Use when a finished task, branch, pull request, uncommitted work since a ref, or a spec or plan needs an independent review. Replaces devflow review-request.
 argument-hint: "[<base-ref>] [<spec-path>] [--exclude <path>] [--auto]"
 metadata:
-  version: "0.0.18"
+  version: "0.0.19"
 license: MIT
 ---
 

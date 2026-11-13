@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.19] - 2026-11-13
+
+1. Description rewritten as a thesis followed by `Use when ...` without `You MUST`, cutting
+   its context cost (`20261111-2220`).
+
 ## [0.0.18] - 2026-11-12
 
 1. A re-review brief is narrow by default: the fix diff, the `Received` and `Ruling` lines

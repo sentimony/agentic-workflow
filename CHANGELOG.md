@@ -3,6 +3,14 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.26] - 2026-11-13
+
+1. cr-request 0.0.19, cr-received 0.0.15, verify 0.0.13, finalize 0.0.12: descriptions are a
+   thesis followed by `Use when ...` without `You MUST`, which lowers their always-loaded
+   token cost (`20261111-2220`).
+2. `AGENTS.md` records the description pattern; the other agentflow skills follow in later
+   releases.
+
 ## [0.0.25] - 2026-11-12
 
 1. cr-request 0.0.18: the owner adapter embeds the review diff for a reviewer without a

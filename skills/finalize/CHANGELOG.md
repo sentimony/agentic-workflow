@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.12] - 2026-11-13
+
+1. Description rewritten as a thesis followed by `Use when ...` without `You MUST`, cutting
+   its context cost (`20261111-2220`).
+
 ## [0.0.11] - 2026-11-07 - [0.0.22](https://github.com/sentimony/agentic-workflow/releases/tag/v0.0.22)
 
 1. Name the skill in `Next step` as inline code in the host's invocation form

@@ -1,9 +1,9 @@
 ---
 name: verify
-description: You MUST use this when anyone - you, a subagent, or the user - is about to state that work is done, fixed, ready, or mergeable, and before a merge, opening a pull request, or a handoff report, including work that has no plan. Covers every promise behind the claim - spec criteria, plan tasks, record entries, accepted review fixes, and the caller's words - proven with fresh checks on the committed tree and given one verdict, without editing code. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
+description: Proves every promise behind a completion claim with fresh checks on the committed tree and gives one verdict, without editing code. Use when anyone is about to say work is done, fixed, ready, or mergeable, and before a merge, pull request, or handoff report, including work with no plan. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-or-spec-path>] [--auto]"
 metadata:
-  version: "0.0.12"
+  version: "0.0.13"
 license: MIT
 ---
 

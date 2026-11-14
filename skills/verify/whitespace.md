@@ -32,7 +32,11 @@ A path in the record's `Initial dirty state` carries someone else's hunks. Its o
 the diff from the captured original (the bytes taken before the change, with their sha256)
 to the current file:
 
-1. Check the sha256 of the captured bytes first. A mismatch makes the path
+1. Take the captured originals from the record's `Snapshot` lines, which `implement` writes
+   at the start (`../implement/scripts/snapshot_record.py parse` validates them and returns
+   the `snapshots` mapping `check_whitespace` takes). A `Snapshot ... unavailable` line,
+   a rejected line, or no line at all leaves the path without a before-snapshot (item 3).
+   Check the sha256 of the captured bytes first. A mismatch makes the path
    `not verified: snapshot hash mismatch`.
 2. Start a second private index from `HEAD` (`read-tree HEAD`), put the captured bytes of
    this path into it with `git hash-object -w --stdin` and
@@ -43,6 +47,11 @@ to the current file:
 3. With no captured original the path is `not verified: no before-snapshot`. `HEAD` is never
    assumed to be the "before" of a dirty file.
 4. List such paths as others' changes in the report; they get no verdict of their own.
+   The report's `Delta:` line names where the checked diff comes from: `own` (no initially
+   dirty path in it), `context from Initial dirty state` (others' hunks shown as context,
+   own delta checked against a snapshot), or `unverified` (a dirty path without a usable
+   snapshot). `Snapshot` is evidence only: a missing one never blocks `verify`,
+   `cr-request`, or `finalize`.
 
 `cr-request` ships the same recipe as a tested helper (`scripts/target_whitespace.py`,
 `check_whitespace`); `verify` does not depend on it.

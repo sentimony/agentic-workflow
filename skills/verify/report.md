@@ -10,6 +10,7 @@ Both end with exactly one `Next step` line.
 HEAD: <full SHA>   Branch: <name or detached>
 Tree: <full tree ID> (committed | working - bound to no commit)
 Uncommitted: <paths outside the verdict, checks run in a clean clone of HEAD, or none>
+Delta: own | context from Initial dirty state | unverified
 Plan: <path or none>   Spec: <path or none>   Record host: <path or none>
 
 Claims:
@@ -32,7 +33,7 @@ C8 | <check command> | `deferred to finalize`
 Bar check: <weakening found, with path and line, or none; one without a ruling that breaks no claim: needs ruling: <path:line> - <what was weakened>>
 Review blockers: <IDs with severity and disposition, or none>
 Verdict: PASS | FAIL | INCOMPLETE (<owner> - <next action>) | BLOCKED (<what stops the check>)
-Record: Verify: <verdict> full tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
+Record: Verify: <verdict> full tree <tree SHA> context <digest> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 Next step: `/<skill>` - <one-line reason>
 ```
 
@@ -41,7 +42,7 @@ Next step: `/<skill>` - <one-line reason>
 ```text
 Verdict: <verdict>   Tree: <full tree ID>
 <only rows whose status is not passed, in the matrix form>
-Record: Verify: <verdict> compact tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
+Record: Verify: <verdict> compact tree <tree SHA> context <digest> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 Next step: `/<skill>` - <one-line reason>
 ```
 
@@ -111,26 +112,24 @@ that only reading can decide. "Looked fine" is not a command.
   forms: `BLOCKED (fingerprint failed: <step>)` when a recipe of
   [tree-fingerprint.md](tree-fingerprint.md) exits non-zero or prints no ID, and
   `BLOCKED (tree keeps changing: <paths or commits>)` when the fingerprint changed during a
-  run and in both restarts after it (SKILL.md step 7).
+  run and in both restarts after it (SKILL.md step 7), and
+  `BLOCKED (context digest failed: <reason>)` when `scripts/context_digest.py` exits
+  non-zero ([context-digest.md](context-digest.md)).
 
 Any `not verified`, any `failed`, any weakening that `needs ruling`, or any open review blocker rules out `PASS`.
 
 ## Review blockers
 
-Read the record of the host, the plan or the spec:
+Run `python3 scripts/record_gate.py --blockers <host>` ([record-gate.md](record-gate.md)):
+it reads the record of the host, every round and document reviews included, and prints
+each open blocker. What it leaves to this skill:
 
-- every round counts, document reviews included: a new round does not close an old finding;
-- each `Finding` of any round with severity `Critical` or `Important` is a blocker until
-  a `Received` line gives its ID a disposition; `REJECT` and `OUTDATED` close it, and
-  `DEFER` closes it with an owner and tracking in an issue, plan task, or follow-up.
-  For GitHub findings with source threads, it also needs an open issue, reply, and
-  resolve API evidence; pending or failed GitHub writes block. Local and document
-  reviews retain the owner-and-tracking rule. `ACCEPT` and `PARTIAL` mark it fixed,
-  with its claim (tag `R<n>-F<k>`)
-  checked in this run over the current tree as the proof;
-- any `ESCALATE` in any `Received` line is a blocker until a
-  `Ruling: R<n>-F<k> escalation decided - <owner's decision> - <cost if wrong>` line for
-  its ID follows;
+- `DEFER` closes a finding only with an owner and tracking in an issue, plan task, or
+  follow-up. For GitHub findings with source threads, it also needs an open issue, reply,
+  and resolve API evidence; pending or failed GitHub writes block. Local and document
+  reviews retain the owner-and-tracking rule;
+- `ACCEPT` and `PARTIAL` mark a finding fixed, with its claim (tag `R<n>-F<k>`) checked
+  in this run over the current tree as the proof;
 - when the `cr-received` return block is in the conversation, every item of its
   `Blocking:` field other than `none` is a blocker too.
 
@@ -151,7 +150,7 @@ Append at the end of the plan's `## Execution record` or the spec's
 when it has one; never rewrite an existing line:
 
 ```text
-Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
+Verify: <verdict> <full|compact> tree <tree SHA> context <digest> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 Round <loop> <n>: <cause>
 Ruling: round R<n> started by the user past the limit - <user's words> - <cost if wrong>
 ```
@@ -161,6 +160,9 @@ gate for `merge`, `squash`, and a ready `pr` does not accept such a verdict. The
 `Ruling` line follows a `Round` line only in a run the user started past the Round rule
 limit.
 
+`<digest>` is the output of `scripts/context_digest.py` (`sha256:<64 hex>`, or `none`
+with no host); `finalize` reads a line without it as `context-missing`.
+
 `<YYYY-MM-DD HH:MM>` is the output of `date '+%Y-%m-%d %H:%M'` run right after the
 re-pin (SKILL.md step 7), never a time written from memory.
 
@@ -169,8 +171,8 @@ tag and promise, for example `Round verify 2: AC3 - login redirects to /home`. `
 numbers are reassigned every run, so they never form the cause; the same tag and promise
 in two rounds is the same cause for the Round rule. A `Round` line is written only when
 the verdict is `FAIL` and the previous `Verify` line (the one before this run's) is not
-a `FAIL` on this fingerprint, a revert to an earlier tree included; a repeated `FAIL` on
-the same fingerprint writes only a new `Verify` line, no `Round`. It is numbered one
+a `FAIL` on this fingerprint and digest, a revert to an earlier tree or an edit of the plan or spec included; a repeated `FAIL` on
+the same fingerprint and digest writes only a new `Verify` line, no `Round`. It is numbered one
 above the last `Round verify` line in the record.
 
 Credentials and secrets never enter a record line; use placeholder names such as
@@ -183,7 +185,7 @@ A spec without `## Verification record` gets it as its last section on the first
 
 ```text
 Branch: <name>
-Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
+Verify: <verdict> <full|compact> tree <tree SHA> context <digest> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 ```
 ````
 

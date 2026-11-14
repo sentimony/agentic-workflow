@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.18] - 2026-11-14
+
+1. The per-phase round budget is counted by `cr-request/scripts/round_budget.py`; the skill points to it instead of repeating the phase rules. Behavior is unchanged (`20261030-0851`).
+
 ## [0.0.17] - 2026-11-13
 
 1. Flat layout: reference files moved next to SKILL.md; no content change.

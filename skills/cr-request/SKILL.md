@@ -3,7 +3,7 @@ name: cr-request
 description: Pins a change and its tree fingerprint, then dispatches a read-only reviewer for separate verdicts and evidence-backed findings. Use when a finished task, branch, pull request, uncommitted work since a ref, or a spec or plan needs an independent review. Replaces devflow review-request.
 argument-hint: "[<base-ref>] [<spec-path>] [--exclude <path>] [--auto]"
 metadata:
-  version: "0.0.21"
+  version: "0.0.22"
 license: MIT
 ---
 
@@ -54,7 +54,8 @@ A review of the wrong diff is worse than no review. Before anything else:
   and generated artifacts instead of reviewing them silently;
 - list changes made by someone else inside the boundary (the journal's
   `Initial dirty state`, another session's edits) in the field for others' changes:
-  the reviewer sees them and does not assess them;
+  the reviewer sees them and does not assess them; name the diff origin in the report as
+  `Delta: own | context from Initial dirty state | unverified` ([target.md](target.md));
 - scan the `--stat` output and the untracked list for files that may hold secrets
   (env files, keys, credentials); exclude them with that reason before any diff is sent;
 - take the tree fingerprint with [tree-fingerprint.md](tree-fingerprint.md)
@@ -251,14 +252,11 @@ the required re-review still needs authorization after the budget is exhausted. 
 limit is dispatched once; its `Ruling` line goes into the record before its `Review` line,
 and the result says the round ran past the limit.
 
-Budgets are kept per phase: `document` for a spec, a plan or prose and their re-reviews,
-`code` for an implementation and its re-reviews. Each phase counts its own automatic
-rounds under the Round rule, written as `Round review <n>: [document|code] <cause>`; a
-line without a phase takes the phase of the nearest `Review` line above it, or counts
-against both when there is none. A new reviewer, model or mode does not reset a count, and
-`R<n>` IDs keep counting across phases. One round count the user gave explicitly covers
-both phases together: say before the first document review how many rounds that leaves
-for code ([round-budgets.md](round-budgets.md)).
+Budgets are kept per phase, `document` and `code`, written as
+`Round review <n>: [document|code] <cause>`; `scripts/round_budget.py [--limit <n>]` reads
+the journal and reports each phase's count, the last automatic round and the next `R<n>`.
+One round count the user gave explicitly covers both phases together: say before the first
+document review how many rounds that leaves for code ([round-budgets.md](round-budgets.md)).
 
 The last line of the result is the next step:
 

@@ -3,7 +3,7 @@ name: finalize
 description: Decides how verified work leaves the branch. Use when verified work awaits merge, push, a pull request (PR), keeping or discarding the branch, or worktree cleanup. Not for unverified work (verify), open review findings (cr-received), a plain commit, or release work with its own checklist. Replaces devflow branch-finish.
 argument-hint: "[merge|pr|squash|keep|discard|pause] [--draft] [--auto]"
 metadata:
-  version: "0.0.14"
+  version: "0.0.15"
 license: MIT
 ---
 
@@ -38,6 +38,9 @@ again.
    and permissions. Tags, releases, infrastructure/data changes and force operations need
    their own applicable authority. Delivery requires the installed G3 helpers,
    current host action authority and verified project-specific contracts. `finalize --auto` without a chosen action must ask for that choice.
+
+While the next transition waits for the user's answer, start agreed independent work
+from the session queue in the same turn; stop only when there is none.
 
 Under `--auto`, a gate failure that a local step heals (`verify`, `cr-request`, or
 `verify` after this run merged the base into the branch) runs that step in the same turn
@@ -120,23 +123,21 @@ The gate guards the integrating options `merge`, `squash`, and a ready `pr`; `pr
    Items 2-4 apply to a hostless ready PR using its report evidence; host-only review
    and record checkpoint requirements apply only when a host exists.
 2. Compute the current fingerprint with the recipe `## Committed tree` in
-   [tree-fingerprint.md](tree-fingerprint.md), leaving the host out. A failed
-   recipe prints no ID and fails the gate.
-3. Take the latest line of the form
-   `Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working]`.
-4. Proceed only when that line says `PASS`, its mode is `full`, it does not end with
-   `working`, and its tree equals the current fingerprint. A `working` verdict judged
-   uncommitted work and is tied to no commit: such work goes through `pr --draft` or
-   stays on the branch. Also check the latest `Received` line: `Re-review: needed` with
-   no later review on this tree means the chain is not finished.
-5. For `merge` and `squash`, the host also needs a code review: a `Review` line with mode
-   `code`, or `re-review` after a code review (a document re-review never counts), after the
-   latest re-approval marker, as `verify` counts it
-   (`Ruling: plan revised after spec re-approval - <spec path>` in a plan,
-   `Ruling: spec re-approved - <YYYY-MM-DD>` in a spec's record), else after the plan's
-   `Base` line or, in a spec's record, anywhere in it. The user may skip it in their own
-   words; append `Ruling: no review - <user's reason> - <cost if wrong>` to the record, and
-   that line counts in place of the review.
+   [tree-fingerprint.md](tree-fingerprint.md), leaving the host out, and the digest with
+   `python3 ../verify/scripts/context_digest.py <host>` (`none` with no host). A failed
+   recipe or script prints no ID and fails the gate.
+3. With a host, run `python3 ../verify/scripts/record_gate.py --gate <host> --tree
+   <fingerprint> --context <digest> --integrate <merge|squash|pr>`
+   ([record-gate.md](../verify/record-gate.md)); it replaces reading the record by hand.
+   Without one, check the report's line the same way (`context none`).
+4. Proceed only when it prints `"ok": true`: latest `Verify` is a full `PASS`, not
+   `working` or `scoped`, on this tree and digest, with no open blocker or pending
+   re-review. A `working` verdict judged uncommitted work and is tied to no commit: such
+   work goes through `pr --draft` or stays on the branch.
+5. For `merge` and `squash`, the gate also needs a code review (a document review never
+   counts). The user may skip it in their own words; append
+   `Ruling: no review - <user's reason> - <cost if wrong>` to the record, and that line
+   counts in place of the review.
 6. Once the user has chosen `merge`, `squash`, or `pr` (a draft too), and before its
    action in step 5, commit the host's uncommitted record lines alone in one checkpoint
    commit `Record <topic>`, the topic taken from the host's file name; a host with nothing
@@ -154,9 +155,11 @@ The gate guards the integrating options `merge`, `squash`, and a ready `pr`; `pr
 Only commits leave the branch. Other uncommitted paths do not fail the gate: they stay
 where they are, and the report lists them as not integrated.
 
-When the gate fails - no `Verify` line, a non-`PASS` verdict, a `compact` verdict, a
-different tree, or a failed fingerprint recipe - integrate nothing, say which condition
-failed, and end with `Next step: verify - no full PASS on the current tree`. A `working`
+When the gate fails - the reasons the script prints, or a failed fingerprint recipe -
+integrate nothing, name each reason, and end with
+`Next step: verify - no full PASS on the current tree`; `context-missing` ends with
+`Next step: verify - Verify line has no context digest`, an `open-blocker:<id>` with
+`Next step: cr-received - open review blocker <id>`. A `working`
 verdict ends with
 `Next step: none - commit the work for a verdict on a commit, or choose pr --draft`; by
 design, a draft carries only what is committed, and the report lists the rest as not

@@ -3,7 +3,7 @@ name: plan-craft
 description: Turns settled requirements into an ordered, multi-step implementation plan covering task order, acceptance-criteria coverage, and the execution choice. Use when an approved spec, accepted design, or requirements agreed in the conversation need a plan before any code, including a plan revision after a document review. Not for open design (specify) or executing a plan (implement). Replaces devflow plan-crafting.
 argument-hint: "[<spec-path>] [<plan-path>] [--auto]"
 metadata:
-  version: "0.0.16"
+  version: "0.0.17"
 license: MIT
 ---
 
@@ -323,11 +323,11 @@ Read the saved plan once more against the spec and fix what fails:
   transitions, and its actual dependencies; it does not copy the whole old `Check` when
   that needs a deferred delivery contract (a resume check before delivery must not
   require a merge or deploy);
-- structure survived the edit: when a section was replaced or edited, its boundary is the
-  next heading of the same or a higher level, and the inventory of headings (ignoring
-  code spans and fenced blocks) before and after differs only by the intended change; the
-  required headings come from [the template](plan-template.md), and a lost
-  intermediate `##` fails the check even when constraints and criteria are intact;
+- structure survived the edit: after replacing or editing a section run
+  `scripts/plan_structure.py diff <before> <after> [--allow-removed <title>]` and
+  `required <plan> --template plan-template.md` (`--legacy` for a pre-record plan); exit 1
+  is a lost or re-leveled heading, such as a dropped intermediate `##` with constraints and
+  criteria intact; a section ends at the next heading of the same or a higher level;
 - proportion: a plan far longer than its spec usually already contains the code; move
   that back into behavior and invariants.
 

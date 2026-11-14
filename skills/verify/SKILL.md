@@ -3,7 +3,7 @@ name: verify
 description: Proves every promise behind a completion claim with fresh checks on the committed tree and gives one verdict, without editing code. Use when anyone is about to say work is done, fixed, ready, or mergeable, and before a merge, pull request, or handoff report, including work with no plan. Not for fixing failures (implement) or reviewing (cr-request). Replaces devflow verification-gate.
 argument-hint: "[<plan-or-spec-path>] [--auto]"
 metadata:
-  version: "0.0.15"
+  version: "0.0.16"
 license: MIT
 ---
 
@@ -55,6 +55,10 @@ A recipe that exits non-zero or prints no ID gives
 `BLOCKED (fingerprint failed: <step>)`; there is no fallback. The real index is never
 touched.
 
+Also compute the context digest: `python3 scripts/context_digest.py <host>` (`none`
+with no host; [context-digest.md](context-digest.md)). A failure gives
+`BLOCKED (context digest failed: <reason>)`.
+
 Before long checks for a PR delivery target, read its full head/base and mergeability.
 Conflicts or an outdated base stop the expensive run; UNKNOWN has a finite deadline.
 Use `finalize`
@@ -93,14 +97,11 @@ Split vague promises ("works", "done") until each part has a check that can fail
 
 ## 3. Open review blockers
 
-Read the record's `Review`, `Finding`, and `Received` lines and, when present in the
-conversation, the `Blocking:` field of the `cr-received` return block. A blocker is a
-`Critical` or `Important` finding of any round, document reviews included, that no
-`Received` line rules on yet, or any `ESCALATE` until a
-`Ruling: R<n>-F<k> escalation decided - ...` line closes it; a new round does not close
-an old finding. `ACCEPT` and `PARTIAL` fixes are proven as claims (step 2). Read
-[report.md](report.md) for the exact reading whenever the record has a
-`Review` line. An open blocker rules out `PASS` whatever the matrix shows.
+Run `python3 scripts/record_gate.py --blockers <host>` ([record-gate.md](record-gate.md)):
+every round counts, and `ACCEPT` and `PARTIAL` fixes are proven as claims (step 2). Add
+the `Blocking:` items of a `cr-received` return block in the conversation, and read
+[report.md](report.md) for the GitHub `DEFER` evidence. An open blocker rules out `PASS`
+whatever the matrix shows.
 
 ## 4. Fresh evidence only
 
@@ -119,7 +120,8 @@ checkout. These are not evidence:
 In a `working` run, whitespace is checked through a private index, not with plain
 `git diff --check`, which skips untracked files and mixes in hunks that were already in the
 working tree; a path from `Initial dirty state` without a captured original is
-`not verified`, never checked against `HEAD` ([whitespace.md](whitespace.md)).
+`not verified`, never checked against `HEAD` ([whitespace.md](whitespace.md)); the originals are
+the record's `Snapshot` lines, and the report names the origin in its `Delta:` line.
 
 For a hostless ready PR, identify project checks from the actual project contract and
 run them freshly against the current committed head/fingerprint with isolated mutable
@@ -166,7 +168,7 @@ without running its target. Confirm the check really ran what the claim needs.
 
 ## 7. Re-pin and decide
 
-Compute the fingerprint again with the same recipe. If it changed while checking, the
+Compute the fingerprint and the digest again with the same recipes. If either changed while checking, the
 results belong to no single tree: start over from step 1, at most twice. A third change
 gives `BLOCKED (tree keeps changing: <paths or commits>)`; a verdict never mixes trees.
 Then pick `PASS`, `FAIL`, `INCOMPLETE`, or `BLOCKED` by the definitions in
@@ -188,7 +190,7 @@ spec's `## Verification record` - inside its ```` ```text ```` block before the 
 fence when it has one, with the fingerprint from step 7:
 
 ```text
-Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
+Verify: <verdict> <full|compact> tree <tree SHA> context <digest> <YYYY-MM-DD HH:MM> [working]
 ```
 
 `working` is there only for a working-tree run (step 1). A spec without the section gets
@@ -209,9 +211,9 @@ tests, the spec body, or the plan body. A failing claim goes back to `implement`
 failing claim tagged `R<n>-F<k>` goes back to `cr-received`.
 
 A `FAIL` writes `Round <loop> <n>: <cause>` with `verify` as the loop unless the
-previous `Verify` line (the one before this run's) is a `FAIL` on this fingerprint, so a
-revert to an earlier tree starts a new verify-fix round too; a repeated `FAIL` on the
-same fingerprint writes only a new `Verify` line, no `Round`. The cause names each
+previous `Verify` line (the one before this run's) is a `FAIL` on this fingerprint and
+digest, so a revert to an earlier tree or an edit of the plan or spec starts a new
+verify-fix round too; a repeated `FAIL` on both writes only a new `Verify` line, no `Round`. The cause names each
 failing claim by its source tag and promise, not by its `C<n>` number, which is
 reassigned every run; the same tag and promise in two rounds is the same cause. The
 counter lives in the record, so a fresh session continues it. Every `FAIL` -> `implement`
@@ -269,13 +271,9 @@ read from that file like record lines, so a clean review of this tree is not ask
 for again. Only a saved `review.md` read from its archive path counts; a review known only from
 the conversation is a claim and leaves the `cr-request` row.
 
-When the record holds the marker line
-`Ruling: plan revised after spec re-approval - <spec path>` (written by `plan-craft`
-when it revises the plan in place after the spec is approved again), or, in a spec's
-`## Verification record`, `Ruling: spec re-approved - <YYYY-MM-DD>`, only the code
-`Review`, `Finding`, and `Received` lines after the last marker count in this table, and
-"after `Base`" reads "after the last marker" (from the start of a spec's record without
-one): with no code review after it, the `PASS` row is the first one, `cr-request`.
+The code-review boundary is the last re-approval marker, else `Base`, else a spec
+record's start ([record-gate.md](record-gate.md)): with no code review after it, the
+`PASS` row is the first one, `cr-request`.
 
 | Condition | Next step |
 | --- | --- |
@@ -345,7 +343,7 @@ secrets, or change a verdict.
 
 Capabilities: the skill runs read-only Git commands, the temporary-index fingerprint
 recipes, a local clean clone of `HEAD` in a temporary directory, and the project's own
-test, build, and check commands. It writes only the `Verify`, `Round`, and
+test, build, and check commands. It runs the read-only `context_digest.py` and `record_gate.py`. It writes only the `Verify`, `Round`, and
 `Ruling: round ...` lines in the record host (creating the spec's
 `## Verification record` when needed), and no file at all without a host. It does not
 stage, commit, push, or merge; under `--auto` it starts only the local skills of step
@@ -358,4 +356,6 @@ network gives `not verified`.
 - [Report format, statuses, verdicts, blockers, record lines](report.md)
 - [Tree fingerprint recipes and validity](tree-fingerprint.md)
 - [Clean clone of `HEAD`](clean-clone.md)
+- [Context digest](context-digest.md)
+- [Record gate and blockers](record-gate.md)
 - [Whitespace of a working-tree target](whitespace.md)

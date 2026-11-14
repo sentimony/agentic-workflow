@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.16] - 2026-11-14
+
+1. Bind `Verify` to the requirements context: the line now carries `context <digest>` from the new `scripts/context_digest.py`, a digest failure gives `BLOCKED (context digest failed)`, and a repeated FAIL counts as the same state only when tree and digest both match (`20261028-2301`, `20261029-2037`).
+2. Open review blockers are read by the new `scripts/record_gate.py --blockers` instead of prose in `SKILL.md` and `report.md`; adds `context-digest.md`, `record-gate.md` and tests with negative fixtures.
+3. Read the record's `Snapshot` lines as the `snapshots` argument of `check_whitespace`; the report names the diff origin in `Delta: own | context from Initial dirty state | unverified` (`20261101-1158`).
+
 ## [0.0.15] - 2026-11-13
 
 1. Flat layout: reference files moved next to SKILL.md; no content change.

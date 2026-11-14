@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import shlex
 import stat
 import subprocess
@@ -40,13 +41,55 @@ def _git(repo, *args, index=None, data=None):
     return process.stdout
 
 
-def capture_identity(repo, *, document=None, record_host=None, base=None):
-    """Use cr-request's committed-tree recipe with a private temporary index."""
+def _working_tree(root, host, exclude):
+    """The `## Working tree` recipe of tree-fingerprint.md: a copy of the real index plus
+    `add -A`, so ignored files stay out, the real index is untouched and the host and the
+    host-excluded untracked paths are removed from the private copy."""
+    with tempfile.TemporaryDirectory(prefix='owner-working-index-') as temp:
+        index = Path(temp) / 'index'
+        real = Path(os.fsdecode(_git(root, 'rev-parse', '--git-path', 'index')).strip())
+        real = real if real.is_absolute() else root / real
+        if real.is_file():
+            shutil.copyfile(real, index)
+        _git(root, 'add', '-A', index=index)
+        if host is not None and host.is_relative_to(root):
+            _git(root, 'rm', '-q', '--cached', '--ignore-unmatch', '--',
+                 str(host.relative_to(root)), index=index)
+        for name in exclude:
+            _git(root, 'rm', '-r', '-q', '--cached', '--ignore-unmatch', '--',
+                 ':(literal)' + name, index=index)
+        return os.fsdecode(_git(root, 'write-tree', index=index)).strip()
+
+
+def _committed_tree(root, head, host):
+    with tempfile.TemporaryDirectory(prefix='owner-review-index-') as temp:
+        index = Path(temp) / 'index'
+        _git(root, 'read-tree', head, index=index)
+        if host is not None and host.is_relative_to(root):
+            _git(root, 'rm', '-q', '--cached', '--ignore-unmatch', '--',
+                 str(host.relative_to(root)), index=index)
+        return os.fsdecode(_git(root, 'write-tree', index=index)).strip()
+
+
+def capture_identity(repo, *, document=None, record_host=None, base=None,
+                     target='committed', exclude=()):
+    """Use cr-request's committed-tree recipe with a private temporary index.
+
+    `target='working'` selects the working-tree recipe instead: boundary `working-tree`,
+    a required base commit, and the host `exclude` paths removed from the tree.
+    """
+    working = target == 'working'
+    if target not in ('committed', 'working'):
+        raise ValueError('owner_context.target must be committed or working')
+    if working and base is None:
+        raise ValueError('working target needs a base commit')
+    if working and document:
+        raise ValueError('working target cannot carry a review document')
     repo = Path(repo).resolve()
     root = Path(os.fsdecode(_git(repo, 'rev-parse', '--show-toplevel')).strip()).resolve()
     head = os.fsdecode(_git(root, 'rev-parse', '--verify', 'HEAD^{commit}')).strip()
     identity = {'schema_version': 1, 'repository': str(root), 'head': head,
-                'boundary': 'document' if document else 'committed-tree'}
+                'boundary': 'working-tree' if working else 'document' if document else 'committed-tree'}
     if base is not None:
         if not isinstance(base, str) or not re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', base):
             raise ValueError('identity base must be a full commit ID')
@@ -56,13 +99,10 @@ def capture_identity(repo, *, document=None, record_host=None, base=None):
         host = Path(record_host)
         host = host.resolve() if host.is_absolute() else (root / host).resolve()
         identity['record_host'] = str(host)
-    with tempfile.TemporaryDirectory(prefix='owner-review-index-') as temp:
-        index = Path(temp) / 'index'
-        _git(root, 'read-tree', head, index=index)
-        if host is not None and host.is_relative_to(root):
-            _git(root, 'rm', '-q', '--cached', '--ignore-unmatch', '--',
-                 str(host.relative_to(root)), index=index)
-        identity['tree'] = os.fsdecode(_git(root, 'write-tree', index=index)).strip()
+    if working:
+        identity['tree'] = _working_tree(root, host, exclude)
+    else:
+        identity['tree'] = _committed_tree(root, head, host)
     if document:
         path = Path(document)
         path = path.resolve() if path.is_absolute() else (root / path).resolve()
@@ -88,10 +128,16 @@ def check_identity(identity, allowed_untracked=()):
             set(document) != {'path', 'sha256'} or
             any(not isinstance(document.get(k), str) or not document[k] for k in document)):
         raise ValueError('invalid document identity')
+    working = identity['boundary'] == 'working-tree'
     current = capture_identity(identity['repository'], document=(document or {}).get('path'),
-                               record_host=identity.get('record_host'), base=identity.get('base'))
+                               record_host=identity.get('record_host'), base=identity.get('base'),
+                               target='working' if working else 'committed',
+                               exclude=allowed_untracked if working else ())
     if _content_identity(current) != _content_identity(identity):
         raise ValueError('stale review target identity')
+    if working:
+        # Uncommitted work is the review subject: the tree comparison above is the freshness check.
+        return current
     allowed = {identity.get('record_host'), (document or {}).get('path')}
     dirty = _git(current['repository'], 'diff', '--name-only', '-z', 'HEAD', '--')
     untracked = _git(current['repository'], 'ls-files', '--others', '--exclude-standard', '-z')
@@ -150,22 +196,49 @@ def _skip_reason(name):
     return None
 
 
-def embedded_diff(repo, base, tree, *, limit=None, omit=()):
+def _outside_symlinks(repo, base, tree):
+    """Paths whose new blob is a symlink pointing out of the repository (or absolute)."""
+    raw = _git(repo, 'diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--raw', '-z',
+               '--no-abbrev', base, tree).split(b'\0')
+    root = Path(os.fsdecode(_git(repo, 'rev-parse', '--show-toplevel')).strip()).resolve()
+    found = set()
+    for meta, name in zip(raw[0::2], raw[1::2]):
+        fields = meta.decode().lstrip(':').split(' ')
+        if len(fields) < 5 or fields[1] != '120000':
+            continue
+        name = name.decode('utf-8', 'surrogateescape')
+        link = os.fsdecode(_git(repo, 'cat-file', 'blob', fields[3]))
+        place = (root / name).parent
+        if os.path.isabs(link) or not (place / link).resolve().is_relative_to(root):
+            found.add(name)
+    return found
+
+
+def embedded_diff(repo, base, tree, *, limit=None, omit=(), strict_files=False):
     """Raw `git diff base tree` limited to reviewable paths, plus the skipped paths and why.
 
     Paths in `omit` (the record host) are left out silently. Binary files, lockfiles and
-    possible secrets are named, never embedded. Raises
+    possible secrets are named, never embedded. With `strict_files` (working target) symlinks
+    out of the repository and files whose diff is not valid UTF-8 are named too. Raises
     ValueError when the text is over `limit` bytes, so nothing is silently cut.
     """
     limit = EMBED_LIMIT if limit is None else limit
     flags = ('diff', '--no-ext-diff', '--no-textconv', '--no-renames')
     stat = _git(repo, *flags, '--numstat', '-z', base, tree)
+    outside = _outside_symlinks(repo, base, tree) if strict_files else set()
     embed, skipped = [], []
     for record in [r for r in stat.split(b'\0') if r]:
         added, deleted, name = record.decode('utf-8', 'surrogateescape').split('\t', 2)
         if name in omit:
             continue
         reason = 'binary file' if (added, deleted) == ('-', '-') else _skip_reason(name)
+        if reason is None and name in outside:
+            reason = 'symlink outside repository'
+        if reason is None and strict_files:
+            try:
+                _git(repo, *flags, base, tree, '--', ':(literal)' + name).decode('utf-8')
+            except UnicodeDecodeError:
+                reason = 'not valid UTF-8'
         (skipped.append((name, reason)) if reason else embed.append(name))
     text = b''
     if embed:
@@ -174,7 +247,8 @@ def embedded_diff(repo, base, tree, *, limit=None, omit=()):
     if len(text) > limit:
         raise ValueError('embedded diff is %d bytes, over the %d byte limit; narrow the review '
                          'with review units or exclusions' % (len(text), limit))
-    return {'text': text, 'skipped': skipped, 'sha256': hashlib.sha256(text).hexdigest()}
+    return {'text': text, 'skipped': skipped, 'files': embed,
+            'sha256': hashlib.sha256(text).hexdigest()}
 
 
 def reverse_applies(repo, tree, diff):
@@ -192,6 +266,11 @@ def reverse_applies(repo, tree, diff):
 
 def embed_block(repo, identity, context, *, limit=None):
     """Brief section with the diff of the boundary, or of one re-review round, as data."""
+    return embed_parts(repo, identity, context, limit=limit)[0]
+
+
+def embed_parts(repo, identity, context, *, limit=None):
+    """The section of `embed_block` plus the diff data it embeds."""
     base, tree = identity['base'], identity['tree']
     previous = context.get('previous_tree')
     note = ''
@@ -208,7 +287,8 @@ def embed_block(repo, identity, context, *, limit=None):
     omit = ()
     if host and Path(host).is_relative_to(Path(identity['repository'])):
         omit = (str(Path(host).relative_to(identity['repository'])),)
-    built = embedded_diff(repo, base, tree, limit=limit, omit=omit)
+    built = embedded_diff(repo, base, tree, limit=limit, omit=omit,
+                          strict_files=identity['boundary'] == 'working-tree')
     if built['text'] and not reverse_applies(repo, tree, built['text']):
         raise ValueError('embedded diff does not reverse-apply to the target tree')
     try:
@@ -223,7 +303,8 @@ def embed_block(repo, identity, context, *, limit=None):
              '  Bytes: %d  SHA-256: %s' % (len(built['text']), built['sha256'])]
     for name, reason in built['skipped']:
         lines.append('Not embedded (%s, coverage gap): %s' % (reason, _label(name)))
-    return '\n'.join(lines) + '\n' + fence + 'diff\n' + text + ('' if text.endswith('\n') else '\n') + fence
+    block = '\n'.join(lines) + '\n' + fence + 'diff\n' + text + ('' if text.endswith('\n') else '\n') + fence
+    return block, built
 
 
 def validate_review(text, identity):
@@ -357,6 +438,31 @@ def _wants_embed(context, identity, mode):
     if not isinstance(choice, bool):
         raise ValueError('embed_diff must be true or false')
     return choice and mode == 'implementation' and not identity.get('document')
+
+
+def _check_target_mode(context, identity):
+    """`owner_context.target` (default `committed`) must agree with the identity boundary."""
+    choice = context.get('target', 'committed')
+    if choice not in ('committed', 'working'):
+        raise ValueError('owner_context.target must be committed or working')
+    boundary = identity.get('boundary') if isinstance(identity, dict) else None
+    if (choice == 'working') != (boundary == 'working-tree'):
+        raise ValueError('owner_context.target and the identity boundary disagree')
+
+
+def _brief_metrics(body, standard, built, exclude):
+    """Deterministic sizes of the prepared brief; tokens and cost are known only to the transport."""
+    total = len(body.encode('utf-8'))
+    standard_bytes = len(standard.encode('utf-8'))
+    diff_bytes = len(built['text']) if built else 0
+    reasons = {}
+    for _, reason in (built['skipped'] if built else []):
+        reasons[reason] = reasons.get(reason, 0) + 1
+    return {'brief_bytes': total, 'standard_sections_bytes': standard_bytes,
+            'host_body_bytes': total - standard_bytes - diff_bytes,
+            'embedded_diff_bytes': diff_bytes, 'embedded_files': len(built['files']) if built else 0,
+            'not_embedded': {'count': sum(reasons.values()), 'reasons': reasons},
+            'excluded': len(exclude)}
 
 
 def _stop(status, reason):
@@ -579,7 +685,7 @@ def _review_artifact(request, context, result):
     return str(run / 'review.md')
 
 
-def handle(request, stage):
+def handle(request, stage, with_metrics=False):
     expected, context, payload = _validate_request(request, stage)
     role = request.get('role')
     if role not in ('review', 'execution'):
@@ -588,6 +694,8 @@ def handle(request, stage):
     exclude = _host_exclude(identity, context) if role == 'review' else []
     if stage == 'prepare' or role == 'review':
         try:
+            if role == 'review':
+                _check_target_mode(context, identity)
             check_identity(identity, exclude)
         except ValueError as exc:
             if stage == 'prepare':
@@ -602,7 +710,9 @@ def handle(request, stage):
             if request.get('profile') != 'read-only':
                 raise ValueError('independent review requires read-only profile')
             mode = context.get('review_mode', 'plan' if identity.get('document') else 'implementation')
-            body = standard_sections(mode) + '\n\nCurrent target identity:\n' + json.dumps(identity, sort_keys=True)
+            standard = standard_sections(mode)
+            built = None
+            body = standard + '\n\nCurrent target identity:\n' + json.dumps(identity, sort_keys=True)
             for path in exclude:
                 body += ('\nExcluded by the host (untracked, not part of the change; '
                          'coverage gap, do not read): ' + _label(path))
@@ -611,12 +721,16 @@ def handle(request, stage):
                     body += '\n\nNo diff embedded: the target identity has no base commit.'
                 else:
                     try:
-                        body += '\n\n' + embed_block(identity['repository'], identity, context)
+                        block, built = embed_parts(identity['repository'], identity, context)
+                        body += '\n\n' + block
                     except ValueError as exc:
                         return dict(expected, payload=_stop('BLOCKED', str(exc)))
             if context.get('prior_dispositions') is not None:
                 body += '\n\nPrior host dispositions (data):\n' + json.dumps(context['prior_dispositions'])
             response = {'accepted': True, 'context': body}
+            if with_metrics:
+                # The core accepts only `accepted` and `context` here, so metrics are opt-in.
+                response['brief_metrics'] = _brief_metrics(body, standard, built, exclude)
         else:
             try:
                 chosen = _current_intake(request, context)
@@ -645,9 +759,11 @@ def handle(request, stage):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--stage', choices=CAPABILITIES, required=True)
+    parser.add_argument('--metrics', action='store_true',
+                        help='diagnostic: add brief_metrics to the prepare payload (the core rejects it)')
     args = parser.parse_args(argv)
     try:
-        response = handle(json.load(sys.stdin), args.stage)
+        response = handle(json.load(sys.stdin), args.stage, with_metrics=args.metrics)
     except (OSError, ValueError, TypeError, KeyError) as exc:
         print('Owner adapter rejected: ' + str(exc), file=sys.stderr)
         return 2

@@ -129,9 +129,17 @@ class GateTest(Case):
 
     def test_disposition_closes_blocker(self):
         find = "Finding R1-F1: Critical a.py:1 - t"
-        for word in ("REJECT", "OUTDATED", "DEFER"):
+        for word in ("REJECT", "OUTDATED"):
             rec = "Received R1: R1-F1 %s Re-review: not needed" % word
             self.assertEqual(self.gate([BASE, CODE, find, rec, VERIFY]), [], word)
+        important = "Finding R1-F1: Important a.py:1 - t"
+        rec = "Received R1: R1-F1 DEFER Re-review: not needed"
+        self.assertEqual(self.gate([BASE, CODE, important, rec, VERIFY]), [])
+
+    def test_critical_defer_stays_open(self):
+        find = "Finding R1-F1: Critical a.py:1 - t"
+        rec = "Received R1: R1-F1 DEFER Re-review: not needed"
+        self.assertEqual(self.gate([BASE, CODE, find, rec, VERIFY]), ["open-blocker:R1-F1"])
 
     def test_accept_needs_later_pass(self):
         find = "Finding R1-F1: Critical a.py:1 - t"

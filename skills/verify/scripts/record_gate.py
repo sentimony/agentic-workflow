@@ -155,6 +155,9 @@ def blockers(events, require_verified=False):
             continue
         if word is None:
             out.append({"id": ident, "severity": severity, "why": "no Received disposition"})
+        elif word == "DEFER" and severity == "Critical":
+            out.append({"id": ident, "severity": severity,
+                        "why": "Critical finding deferred (it escalates instead)"})
         elif require_verified and word in ("ACCEPT", "PARTIAL"):
             passed = any(k == "verify" and d["verdict"] == "PASS" and d["mode"] == "full"
                          and not d["suffix"] for k, d in events[at + 1:])

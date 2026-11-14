@@ -162,6 +162,14 @@ class SnapshotRecordTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             sr.parse(bad, self.repo)
 
+    def test_parser_does_not_read_a_fifo_named_by_a_line(self):
+        fifo = self.root / 'pipe'
+        os.mkfifo(fifo)
+        empty = hashlib.sha256(b'').hexdigest()
+        line = 'Snapshot: a.txt sha256 ' + empty + ' file ' + str(fifo)
+        with self.assertRaisesRegex(ValueError, 'regular file'):
+            sr.parse(line, self.repo)
+
     def test_parser_rejects_path_outside_repo(self):
         item = sr.capture(self.repo, ['a.txt'], self.store)[0]
         for path in ('../a.txt', '/etc/passwd', 'x/../../a.txt', './a.txt', ''):

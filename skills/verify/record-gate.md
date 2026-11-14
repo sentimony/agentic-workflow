@@ -20,7 +20,8 @@ the format of [journal.md](../implement/journal.md).
 `--blockers` prints `{"blockers": [{"id", "severity", "why"}]}`. A blocker is a
 `Finding R<n>-F<k>` with `Critical` or `Important` severity, of any round and any review
 mode, with no `Received` disposition (`REJECT`, `OUTDATED`, `DEFER`, `ACCEPT`, `PARTIAL`),
-or any `ESCALATE` with no later `Ruling: R<n>-F<k> escalation decided - ...`. The last
+a `Critical` finding whose last disposition is `DEFER` (a Critical finding escalates, it is
+never deferred), or any `ESCALATE` with no later `Ruling: R<n>-F<k> escalation decided - ...`. The last
 disposition of an ID wins. `ACCEPT` and `PARTIAL` close a blocker here because `verify`
 proves the fix as a claim. The freshness of GitHub evidence for `DEFER` is not read:
 `verify` and `finalize` keep that check.

@@ -24,6 +24,7 @@ import tempfile
 from pathlib import Path
 
 PREFIX = 'Snapshot: '
+MAX_SNAPSHOT_BYTES = 16 * 1024 * 1024
 _SAFE = re.compile(r'[A-Za-z0-9._/@%+=,:~-]+')
 _TOKEN = r'(?:"(?:[^"\\]|\\.)*"|[^\s"]+)'
 _FILE_LINE = re.compile(r'(?P<path>' + _TOKEN + r') sha256 (?P<sha>[0-9a-f]{64}) file (?P<file>' + _TOKEN + r')')
@@ -137,6 +138,9 @@ def parse(line, repo):
     if not os.path.isabs(file):
         raise ValueError('snapshot file path is not absolute')
     try:
+        info = os.lstat(file)
+        if not stat.S_ISREG(info.st_mode) or info.st_size > MAX_SNAPSHOT_BYTES:
+            raise ValueError('snapshot file is not a regular file within the size cap')
         data = Path(file).read_bytes()
     except OSError:
         raise ValueError('snapshot file is unreadable')

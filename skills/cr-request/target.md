@@ -168,9 +168,14 @@ handled below and never compared with `HEAD`.
 
 For a path from `Initial dirty state`, the own delta is the diff from the captured original
 (the bytes taken before the change, with their sha256) to the current file; check the hash
-first. Others' hunks stay context under `Others' changes in scope (not assessed)`. A
+first. The originals are the record's `Snapshot` lines, written by `implement` at its start;
+`implement/scripts/snapshot_record.py parse` validates them and returns the `snapshots`
+argument of `check_whitespace` (an `unavailable` or rejected line gives no entry). Others' hunks stay context under `Others' changes in scope (not assessed)`. A
 missing, unreadable or mismatching before-snapshot makes the path `unverified`: `HEAD` is
-never assumed to be its "before". The final `Tree` and the origin of each hunk are recorded separately.
+never assumed to be its "before". The final `Tree` and the origin of each hunk are recorded separately: the report names the
+origin in `Delta: own | context from Initial dirty state | unverified`, and the identity
+fields of the target do not change. `Snapshot` is evidence only, never a blocker or a
+requirement for `cr-request`, `verify`, or `finalize`.
 `scripts/target_whitespace.py` implements this (`check_whitespace`).
 
 ## Base discovery

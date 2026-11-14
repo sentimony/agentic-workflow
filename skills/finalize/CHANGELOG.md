@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.15] - 2026-11-14
+
+1. The delivery gate runs `../verify/scripts/record_gate.py --gate`: latest full PASS, tree and context digest equal to the current ones, a code review for merge and squash, no open blocker, no pending re-review. The report names the script's refusal codes; a `Verify` line without a context digest fails closed with `Next step: verify` (`20261029-2037`).
+2. Adds the independent-work sentence to the `--auto` section (`20261024-2324`).
+
 ## [0.0.14] - 2026-11-13
 
 1. Flat layout: reference files moved next to SKILL.md; no content change.

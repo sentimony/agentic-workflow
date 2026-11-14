@@ -3,7 +3,7 @@ name: cr-received
 description: Verifies each review finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, then routes back to verify. Use when code review, PR comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix. Replaces devflow review-resolution.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.17"
+  version: "0.0.18"
 license: MIT
 ---
 
@@ -291,13 +291,11 @@ permission; they stale verification and still require the appropriate re-review,
 even when the budget is exhausted. When the rule stops the loop, escalate with what
 kept failing and a proposal to simplify.
 
-The automatic budget is kept per phase, `document` (spec, plan, prose and their
-re-reviews) and `code` (implementation and its re-reviews). Write
-`Round review <n>: [document|code] <cause>`, count each phase apart, and do not reset a
-count when the reviewer, model or mode changes. A line without a phase takes the phase of
-the nearest `Review` line above it, or counts against both when there is none. One round
-count the user gave explicitly covers both phases together. `R<n>` IDs keep counting.
-The full rule and its scenarios are in `cr-request` (`round-budgets.md`).
+The automatic budget is kept per phase, `document` and `code`. Write
+`Round review <n>: [document|code] <cause>`; `cr-request/scripts/round_budget.py
+[--limit <n>]` counts each phase from the journal and gives the next `R<n>`. One round
+count the user gave explicitly covers both phases together. The full rule and its
+scenarios are in `cr-request` (`round-budgets.md`).
 
 ## 9. Journal
 

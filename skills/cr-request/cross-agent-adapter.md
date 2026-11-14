@@ -72,5 +72,23 @@
     `accepted: false`, `status: BLOCKED` and a reason; nothing is cut. `exclude` admits
     only untracked paths and lets them pass the clean-target check; they are named as a
     coverage gap. A path with a newline or another control character is written as a quoted
-    JSON string, so a file name stays data. Without `embed_diff` the brief is unchanged. Untracked file content is
-    never embedded: the target stays a committed tree.
+    JSON string, so a file name stays data. Without `embed_diff` the brief is unchanged. In the default
+    `committed` mode untracked file content is never embedded.
+14. Working target. `owner_context.target` is `committed` (default, behavior above) or
+    `working`; it must agree with the identity `boundary` (`working-tree`), repeated at
+    `prepare`, `validate` and `intake`. `working` reviews uncommitted work: `tree` is the
+    `## Working tree` recipe of [tree-fingerprint.md](tree-fingerprint.md) (a private copy of
+    the index, `add -A`, so ignored files stay out; the host and `exclude` paths removed),
+    and a full `base` commit is required: without it `prepare` returns `BLOCKED`,
+    `working target needs a base commit`. The diff `base..tree` then carries untracked
+    content too. Secrets by name, lockfiles, binary files, files that are not valid UTF-8
+    and symlinks out of the repository are not embedded; each is a named coverage gap
+    (lockfiles have no switch, the 262144 byte limit is fixed and nothing is cut). Freshness
+    recomputes the tree: any edit or new untracked file is `stale review target identity`;
+    the dirty-tree check does not apply. A review document cannot be combined with `working`.
+    The core treats the identity as opaque: the paired test accepts `working-tree`.
+15. Brief metrics. The core accepts only `accepted` and `context` in an accepted `prepare`
+    payload, so `brief_metrics` is opt-in: `--stage prepare --metrics` (diagnostic, not for
+    the core) adds `brief_bytes` (equal to `standard_sections_bytes` + `host_body_bytes` +
+    `embedded_diff_bytes`), `embedded_files`, `not_embedded` (`count`, `reasons`) and
+    `excluded`. Tokens and cost are known only to the transport.

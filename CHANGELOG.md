@@ -3,6 +3,13 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.30] - 2026-11-14
+
+1. verify 0.0.16, finalize 0.0.15: `Verify` carries a context digest, and the delivery gate is one checked procedure (`record_gate.py`) covering tree, context, code review and open blockers.
+2. cr-request 0.0.22, cr-received 0.0.18, plan-craft 0.0.17, implement 0.0.16: working-tree target in the owner adapter, round-budget counter, plan structure check, snapshots of initially dirty files.
+3. New contract tests for the review-loop `Next step` sentences and the entry-point skills.
+4. Requests: `20261028-2301`, `20261029-2037`, `20261101-1158`, `20261107-0020`, `20261030-0851`, `20261024-2324`, `20261031-1944`.
+
 ## [0.0.29] - 2026-11-13
 
 1. Flat layout: reference files of cr-received 0.0.17, cr-request 0.0.21, finalize 0.0.14, implement 0.0.15, plan-craft 0.0.16, resolve-issue 0.0.5, session-learnings 0.0.15, specify 0.0.15 and verify 0.0.15 moved next to `SKILL.md` (33 files, no `references/` directories); links, the fingerprint-copies test and the cr-request adapter path updated; no content change.

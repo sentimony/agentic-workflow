@@ -523,5 +523,240 @@ class EmbeddedDiffTests(unittest.TestCase):
         self.assertIn('previous_tree must be a full tree ID', stopped['reason'])
 
 
+class WorkingTargetTests(unittest.TestCase):
+    """`owner_context.target: working`: uncommitted work reviewed through one embedded diff."""
+
+    setUp = EmbeddedDiffTests.setUp
+    git = EmbeddedDiffTests.git
+    commit = EmbeddedDiffTests.commit
+
+    def identity(self, **kwargs):
+        kwargs.setdefault('base', self.base)
+        return adapter.capture_identity(self.repo, record_host='record.md', target='working', **kwargs)
+
+    def request(self, context=None, identity=None, stage='prepare'):
+        return dict(schema_version=1, protocol_version=1, owner_id=adapter.OWNER_ID,
+                    adapter_id=adapter.ADAPTER_ID, contract_version=1, stage=stage,
+                    role='review', operation='review', profile='read-only',
+                    task_kind='skill', host={'repo': str(self.repo), 'conversation_id': 'fixture'},
+                    target_identity=identity or self.identity(),
+                    owner_context=dict({'target': 'working', 'embed_diff': True}, **(context or {})),
+                    task_selection={}, payload={'assignment': 'cr-request'})
+
+    def prepare(self, **kwargs):
+        return adapter.handle(self.request(**kwargs), 'prepare', with_metrics=True)['payload']
+
+    def dirty(self):
+        (self.repo / 'code.py').write_text('line one\nline two\n')
+        (self.repo / 'new.py').write_text('print("untracked")\n')
+
+    def test_untracked_content_is_embedded_and_identity_is_working_tree(self):
+        self.dirty()
+        identity = self.identity()
+        self.assertEqual(identity['boundary'], 'working-tree')
+        self.assertEqual(identity['base'], self.base)
+        context = self.prepare()['context']
+        self.assertIn('+line two', context)
+        self.assertIn('+print("untracked")', context)
+        self.assertNotIn('record.md', context.split('Embedded target diff', 1)[1])
+
+    def test_filters_name_gaps_for_untracked_secret_lock_binary_and_invalid_utf8(self):
+        self.dirty()
+        (self.repo / '.env').write_text('TOKEN=hunter2\n')
+        (self.repo / 'uv.lock').write_text('lock\n')
+        (self.repo / 'logo.bin').write_bytes(b'\x00\x01binary')
+        (self.repo / 'latin.txt').write_bytes(b'caf\xe9\n')
+        prepared = self.prepare()
+        context = prepared['context']
+        self.assertTrue(prepared['accepted'], prepared)
+        self.assertNotIn('hunter2', context)
+        self.assertIn('Not embedded (possible secret, coverage gap): .env', context)
+        self.assertIn('Not embedded (lockfile, coverage gap): uv.lock', context)
+        self.assertIn('Not embedded (binary file, coverage gap): logo.bin', context)
+        self.assertIn('Not embedded (not valid UTF-8, coverage gap): latin.txt', context)
+        self.assertIn('+print("untracked")', context)
+        self.assertEqual(prepared['brief_metrics']['not_embedded']['count'], 4)
+
+    def test_symlink_outside_the_repository_is_a_gap_and_inside_is_embedded(self):
+        self.dirty()
+        os.symlink('/etc/hosts', self.repo / 'out-abs')
+        os.symlink('../outside', self.repo / 'out-rel')
+        os.symlink('code.py', self.repo / 'inside')
+        context = self.prepare()['context']
+        self.assertIn('Not embedded (symlink outside repository, coverage gap): out-abs', context)
+        self.assertIn('Not embedded (symlink outside repository, coverage gap): out-rel', context)
+        self.assertNotIn('coverage gap): inside', context)
+        self.assertNotIn('/etc/hosts', context.split('Embedded target diff', 1)[1].split('```diff', 1)[1])
+
+    def test_ignored_files_stay_out_of_the_tree_and_the_diff(self):
+        (self.repo / '.gitignore').write_text('ignored.txt\n')
+        (self.repo / 'ignored.txt').write_text('private ignored text\n')
+        self.dirty()
+        context = self.prepare()['context']
+        self.assertNotIn('private ignored text', context)
+        self.assertNotIn('ignored.txt\n+', context)
+        listing = self.git('ls-tree', '-r', '--name-only', self.identity()['tree'])
+        self.assertNotIn('ignored.txt', listing.split('\n'))
+
+    def test_exclude_removes_untracked_paths_from_the_tree_and_names_them(self):
+        self.dirty()
+        (self.repo / 'scratch').mkdir()
+        (self.repo / 'scratch' / 'notes.txt').write_text('scratch notes\n')
+        identity = self.identity(exclude=['scratch'])
+        self.assertNotEqual(identity['tree'], self.identity()['tree'])
+        prepared = self.prepare(context={'exclude': ['scratch']}, identity=identity)
+        self.assertTrue(prepared['accepted'], prepared)
+        self.assertNotIn('scratch notes', prepared['context'])
+        self.assertIn('coverage gap, do not read): scratch', prepared['context'])
+        self.assertEqual(prepared['brief_metrics']['excluded'], 1)
+        # Without the host repeating the exclusion the target is stale.
+        stale = self.prepare(identity=identity)
+        self.assertEqual(stale['status'], 'BLOCKED')
+        self.assertIn('stale review target identity', stale['reason'])
+
+    def test_working_target_without_base_is_blocked(self):
+        self.dirty()
+        identity = dict(self.identity())
+        identity.pop('base')
+        stopped = self.prepare(identity=identity)
+        self.assertFalse(stopped['accepted'])
+        self.assertEqual(stopped['status'], 'BLOCKED')
+        self.assertEqual(stopped['reason'], 'working target needs a base commit')
+        with self.assertRaises(ValueError):
+            adapter.capture_identity(self.repo, target='working')
+
+    def test_edit_or_new_untracked_file_after_prepare_makes_the_target_stale(self):
+        self.dirty()
+        identity = self.identity()
+        self.assertTrue(self.prepare(identity=identity)['accepted'])
+        (self.repo / 'code.py').write_text('line one\nline two\nthree\n')
+        stopped = self.prepare(identity=identity)
+        self.assertEqual(stopped['status'], 'BLOCKED')
+        self.assertIn('stale review target identity', stopped['reason'])
+        fresh = self.identity()
+        (self.repo / 'later.txt').write_text('late\n')
+        self.assertIn('stale review target identity', self.prepare(identity=fresh)['reason'])
+
+    def test_validate_checks_freshness_and_target_must_agree_with_boundary(self):
+        self.dirty()
+        identity = self.identity()
+        output = report(identity)
+        envelope = self.request(identity=identity, stage='validate')
+        envelope['payload'] = {'result': {'status': 'COMPLETED', 'output': output,
+                                          'target_identity': identity}}
+        self.assertTrue(adapter.handle(envelope, 'validate')['payload']['accepted'])
+        (self.repo / 'later.txt').write_text('late\n')
+        with self.assertRaisesRegex(ValueError, 'stale review target identity'):
+            adapter.handle(envelope, 'validate')
+        # `committed` (the default) refuses a working-tree identity, and the reverse.
+        mismatch = self.request(identity=self.identity(), context={'target': 'committed'})
+        self.assertIn('disagree', adapter.handle(mismatch, 'prepare')['payload']['reason'])
+        committed = adapter.capture_identity(self.repo, record_host='record.md', base=self.base)
+        mismatch = self.request(identity=committed)
+        self.assertIn('disagree', adapter.handle(mismatch, 'prepare')['payload']['reason'])
+        bad = self.request(identity=committed, context={'target': 'staged'})
+        self.assertIn('committed or working', adapter.handle(bad, 'prepare')['payload']['reason'])
+
+    def test_embedded_diff_reverse_applies_to_the_working_tree_and_leaves_it_alone(self):
+        self.dirty()
+        (self.repo / '.env').write_text('TOKEN=hunter2\n')
+        index_before = (self.repo / '.git' / 'index').read_bytes()
+        status_before = self.git('status', '--porcelain=v2')
+        context = self.prepare()['context']
+        diff = context.split('diff\n', 1)[1].rsplit('\n```', 1)[0] + '\n'
+        applied = subprocess.run(['/usr/bin/git', '-C', str(self.repo), 'apply', '--check',
+                                  '--reverse', '-'], env=self.env, input=diff.encode(),
+                                 capture_output=True)
+        self.assertEqual(applied.returncode, 0, applied.stderr)
+        self.assertEqual((self.repo / '.git' / 'index').read_bytes(), index_before)
+        self.assertEqual(self.git('status', '--porcelain=v2'), status_before)
+        self.assertEqual((self.repo / 'new.py').read_text(), 'print("untracked")\n')
+
+    def test_brief_metrics_sum_matches_the_brief_length(self):
+        self.dirty()
+        (self.repo / '.env').write_text('TOKEN=hunter2\n')
+        prepared = self.prepare()
+        metrics = prepared['brief_metrics']
+        self.assertEqual(metrics['brief_bytes'], len(prepared['context'].encode('utf-8')))
+        self.assertEqual(metrics['brief_bytes'], metrics['standard_sections_bytes'] +
+                         metrics['host_body_bytes'] + metrics['embedded_diff_bytes'])
+        self.assertEqual(metrics['embedded_files'], 2)
+        self.assertEqual(metrics['not_embedded'], {'count': 1, 'reasons': {'possible secret': 1}})
+        self.assertGreater(metrics['embedded_diff_bytes'], 0)
+        self.assertEqual(metrics['excluded'], 0)
+
+    def test_default_prepare_payload_carries_only_what_the_core_accepts(self):
+        self.dirty()
+        payload = adapter.handle(self.request(), 'prepare')['payload']
+        self.assertEqual(set(payload), {'accepted', 'context'})
+
+    def test_brief_metrics_for_committed_target_and_no_embedding(self):
+        identity = adapter.capture_identity(self.repo, record_host='record.md', base=self.base)
+        envelope = self.request(identity=identity, context={'target': 'committed', 'embed_diff': False})
+        metrics = adapter.handle(envelope, 'prepare', with_metrics=True)['payload']['brief_metrics']
+        self.assertEqual(metrics['embedded_diff_bytes'], 0)
+        self.assertEqual(metrics['embedded_files'], 0)
+        self.assertEqual(metrics['brief_bytes'], metrics['standard_sections_bytes'] + metrics['host_body_bytes'])
+
+    def test_committed_mode_is_unchanged_and_still_rejects_a_dirty_tree(self):
+        (self.repo / 'new.py').write_text('untracked\n')
+        identity = adapter.capture_identity(self.repo, record_host='record.md', base=self.base)
+        self.assertEqual(identity['boundary'], 'committed-tree')
+        stopped = adapter.handle(self.request(identity=identity, context={'target': 'committed'}),
+                                 'prepare')['payload']
+        self.assertEqual(stopped['status'], 'BLOCKED')
+        self.assertIn('dirty implementation', stopped['reason'])
+
+    def test_actual_core_accepts_the_working_tree_boundary(self):
+        source = os.environ.get('CROSS_AGENT_TEST_SOURCE')
+        if not source:
+            self.skipTest('explicit standalone source required for paired test')
+        import shutil
+        import sys
+        scripts = Path(source).resolve() / 'skills/cross-agent/scripts'
+        sys.path.insert(0, str(scripts))
+        self.addCleanup(lambda: sys.path.remove(str(scripts)))
+        from cross_agent import HostContext, dispatch
+        from cross_agent_request import load_config, parse_request
+        from cross_agent_state import TaskContext
+        self.dirty()
+        identity = self.identity()
+        fake_bin = self.root / 'bin'
+        fake_bin.mkdir()
+        (fake_bin / 'python3').symlink_to(sys.executable)
+        fixture = '''#!/usr/bin/env python3
+import sys,json,uuid
+from pathlib import Path
+sys.stdin.read()
+args=sys.argv[1:]
+print(json.dumps({'type':'thread.started','thread_id':str(uuid.uuid4())}))
+print(json.dumps({'type':'session_meta','payload':{'model':'gpt-6.1-sol','reasoning_effort':'low'}}))
+Path(args[args.index('-o')+1]).write_text(json.dumps({'schema_version':1,'status':'COMPLETED','output':OUTPUT}))
+'''.replace('OUTPUT', repr(report(identity)))
+        (fake_bin / 'codex').write_text(fixture)
+        (fake_bin / 'codex').chmod(0o700)
+        policy = {'schema_version': 1, 'agents': {'codex': {
+            'models': {'gpt-6.1-sol': ['low']}, 'default_model': 'gpt-6.1-sol',
+            'default_effort': 'low', 'profiles': ['read-only'],
+            'capabilities': {'read-only': 'supported'}}}}
+        artifact_root = self.root / 'artifacts'
+        skill = Path(adapter.__file__).resolve().parents[1]
+        binding = {'owner_id': adapter.OWNER_ID, 'adapter_id': adapter.ADAPTER_ID,
+                   'protocol_version': 1, 'contract_version': 1,
+                   'capabilities': list(adapter.CAPABILITIES), 'installed_root': str(skill),
+                   'entrypoint': str(Path(adapter.__file__).resolve()), 'interpreter': sys.executable}
+        host = HostContext(load_config(host_config=policy, role='review', profile='read-only'),
+            TaskContext(str(self.root / 'registry'), str(self.repo), 'fixture'),
+            'claude', str(self.repo), str(artifact_root), identity,
+            assignment_kind='skill', installed_skills={'cr-request': {
+                'origin': 'fixture-agentflow', 'base': str(skill), 'integration_required': True}},
+            integration=binding, owner_context={'artifact_root': str(artifact_root),
+                                                'target': 'working', 'embed_diff': True},
+            environment={'HOME': str(self.root), 'PATH': str(fake_bin)}, timeout_seconds=5)
+        result = dispatch(parse_request('codex [cr-request]'), host).results[0]
+        self.assertEqual(result['status'], 'COMPLETED', result.get('reason'))
+        self.assertTrue(Path(result['domain_intake']['review_path']).is_file())
+
+
 if __name__ == '__main__':
     unittest.main()

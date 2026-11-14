@@ -5,25 +5,25 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.
 
-Version: `v0.0.29`
+Version: `v0.0.30`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [agentflow](.) | 0.0.29 | resolve-issue, resolve-pr, resolve-ci, resume-task, specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
+| [agentflow](.) | 0.0.30 | resolve-issue, resolve-pr, resolve-ci, resume-task, specify, plan-craft, implement, verify, cr-request, cr-received, finalize, session-learnings |
 
 ## Skills
 
 | Skill | Version | Command | Description |
 | --- | --- | --- | --- |
 | [specify](skills/specify/SKILL.md) | 0.0.15 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
-| [plan-craft](skills/plan-craft/SKILL.md) | 0.0.16 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
-| [implement](skills/implement/SKILL.md) | 0.0.15 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
-| [verify](skills/verify/SKILL.md) | 0.0.15 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
-| [cr-request](skills/cr-request/SKILL.md) | 0.0.21 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; preserve the full report, evidence, and reviewer provenance. |
-| [cr-received](skills/cr-received/SKILL.md) | 0.0.17 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
-| [finalize](skills/finalize/SKILL.md) | 0.0.14 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
+| [plan-craft](skills/plan-craft/SKILL.md) | 0.0.17 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
+| [implement](skills/implement/SKILL.md) | 0.0.16 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
+| [verify](skills/verify/SKILL.md) | 0.0.16 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
+| [cr-request](skills/cr-request/SKILL.md) | 0.0.22 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; preserve the full report, evidence, and reviewer provenance. |
+| [cr-received](skills/cr-received/SKILL.md) | 0.0.18 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
+| [finalize](skills/finalize/SKILL.md) | 0.0.15 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
 | [resolve-issue](skills/resolve-issue/SKILL.md) | 0.0.5 | `/resolve-issue` | Run issue intake through configured delivery with durable recovery and fresh host authority. |
 | [resolve-pr](skills/resolve-pr/SKILL.md) | 0.0.1 | `/resolve-pr` | Take over an existing PR and route its review findings, failing checks and verification toward merge readiness. |
 | [resolve-ci](skills/resolve-ci/SKILL.md) | 0.0.1 | `/resolve-ci` | Reproduce one CI failure locally, find its cause and verify the fix. |

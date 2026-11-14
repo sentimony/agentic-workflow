@@ -18,10 +18,11 @@ are not rewritten, except the state of a `Task` line.
 Base: <full SHA>   Root: <path>   Branch: <name>
 Commits: allowed | ask once | forbidden
 Initial dirty state: <paths or none>
+Snapshot: <path> sha256 <hex> file <absolute path> | <path> unavailable <reason>
 Task <n>: pending | in progress | done | blocked - <evidence: command -> result>
 Ruling: <decision> - <reason> - <cost if wrong>
 Deferred: <item> - <owner or place>
-Verify: <verdict> <full|compact> tree <tree SHA> <YYYY-MM-DD HH:MM> [working]
+Verify: <verdict> <full|compact> tree <tree SHA> context <sha256:hex|none> <YYYY-MM-DD HH:MM> [working|scoped <paths>]
 Review R<n>: <Summary line> tree <tree SHA> reviewer <model> mode <code|document|re-review>
 Finding R<n>-F<k>: <severity> <location> - <title>
 Received R<n>: <ID> <ACCEPT|REJECT|PARTIAL|DEFER|ESCALATE|OUTDATED>, ... Re-review: <needed|not needed>
@@ -30,7 +31,7 @@ Round <loop> <n>: <cause>
 
 ## Lines this skill writes
 
-`implement` writes `Base`, `Root`, `Branch`, `Commits`, `Initial dirty state`, `Task`,
+`implement` writes `Base`, `Root`, `Branch`, `Commits`, `Initial dirty state`, `Snapshot`, `Task`,
 `Ruling`, `Deferred`, and its own `Round` lines. `Verify`, `Review`, `Finding`, and `Received`
 belong to other skills; read them, never write them, except the `Verify:` line a
 subagent returns, which the controller appends verbatim. `plan-craft` writes only these
@@ -56,6 +57,34 @@ fence like every new line. `verify` counts only the code reviews after the last 
 
   `Base` is the full object ID of `HEAD` before the first task. `Root` is the
   absolute path of the working tree the tasks run in (the worktree, when one was made).
+
+- **Snapshot.** Right after `Initial dirty state`, keep the bytes of each initially dirty
+  path that is a regular file inside the repository, so a later whitespace check can
+  separate the task's own delta from content that was already there. Run from the repo root:
+
+  ```sh
+  python3 <skill dir>/scripts/snapshot_record.py capture <path>...
+  ```
+
+  It copies each file to `~/.sentimony/agentflow/implement/<project>/<branch>/snapshots/<sha256>`
+  (directory 0700, file 0400) and prints one line per path, appended under `Initial dirty
+  state`. It reads files only: the index, staged content, and working-file bytes and modes
+  stay as they were. A path with spaces or non-ASCII characters is written as a JSON string.
+  A symlink, a non-regular or unreadable file, or a path outside the repo gets
+  `Snapshot: <path> unavailable <reason>` and no copy; `HEAD` is never assumed to be its
+  "before". `snapshot_record.py parse` validates the lines: it rejects a hash that does not
+  match the stored bytes, a path outside the repo, and extra fields.
+
+  ```text
+  Snapshot: README.md sha256 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 file /home/u/.sentimony/agentflow/implement/repo-1a2b3c4d5e6f/feature-x-0a1b2c3d/snapshots/9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+  Snapshot: "docs/my notes.md" unavailable symlink
+  ```
+
+  `Snapshot` is evidence for whitespace checks only. `verify`, `cr-request`, and `finalize`
+  read it (`verify` and `cr-request` pass the parsed lines as the `snapshots` argument of
+  `check_whitespace`) and never count a missing, unavailable, or mismatching one as a
+  blocker or a requirement: the path is then `unverified`. A resume that finds `Initial dirty
+  state` without `Snapshot` lines (a record from before 0.0.16) adds none.
 
 - **Task state.** Change the state of the task's own line in place. Every state except
   `pending` carries evidence: a command and what it returned.
@@ -100,7 +129,7 @@ Keep the journal proportional: a short plan needs one line per task and nothing 
 Without a plan, nothing new is created in the plans folder. With a spec, the edit's lines
 go into the spec's `## Verification record`, its optional last section. The first skill
 that writes there (`implement` or `verify`) adds it as a ```` ```text ```` block whose first
-line is `Branch: <name>`, followed by `Commits`, `Initial dirty state`, `Task`, `Verify`,
+line is `Branch: <name>`, followed by `Commits`, `Initial dirty state`, `Snapshot`, `Task`, `Verify`,
 `Round`, `Review`, `Finding`, `Received`, `Ruling`, and `Deferred` lines under the same
 append rules as a plan's record. Appending there is not a material change of the spec,
 and the tree fingerprint leaves the record host out. With no spec either, there is no

@@ -3,7 +3,7 @@ name: implement
 description: Executes a plan task by task with evidence, drift handling, and a resumable execution record. Use when an existing plan is to be run in the current session or through subagents, when resuming an interrupted execution, or when one or two edits with an obvious approach need doing without a plan. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize). Replaces devflow plan-execution and plan-orchestration.
 argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents] [--auto]"
 metadata:
-  version: "0.0.15"
+  version: "0.0.16"
 license: MIT
 ---
 
@@ -133,6 +133,8 @@ the `Base` placeholder with the full object ID of `HEAD`, `Root`, and `Branch`, 
 `Initial dirty state`, naming staged paths as well as unstaged and untracked ones (format
 and example in [journal.md](journal.md)). Without a plan, the spec's
 `## Verification record` starts with `Branch: <name>` and takes the same lines.
+Then store each initially dirty regular file with `scripts/snapshot_record.py capture` and
+append its `Snapshot` lines ([journal.md](journal.md)); a failed capture never blocks the work.
 
 Uncommitted changes listed there, staged ones included, belong to someone else: work
 around them, never fold them into task commits, leave staged content staged, and never

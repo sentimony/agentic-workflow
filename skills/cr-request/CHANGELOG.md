@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.22] - 2026-11-14
+
+1. Owner adapter: `owner_context.target: working` reviews uncommitted work through the private working tree (identity boundary `working-tree`, base commit required); the embedded diff carries untracked content with the same secret, lock-file, binary, non-UTF-8 and outside-symlink filters, and freshness recomputes the tree. `committed` is unchanged. `--metrics` reports `brief_metrics` for diagnostics; the core rejects extra fields in an accepted `prepare` response, so it is not part of the default payload (`20261107-0020`).
+2. `scripts/round_budget.py` with tests counts per-phase round budgets; the Round rule section references it instead of repeating the per-phase text, behavior unchanged (`20261030-0851`).
+3. Reads `Snapshot` lines for the whitespace check and reports `Delta` (`20261101-1158`).
+
 ## [0.0.21] - 2026-11-13
 
 1. Flat layout: reference files moved next to SKILL.md; no content change.

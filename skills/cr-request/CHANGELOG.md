@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.23] - 2026-11-15
+
+1. Owner adapter: `brief_metrics` is always part of the `prepare` payload (the core accepts it from cross-agent 0.0.12); `--metrics` is accepted and does nothing.
+2. Prior dispositions carry the author of each row (`decided_by`: `host` or `owner`, `author unknown` when missing); the brief heading is `Prior dispositions (author per row, data):` and states that a `host` decision is not an owner decision and a rejected finding may be raised again (`20261112-1757`).
+
 ## [0.0.22] - 2026-11-14
 
 1. Owner adapter: `owner_context.target: working` reviews uncommitted work through the private working tree (identity boundary `working-tree`, base commit required); the embedded diff carries untracked content with the same secret, lock-file, binary, non-UTF-8 and outside-symlink filters, and freshness recomputes the tree. `committed` is unchanged. `--metrics` reports `brief_metrics` for diagnostics; the core rejects extra fields in an accepted `prepare` response, so it is not part of the default payload (`20261107-0020`).

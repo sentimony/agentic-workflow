@@ -129,6 +129,11 @@ while preserving the complete evidence. The reviewer reports evidence and any de
 decisions; the trusted host records dispositions. Do not invent source identities or
 host dispositions.
 
+Prior dispositions arrive with the author of each row (`host` or `owner`; an `owner` row
+carries the date and the owner's words; a row without an author is `author unknown`). A
+`host` decision is not an owner decision, and a finding the host rejected may be raised
+again as a finding; never describe it as a compromise the owner accepted.
+
 By default, end the result with ``Next step: `/<skill>` - <reason>``. Place any
 caller-required extra closing line immediately before it, unless the caller explicitly
 specifies another output format. Follow caller-specified presentation and closing

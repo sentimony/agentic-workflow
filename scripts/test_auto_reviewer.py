@@ -8,8 +8,8 @@ import subprocess
 import unittest
 
 WORKFLOW = Path(__file__).resolve().parents[1] / '.github/workflows/auto-reviewer.yaml'
-# The caller pins a full commit SHA; the test checks the form, not one commit.
-USES = re.compile(r'sentimony/github-workflows/\.github/workflows/auto-reviewer-shared\.yaml@[0-9a-f]{40}')
+# The caller follows the stable branch of the shared workflow.
+USES = re.compile(r'sentimony/github-workflows/\.github/workflows/auto-reviewer-shared\.yaml@stable')
 NAME = 'Auto Reviewer'
 CI_JOB = 'validate'
 

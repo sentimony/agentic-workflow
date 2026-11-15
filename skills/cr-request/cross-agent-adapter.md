@@ -18,8 +18,8 @@
    HEAD changes do not invalidate the tree/document fingerprint. Unknown legacy
    identities stay unavailable.
 5. `owner_context` is host-owned and separate from provider output. It accepts
-   `review_mode` (`implementation` or `plan`), optional `prior_dispositions`, and the
-   absolute `artifact_root` allowlist for review persistence. Intake uses
+   `review_mode` (`implementation` or `plan`), optional `prior_dispositions` (rows with
+   `decided_by`), and the absolute `artifact_root` allowlist for review persistence. Intake uses
    `active_task_id`, `review_records`, and optional paired `review_path` plus
    `intake_identity`. Records carry task, role, completion status, review path and
    saved identity. A validated explicit task selector overrides the active task;
@@ -87,8 +87,14 @@
     recomputes the tree: any edit or new untracked file is `stale review target identity`;
     the dirty-tree check does not apply. A review document cannot be combined with `working`.
     The core treats the identity as opaque: the paired test accepts `working-tree`.
-15. Brief metrics. The core accepts only `accepted` and `context` in an accepted `prepare`
-    payload, so `brief_metrics` is opt-in: `--stage prepare --metrics` (diagnostic, not for
-    the core) adds `brief_bytes` (equal to `standard_sections_bytes` + `host_body_bytes` +
-    `embedded_diff_bytes`), `embedded_files`, `not_embedded` (`count`, `reasons`) and
-    `excluded`. Tokens and cost are known only to the transport.
+15. Brief metrics. Every accepted `prepare` payload carries the optional object
+    `brief_metrics` (the core accepts it from cross-agent 0.0.12): `brief_bytes` (equal to
+    `standard_sections_bytes` + `host_body_bytes` + `embedded_diff_bytes`),
+    `embedded_files`, `not_embedded` (`count`, `reasons`) and `excluded`. `--metrics` is
+    still accepted and does nothing. Tokens and cost are known only to the transport.
+16. Disposition authors. Each `prior_dispositions` row carries `decided_by` (`host` or
+    `owner`; an `owner` row carries the date and the owner's words). The brief lists the
+    rows under `Prior dispositions (author per row, data):`, names the author of every row
+    (`author unknown` when `decided_by` is missing or is neither `host` nor `owner`) and
+    states that a `host` decision is not an owner decision and a finding the host
+    rejected may be raised again.

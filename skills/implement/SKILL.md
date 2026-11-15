@@ -3,7 +3,7 @@ name: implement
 description: Executes a plan task by task with evidence, drift handling, and a resumable execution record. Use when an existing plan is to be run in the current session or through subagents, when resuming an interrupted execution, or when one or two edits with an obvious approach need doing without a plan. Not for writing a plan (plan-craft), checking finished work (verify), acting on review findings (cr-received), or merging, pushing, or opening a pull request (finalize). Replaces devflow plan-execution and plan-orchestration.
 argument-hint: "[<plan-path>|<spec-path>] [--inline|--subagents] [--auto]"
 metadata:
-  version: "0.0.16"
+  version: "0.0.17"
 license: MIT
 ---
 

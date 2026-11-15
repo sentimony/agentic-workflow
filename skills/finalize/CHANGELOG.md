@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.16] - 2026-11-15
+
+1. `session-learnings` moved to the `skills` plugin (sentimony/skills v0.0.112); the next step names it "when installed", with no dependency between plugins.
+
 ## [0.0.15] - 2026-11-14
 
 1. The delivery gate runs `../verify/scripts/record_gate.py --gate`: latest full PASS, tree and context digest equal to the current ones, a code review for merge and squash, no open blocker, no pending re-review. The report names the script's refusal codes; a `Verify` line without a context digest fails closed with `Next step: verify` (`20261029-2037`).

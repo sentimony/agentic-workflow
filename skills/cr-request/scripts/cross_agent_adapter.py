@@ -685,7 +685,28 @@ def _review_artifact(request, context, result):
     return str(run / 'review.md')
 
 
+def _disposition_author(row):
+    author = row.get('decided_by') if isinstance(row, dict) else None
+    return author if author in ('host', 'owner') else 'unknown'
+
+
+def _dispositions_block(rows):
+    if not isinstance(rows, list):
+        rows = [rows]
+    lines = ['Prior dispositions (author per row, data):']
+    for index, row in enumerate(rows, 1):
+        author = _disposition_author(row)
+        label = row.get('id') if isinstance(row, dict) and row.get('id') else 'row' + str(index)
+        shown = 'author unknown' if author == 'unknown' else 'author: ' + author
+        lines.append('- ' + str(label).replace('\n', ' ') + ' ' + shown + ' ' + json.dumps(row, sort_keys=True))
+    lines.append('A `host` decision is not an owner decision, and a finding the host rejected '
+                 'may be raised again. An `owner` row carries the date and the owner\'s words; '
+                 'a row with an unknown author counts as a host decision.')
+    return '\n'.join(lines)
+
+
 def handle(request, stage, with_metrics=False):
+    # with_metrics is kept for the --metrics flag; brief_metrics is always returned at prepare.
     expected, context, payload = _validate_request(request, stage)
     role = request.get('role')
     if role not in ('review', 'execution'):
@@ -726,11 +747,9 @@ def handle(request, stage, with_metrics=False):
                     except ValueError as exc:
                         return dict(expected, payload=_stop('BLOCKED', str(exc)))
             if context.get('prior_dispositions') is not None:
-                body += '\n\nPrior host dispositions (data):\n' + json.dumps(context['prior_dispositions'])
-            response = {'accepted': True, 'context': body}
-            if with_metrics:
-                # The core accepts only `accepted` and `context` here, so metrics are opt-in.
-                response['brief_metrics'] = _brief_metrics(body, standard, built, exclude)
+                body += '\n\n' + _dispositions_block(context['prior_dispositions'])
+            response = {'accepted': True, 'context': body,
+                        'brief_metrics': _brief_metrics(body, standard, built, exclude)}
         else:
             try:
                 chosen = _current_intake(request, context)
@@ -760,7 +779,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--stage', choices=CAPABILITIES, required=True)
     parser.add_argument('--metrics', action='store_true',
-                        help='diagnostic: add brief_metrics to the prepare payload (the core rejects it)')
+                        help='accepted for compatibility and ignored: brief_metrics is always in the prepare payload')
     args = parser.parse_args(argv)
     try:
         response = handle(json.load(sys.stdin), args.stage, with_metrics=args.metrics)

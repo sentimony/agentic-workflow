@@ -1,4 +1,5 @@
 """Owner policy tests; no real provider, credentials, or OS sandbox."""
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -544,7 +545,7 @@ class WorkingTargetTests(unittest.TestCase):
                     task_selection={}, payload={'assignment': 'cr-request'})
 
     def prepare(self, **kwargs):
-        return adapter.handle(self.request(**kwargs), 'prepare', with_metrics=True)['payload']
+        return adapter.handle(self.request(**kwargs), 'prepare')['payload']
 
     def dirty(self):
         (self.repo / 'code.py').write_text('line one\nline two\n')
@@ -685,15 +686,61 @@ class WorkingTargetTests(unittest.TestCase):
         self.assertGreater(metrics['embedded_diff_bytes'], 0)
         self.assertEqual(metrics['excluded'], 0)
 
-    def test_default_prepare_payload_carries_only_what_the_core_accepts(self):
+    def test_prepare_payload_always_carries_brief_metrics(self):
         self.dirty()
         payload = adapter.handle(self.request(), 'prepare')['payload']
-        self.assertEqual(set(payload), {'accepted', 'context'})
+        self.assertEqual(set(payload), {'accepted', 'context', 'brief_metrics'})
+
+    def test_metrics_flag_is_accepted_and_changes_nothing(self):
+        self.dirty()
+        envelope = self.request()
+        self.assertEqual(adapter.handle(envelope, 'prepare', with_metrics=True),
+                         adapter.handle(envelope, 'prepare'))
+        import io
+        import contextlib
+        outputs = []
+        for argv in (['--stage', 'prepare'], ['--stage', 'prepare', '--metrics']):
+            stdin = io.StringIO(json.dumps(envelope))
+            stdout = io.StringIO()
+            with mock.patch('sys.stdin', stdin), contextlib.redirect_stdout(stdout):
+                self.assertEqual(adapter.main(argv), 0)
+            outputs.append(json.loads(stdout.getvalue()))
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertIn('brief_metrics', outputs[0]['payload'])
+
+    def test_brief_names_the_author_of_every_disposition_and_the_host_rule(self):
+        self.dirty()
+        rows = [
+            {'id': 'R1', 'decision': 'rejected', 'decided_by': 'host', 'reason': 'out of scope'},
+            {'id': 'R2', 'decision': 'accepted', 'decided_by': 'owner', 'date': '2026-11-12',
+             'owner_words': 'ship it as is'},
+            {'id': 'R3', 'decision': 'deferred'},
+            {'id': 'R4', 'decision': 'rejected', 'decided_by': 'admin'},
+        ]
+        context = self.prepare(context={'prior_dispositions': rows})['context']
+        self.assertIn('Prior dispositions (author per row, data):', context)
+        self.assertNotIn('Prior host dispositions', context)
+        lines = {line.split(' ')[1]: line for line in context.splitlines() if line.startswith('- R')}
+        self.assertIn('author: host', lines['R1'])
+        self.assertIn('author: owner', lines['R2'])
+        self.assertIn('2026-11-12', lines['R2'])
+        self.assertIn('ship it as is', lines['R2'])
+        self.assertIn('author unknown', lines['R3'])
+        self.assertIn('author unknown', lines['R4'])
+        self.assertNotIn('author: admin', lines['R4'])
+        self.assertIn('A `host` decision is not an owner decision', context)
+        self.assertIn('a finding the host rejected may be raised again', context)
+
+    def test_brief_without_dispositions_has_no_dispositions_section(self):
+        self.dirty()
+        context = self.prepare()['context']
+        self.assertNotIn('Prior dispositions', context)
+        self.assertNotIn('not an owner decision', context)
 
     def test_brief_metrics_for_committed_target_and_no_embedding(self):
         identity = adapter.capture_identity(self.repo, record_host='record.md', base=self.base)
         envelope = self.request(identity=identity, context={'target': 'committed', 'embed_diff': False})
-        metrics = adapter.handle(envelope, 'prepare', with_metrics=True)['payload']['brief_metrics']
+        metrics = adapter.handle(envelope, 'prepare')['payload']['brief_metrics']
         self.assertEqual(metrics['embedded_diff_bytes'], 0)
         self.assertEqual(metrics['embedded_files'], 0)
         self.assertEqual(metrics['brief_bytes'], metrics['standard_sections_bytes'] + metrics['host_body_bytes'])

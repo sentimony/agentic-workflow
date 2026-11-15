@@ -26,7 +26,7 @@ Each brief stands on its own, because the subagent sees nothing of this conversa
   anything noticed but left alone. A subagent whose brief forbids the record and that runs
   `verify` returns the `Verify:` line in its report instead, and the controller appends
   that line verbatim.
-- **At the end** - run `session-learnings` and, when installed, a skill retrospective
+- **At the end** - when installed, run `session-learnings` and a skill retrospective
   skill (such as `fdb`), and return the lines `Learnings: ...` and `Requests: ...`. This
   is desirable, not a condition of `DONE`.
 

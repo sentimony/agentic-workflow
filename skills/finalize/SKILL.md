@@ -3,7 +3,7 @@ name: finalize
 description: Decides how verified work leaves the branch. Use when verified work awaits merge, push, a pull request (PR), keeping or discarding the branch, or worktree cleanup. Not for unverified work (verify), open review findings (cr-received), a plain commit, or release work with its own checklist. Replaces devflow branch-finish.
 argument-hint: "[merge|pr|squash|keep|discard|pause] [--draft] [--auto]"
 metadata:
-  version: "0.0.15"
+  version: "0.0.16"
 license: MIT
 ---
 
@@ -51,9 +51,10 @@ branch or a workspace outside verified task-created cleanup scope and the `--for
 operation in step 6 still need their own applicable authorization.
 
 After a successful `merge`, `squash`, `pr`, `keep`, or `discard` under `--auto`, start
-`session-learnings --auto` in recording mode, or return that next action to the
-orchestrator, once no confirmation of step 6 is pending; with one pending, the turn ends
-on it, and `session-learnings` follows the user's answer. Post-merge `evidence-pending`
+`session-learnings --auto` in recording mode when that skill is installed (it belongs to
+the `skills` plugin), or return that next action to the orchestrator, once no
+confirmation of step 6 is pending; with one pending, the turn ends on it, and
+`session-learnings` follows the user's answer. Post-merge `evidence-pending`
 also keeps the cycle incomplete; preserve its artifact and follow
 [post-merge.md](../implement/post-merge.md) without editing the tracked host
 on the base.
@@ -329,7 +330,7 @@ follows the table below; `evidence-pending` takes precedence over ordinary compl
 | Outcome | Next step |
 | --- | --- |
 | post-merge evidence is pending | `Next step: none - evidence-pending, preserve the local artifact and retry authorized publication` |
-| integrated (`merge`, `squash`), PR opened or updated, kept, paused, or discarded on request | `Next step: session-learnings - record what this change taught` |
+| integrated (`merge`, `squash`), PR opened or updated, kept, paused, or discarded on request | `Next step: session-learnings - record what this change taught` (when installed) |
 | no full `PASS` on the current tree, or the tree changed during the run | `Next step: verify - no full PASS on the current tree` |
 | full `PASS` judged on the working tree (`working`) | `Next step: none - commit the work for a verdict on a commit, or choose pr --draft` |
 | full `PASS`, but no `Review` (or `Ruling: no review`) for `merge` or `squash` | `Next step: cr-request - no code review on this tree` |
@@ -397,5 +398,5 @@ this option choice grants no evidence-comment or production permission.
 - [Squash merge on the forge](squash.md)
 - [PR title and body](pr-body.md)
 - [Post-merge evidence and recovery](../implement/post-merge.md)
-- Next step: `session-learnings`, `verify` when the gate fails, or `cr-request` when a
+- Next step: `session-learnings` (when installed), `verify` when the gate fails, or `cr-request` when a
   review or a re-review is still needed

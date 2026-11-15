@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.17] - 2026-11-15
+
+1. `session-learnings` moved to the `skills` plugin (sentimony/skills v0.0.112); the end-of-task step runs it "when installed", with no dependency between plugins.
+
 ## [0.0.16] - 2026-11-14
 
 1. Records the starting point of each initially dirty regular file: `scripts/snapshot_record.py capture` stores its bytes under `~/.sentimony/agentflow/implement/<project>/<branch>/snapshots/` (0700/0400) and appends `Snapshot:` lines (or `unavailable <reason>` for symlinks and unreadable or outside files); `parse` rejects mismatched hashes, paths outside the repo and extra fields. `parse` reads only regular files within a size cap, never a FIFO or device named by a line. `Snapshot` never blocks work (`20261101-1158`).

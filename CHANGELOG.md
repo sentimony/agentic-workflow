@@ -3,6 +3,12 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.31] - 2026-11-15
+
+1. session-learnings 0.0.15 leaves this plugin and continues as 0.0.16 in the `skills` plugin (sentimony/skills v0.0.112); finalize 0.0.16 and implement 0.0.17 name it "when installed".
+2. cr-request 0.0.23: `brief_metrics` is always in the owner adapter `prepare` payload (cross-agent 0.0.12 accepts it; `--metrics` does nothing), and prior dispositions carry the author of each row (`20261112-1757`).
+3. Do not merge before sentimony/skills v0.0.112 and cross-agent v0.0.12 are tagged.
+
 ## [0.0.30] - 2026-11-14
 
 1. verify 0.0.16, finalize 0.0.15: `Verify` carries a context digest, and the delivery gate is one checked procedure (`record_gate.py`) covering tree, context, code review and open blockers.

@@ -3,11 +3,13 @@ import copy
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import unittest
 
 WORKFLOW = Path(__file__).resolve().parents[1] / '.github/workflows/auto-reviewer.yaml'
-PIN = 'd431253a764823c2414bf51e496b8a8c65adef78'
+# The caller pins a full commit SHA; the test checks the form, not one commit.
+USES = re.compile(r'sentimony/github-workflows/\.github/workflows/auto-reviewer-shared\.yaml@[0-9a-f]{40}')
 NAME = 'Auto Reviewer'
 CI_JOB = 'validate'
 
@@ -32,7 +34,7 @@ def validate(w):
     assert set(w['jobs']) == {'auto_review'}
     job = w['jobs']['auto_review']
     assert set(job) == {'uses', 'with', 'secrets'}
-    assert job['uses'] == 'sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@' + PIN
+    assert USES.fullmatch(job['uses'])
     assert job['with'] == {'required-ci-job': CI_JOB, 'pr': "${{ inputs.pr || '' }}"}
     assert job['secrets'] == {'AUTO_REVIEWER_YNGWALD': '${{ secrets.AUTO_REVIEWER_YNGWALD }}',
                               'CLAUDE_CODE_OAUTH_TOKEN': '${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}'}
@@ -65,7 +67,7 @@ class CallerContractTest(unittest.TestCase):
                 elif mutation == 'extra_secret':
                     job['secrets']['EXTRA'] = '${{ secrets.EXTRA }}'
                 elif mutation == 'old_ref':
-                    job['uses'] = job['uses'].replace('@'+PIN, '@v0.0.1')
+                    job['uses'] = job['uses'].rpartition('@')[0] + '@v0.0.1'
                 else:
                     job['uses'] = job['uses'].replace('/auto-reviewer-shared.yaml@', '/wrong-workflow.yaml@')
                 with self.assertRaises(AssertionError):

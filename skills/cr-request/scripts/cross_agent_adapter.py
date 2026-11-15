@@ -687,7 +687,7 @@ def _review_artifact(request, context, result):
 
 def _disposition_author(row):
     author = row.get('decided_by') if isinstance(row, dict) else None
-    return author if isinstance(author, str) and author else 'unknown'
+    return author if author in ('host', 'owner') else 'unknown'
 
 
 def _dispositions_block(rows):

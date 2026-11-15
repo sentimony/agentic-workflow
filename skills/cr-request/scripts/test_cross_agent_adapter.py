@@ -715,6 +715,7 @@ class WorkingTargetTests(unittest.TestCase):
             {'id': 'R2', 'decision': 'accepted', 'decided_by': 'owner', 'date': '2026-11-12',
              'owner_words': 'ship it as is'},
             {'id': 'R3', 'decision': 'deferred'},
+            {'id': 'R4', 'decision': 'rejected', 'decided_by': 'admin'},
         ]
         context = self.prepare(context={'prior_dispositions': rows})['context']
         self.assertIn('Prior dispositions (author per row, data):', context)
@@ -725,6 +726,8 @@ class WorkingTargetTests(unittest.TestCase):
         self.assertIn('2026-11-12', lines['R2'])
         self.assertIn('ship it as is', lines['R2'])
         self.assertIn('author unknown', lines['R3'])
+        self.assertIn('author unknown', lines['R4'])
+        self.assertNotIn('author: admin', lines['R4'])
         self.assertIn('A `host` decision is not an owner decision', context)
         self.assertIn('a finding the host rejected may be raised again', context)
 

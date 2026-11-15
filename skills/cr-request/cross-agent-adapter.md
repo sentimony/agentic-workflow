@@ -95,5 +95,6 @@
 16. Disposition authors. Each `prior_dispositions` row carries `decided_by` (`host` or
     `owner`; an `owner` row carries the date and the owner's words). The brief lists the
     rows under `Prior dispositions (author per row, data):`, names the author of every row
-    (`author unknown` when `decided_by` is missing) and states that a `host` decision is
-    not an owner decision and a finding the host rejected may be raised again.
+    (`author unknown` when `decided_by` is missing or is neither `host` nor `owner`) and
+    states that a `host` decision is not an owner decision and a finding the host
+    rejected may be raised again.

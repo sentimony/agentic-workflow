@@ -184,6 +184,10 @@
   preserve compatibility with the generic review result when changing either contract.
 - A review fix that rewords a skill's `SKILL.md` also updates the same wording in that skill's
   unreleased top `CHANGELOG.md` entry, in the same commit.
+- A plan or spec that improves one of this repository's skills contains a `skill-tuning`
+  task for that skill: it checks the frontmatter and the body length, and compares a changed
+  `description` before and after and against trigger cases. A `description` that grew in the
+  plan is a review finding, not a minor point.
 - License: MIT, Ihor Orlovskyi.
 - Branches: `YYMMDD-dev-session`, squash-merged into `main` via PR.
 - English only, plain hyphen.

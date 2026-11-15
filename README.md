@@ -168,9 +168,9 @@ npx skills add sentimony/agentic-workflow -s specify plan-craft implement verify
 ## Review operations
 
 The caller delegates to
-`sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@ab928503b0e21a3e98f7ba34ee9eeb22066cfca8`
+`sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@d431253a764823c2414bf51e496b8a8c65adef78`
 using the `validate` CI job adapter. The pin is the full SHA of a commit in its `main`; the caller
-names the version in a comment (`# v0.0.9`). Later upgrades update the caller and its
+names the version in a comment (`# v0.0.13`). Later upgrades update the caller and its
 contract test together. The preceding review phase reached Ready through `auto-reviewer.yaml@v0.0.3`;
 that review checked the proposed diff and does not prove the new engine's runtime.
 The shared workflow owns the engine and its tests; local `scripts/test_auto_reviewer.py`

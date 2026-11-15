@@ -6,9 +6,9 @@
 - `skills/<skill>/` - `SKILL.md`, `CHANGELOG.md`, `LICENSE`, reference files next to `SKILL.md`.
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
   The caller delegates to
-  `sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@ab928503b0e21a3e98f7ba34ee9eeb22066cfca8`
+  `sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml@d431253a764823c2414bf51e496b8a8c65adef78`
   using the `validate` CI job adapter. The pin is the full SHA of a commit in its `main`; the
-  caller names the version in a comment (`# v0.0.9`).
+  caller names the version in a comment (`# v0.0.13`).
   The shared workflow owns the engine and its tests;
   local `scripts/test_auto_reviewer.py` checks the caller contract. Run it with
   `python3 -m unittest discover -s scripts -p 'test_auto_reviewer.py'`.

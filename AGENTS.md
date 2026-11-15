@@ -7,8 +7,8 @@
 - `.github/workflows/ci.yml` - metadata, manifests, Unicode, and review-helper validation.
   The caller delegates to
   `sentimony/github-workflows/.github/workflows/auto-reviewer-shared.yaml`
-  using the `validate` CI job adapter. The pin is the full SHA of a commit in its `main`; the
-  caller names the version in a comment (`@<sha> # vX.Y.Z`); the pin itself lives only there.
+  using the `validate` CI job adapter. The caller references its `stable` branch, which that
+  repository moves to each released commit.
   The shared workflow owns the engine and its tests;
   local `scripts/test_auto_reviewer.py` checks the caller contract. Run it with
   `python3 -m unittest discover -s scripts -p 'test_auto_reviewer.py'`.

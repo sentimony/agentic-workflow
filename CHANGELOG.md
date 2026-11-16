@@ -6,6 +6,7 @@ Git commit subjects. Skill changelogs retain the detailed skill history.
 ## [0.0.32] - 2026-11-16
 
 1. cr-received 0.0.19: `reply_disposition.py` recognizes the glyph finding headings (`$\color{green}◎$ Low R1-F1`) next to the bold ones, so a REJECT reply no longer stops with `root_mismatch` on current Auto Reviewer threads.
+2. `skills.sh.json`: resolve-pr, resolve-ci and resume-task join the Skills group; the Renamed skills group becomes Deprecated, names what was renamed or moved where, and gains `session-learnings`.
 
 ## [0.0.31] - 2026-11-15
 

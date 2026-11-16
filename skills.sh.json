@@ -4,9 +4,12 @@
   "groupings": [
     {
       "title": "Skills",
-      "description": "Agentic Workflow, one change from request to merge (resolve-issue, specify, plan-craft, implement, verify, cr-request, cr-received, finalize).",
+      "description": "Agentic Workflow, one change from request to merge (resolve-issue, resolve-pr, resolve-ci, resume-task, specify, plan-craft, implement, verify, cr-request, cr-received, finalize).",
       "skills": [
         "resolve-issue",
+        "resolve-pr",
+        "resolve-ci",
+        "resume-task",
         "specify",
         "plan-craft",
         "implement",
@@ -17,11 +20,12 @@
       ]
     },
     {
-      "title": "Renamed skills",
-      "description": "Earlier names of renamed skills. No files remain under these names.",
+      "title": "Deprecated",
+      "description": "Skills that were renamed (cr-receive → cr-received) or moved to another repository (cross-cr → sentimony/cross-agent · session-learnings → sentimony/skills). No files remain under these names.",
       "skills": [
         "cr-receive",
-        "cross-cr"
+        "cross-cr",
+        "session-learnings"
       ]
     }
   ]

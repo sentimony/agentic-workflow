@@ -151,8 +151,17 @@
 - Renaming a released skill moves `skills/<old>/` to `skills/<new>/` like a directory rename:
   no file of the old skill remains. Its files change only in the name and its mentions; the
   version continues with a patch bump, and the CHANGELOG entry names the old name. The old
-  name goes to the last `Renamed skills` group of `skills.sh.json`, and README Install says to
+  name goes to the last `Deprecated` group of `skills.sh.json`, and README Install says to
   remove the old skill or reinstall. Content changes go in a separate PR and version.
+- `skills.sh.json` lists every skill skills.sh knows for this repository: a name missing
+  from it shows on the skills.sh page under an unwanted `Other skills` heading. Any change
+  that adds, renames, moves out or removes a skill updates the file in the same PR. A skill
+  under `skills/` goes to the `Skills` group, both its `skills` list and the parentheses of
+  its description, in README order. A name with no files left goes to the last `Deprecated`
+  group, and that group's description records it in two pairs of parentheses, entries
+  separated by ` · `: renamed skills as `old → new` (`cr-receive → cr-received`), skills
+  moved to another repository as `skill → owner/repo` (`cross-cr → sentimony/cross-agent ·
+  session-learnings → sentimony/skills`).
 1. `resolve-issue` owns issue orchestration. Stage skills remain usable standalone.
    Without auto, finish a meaningful stage and ask for the next transition. With auto,
    continue within current verified authority and pass the flag to every invoked skill.

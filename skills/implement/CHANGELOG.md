@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.18] - 2026-11-16
+
+1. Description names the renamed `sentimony/skills` skills `implement` and `subagents-implement` (were `plan-execution` and `plan-orchestration`).
+
 ## [0.0.17] - 2026-11-15
 
 1. `session-learnings` moved to the `skills` plugin (sentimony/skills v0.0.112); the end-of-task step runs it "when installed", with no dependency between plugins.

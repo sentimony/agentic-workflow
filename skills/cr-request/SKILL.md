@@ -1,9 +1,9 @@
 ---
 name: cr-request
-description: Pins a change and its tree fingerprint, then dispatches a read-only reviewer for separate verdicts and evidence-backed findings. Use when a finished task, branch, pull request, uncommitted work since a ref, or a spec or plan needs an independent review. Replaces devflow review-request.
+description: Pins a change and its tree fingerprint, then dispatches a read-only reviewer for separate verdicts and evidence-backed findings. Use when a finished task, branch, pull request, uncommitted work since a ref, or a spec or plan needs an independent review. Replaces devflow request-review.
 argument-hint: "[<base-ref>] [<spec-path>] [--exclude <path>] [--auto]"
 metadata:
-  version: "0.0.23"
+  version: "0.0.24"
 license: MIT
 ---
 

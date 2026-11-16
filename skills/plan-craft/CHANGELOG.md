@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.18] - 2026-11-16
+
+1. Description names the renamed `sentimony/skills` skill `plan-craft` (was `plan-crafting`); the preview skill is `md-preview` (was `doc-preview`).
+
 ## [0.0.17] - 2026-11-14
 
 1. Adds `scripts/plan_structure.py`: heading inventory that ignores fenced blocks and inline mentions, section replacement bounded by the next heading of the same or a higher level, and a diff check that fails on a lost or re-leveled heading. Step 6 calls the script instead of describing the boundary rule (`20261101-1158`).

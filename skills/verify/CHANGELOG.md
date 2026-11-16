@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.17] - 2026-11-16
+
+1. Description names the renamed `sentimony/skills` skill `verify-gate` (was `verification-gate`).
+
 ## [0.0.16] - 2026-11-14
 
 1. Bind `Verify` to the requirements context: the line now carries `context <digest>` from the new `scripts/context_digest.py`, a digest failure gives `BLOCKED (context digest failed)`, and a repeated FAIL counts as the same state only when tree and digest both match (`20261028-2301`, `20261029-2037`).

@@ -3,6 +3,10 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.33] - 2026-11-16
+
+1. Follow the 14 skill renames in `sentimony/skills` (not yet released there): specify 0.0.16, cr-received 0.0.20, cr-request 0.0.24, finalize 0.0.17, implement 0.0.18, plan-craft 0.0.18 and verify 0.0.17 use the new names in descriptions and bodies (`md-preview`, `received-review`, `request-review`, `verify-gate`, `subagents-implement`).
+
 ## [0.0.32] - 2026-11-16
 
 1. cr-received 0.0.19: `reply_disposition.py` recognizes the glyph finding headings (`$\color{green}◎$ Low R1-F1`) next to the bold ones, so a REJECT reply no longer stops with `root_mismatch` on current Auto Reviewer threads.

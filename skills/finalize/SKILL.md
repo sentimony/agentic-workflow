@@ -1,9 +1,9 @@
 ---
 name: finalize
-description: Decides how verified work leaves the branch. Use when verified work awaits merge, push, a pull request (PR), keeping or discarding the branch, or worktree cleanup. Not for unverified work (verify), open review findings (cr-received), a plain commit, or release work with its own checklist. Replaces devflow branch-finish.
+description: Decides how verified work leaves the branch. Use when verified work awaits merge, push, a pull request (PR), keeping or discarding the branch, or worktree cleanup. Not for unverified work (verify), open review findings (cr-received), a plain commit, or release work with its own checklist. Replaces devflow finalize.
 argument-hint: "[merge|pr|squash|keep|discard|pause] [--draft] [--auto]"
 metadata:
-  version: "0.0.16"
+  version: "0.0.17"
 license: MIT
 ---
 

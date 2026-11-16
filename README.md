@@ -5,32 +5,32 @@
 Agent skills for Claude Code, Codex, and other AI coding agents, packaged as the
 `agentflow` plugin.
 
-Version: `v0.0.32`
+Version: `v0.0.33`
 
 ## Plugins
 
 | Plugin | Version | Skills |
 | --- | --- | --- |
-| [agentflow](.) | 0.0.32 | resolve-issue, resolve-pr, resolve-ci, resume-task, specify, plan-craft, implement, verify, cr-request, cr-received, finalize |
+| [agentflow](.) | 0.0.33 | resolve-issue, resolve-pr, resolve-ci, resume-task, specify, plan-craft, implement, verify, cr-request, cr-received, finalize |
 
 ## Skills
 
 | Skill | Version | Command | Description |
 | --- | --- | --- | --- |
-| [specify](skills/specify/SKILL.md) | 0.0.15 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
-| [plan-craft](skills/plan-craft/SKILL.md) | 0.0.17 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
-| [implement](skills/implement/SKILL.md) | 0.0.17 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
-| [verify](skills/verify/SKILL.md) | 0.0.16 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
-| [cr-request](skills/cr-request/SKILL.md) | 0.0.23 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; preserve the full report, evidence, and reviewer provenance. |
-| [cr-received](skills/cr-received/SKILL.md) | 0.0.19 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
-| [finalize](skills/finalize/SKILL.md) | 0.0.16 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
+| [specify](skills/specify/SKILL.md) | 0.0.16 | `/specify` | Triage a request into a direct change, a short note, or a full design, and write an approved spec with checkable acceptance criteria. |
+| [plan-craft](skills/plan-craft/SKILL.md) | 0.0.18 | `/plan-craft` | Turn an approved spec into a task plan with exact files, checks, and commits, ending in an execution record the chain fills in. |
+| [implement](skills/implement/SKILL.md) | 0.0.18 | `/implement` | Execute a plan with resumable task evidence; after merge, publish authorized completion evidence with readback or retain an explicit local pending record. |
+| [verify](skills/verify/SKILL.md) | 0.0.17 | `/verify` | Check completion claims on the pinned tree with isolated mutable dependencies and fresh target evidence; return PASS, FAIL, INCOMPLETE, or BLOCKED. |
+| [cr-request](skills/cr-request/SKILL.md) | 0.0.24 | `/cr-request` | Pin the exact change, state its intent, and dispatch a read-only reviewer; preserve the full report, evidence, and reviewer provenance. |
+| [cr-received](skills/cr-received/SKILL.md) | 0.0.20 | `/cr-received` | Verify each review finding against the current code, decide with evidence, fix only what holds up, and report per finding. |
+| [finalize](skills/finalize/SKILL.md) | 0.0.17 | `/finalize` | Guard local readiness and strict merge eligibility; preserve post-merge evidence, remove proven transferred duplicates, and separately guard branch/workspace disposal. |
 | [resolve-issue](skills/resolve-issue/SKILL.md) | 0.0.5 | `/resolve-issue` | Run issue intake through configured delivery with durable recovery and fresh host authority. |
 | [resolve-pr](skills/resolve-pr/SKILL.md) | 0.0.1 | `/resolve-pr` | Take over an existing PR and route its review findings, failing checks and verification toward merge readiness. |
 | [resolve-ci](skills/resolve-ci/SKILL.md) | 0.0.1 | `/resolve-ci` | Reproduce one CI failure locally, find its cause and verify the fix. |
 | [resume-task](skills/resume-task/SKILL.md) | 0.0.1 | `/resume-task` | Restore an interrupted task from its journal and the current tree, then name the stage to continue. |
 
 `specify` and `plan-craft` use the separately installed
-[`doc-preview`](https://github.com/sentimony/skills/tree/main/skills/doc-preview) skill
+[`md-preview`](https://github.com/sentimony/skills/tree/main/skills/md-preview) skill
 for document previews. If it is unavailable, they report that and continue.
 
 ## Workflow
@@ -139,9 +139,9 @@ plugin as shown below.
 
 agentflow replaces these sentimony/skills devflow skills; remove them from a workspace
 that installs agentflow, or they intercept the same requests: `scope-triage`,
-`plan-crafting`, `plan-execution` (earlier `inline-plan-dev`), `plan-orchestration`
-(earlier `subagent-plan-dev`), `verification-gate`, `branch-finish`, `review-request`,
-`review-resolution`, and `cross-review`.
+`plan-craft` of `sentimony/skills`, `implement` of `sentimony/skills` (earlier
+`inline-plan-dev`), `subagents-implement` (earlier `subagent-plan-dev`), `verify-gate`,
+`finalize` of `sentimony/skills`, `request-review`, `received-review`, and `cross-review`.
 `session-learnings` moved to the `skills` plugin (sentimony/skills v0.0.112); install that plugin, or remove the old skill from a reinstalled workspace. `finalize` and `implement` still name it as the next step when it is installed.
 Install standalone `cross-agent` separately for cross-model delegation.
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.17] - 2026-11-16
+
+1. Description names the renamed `sentimony/skills` skill `finalize` (was `branch-finish`).
+
 ## [0.0.16] - 2026-11-15
 
 1. `session-learnings` moved to the `skills` plugin (sentimony/skills v0.0.112); the next step names it "when installed", with no dependency between plugins.

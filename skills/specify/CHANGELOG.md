@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.16] - 2026-11-16
+
+1. Name the `sentimony/skills` preview skill `md-preview` (was `doc-preview`).
+
 ## [0.0.15] - 2026-11-13
 
 1. Flat layout: reference files moved next to SKILL.md; no content change.

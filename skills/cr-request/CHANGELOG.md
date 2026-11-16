@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.24] - 2026-11-16
+
+1. Description names the renamed `sentimony/skills` skill `request-review` (was `review-request`).
+
 ## [0.0.23] - 2026-11-15
 
 1. Owner adapter: `brief_metrics` is always part of the `prepare` payload (the core accepts it from cross-agent 0.0.12); `--metrics` is accepted and does nothing.

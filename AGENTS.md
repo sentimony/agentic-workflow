@@ -151,8 +151,7 @@
 - Renaming a released skill moves `skills/<old>/` to `skills/<new>/` like a directory rename:
   no file of the old skill remains. Its files change only in the name and its mentions; the
   version continues with a patch bump, and the CHANGELOG entry names the old name. The old
-  name goes to the last `Deprecated` group of `skills.sh.json`, and README Install says to
-  remove the old skill or reinstall. Content changes go in a separate PR and version.
+  name goes to the last `Deprecated` group of `skills.sh.json`. Content changes go in a separate PR and version.
 - `skills.sh.json` lists every skill skills.sh knows for this repository: a name missing
   from it shows on the skills.sh page under an unwanted `Other skills` heading. Any change
   that adds, renames, moves out or removes a skill updates the file in the same PR. A skill
@@ -172,9 +171,11 @@
    verified project contracts; unknown contracts block their actions. Native/full
    production acceptance remains unverified by synthetic tests. The installed review
    adapter remains owner of review policy; ordinary consultations use the generic core.
-- agentflow skills replace their sentimony/skills devflow counterparts (scope-triage,
-  plan-crafting, plan-execution, plan-orchestration, verification-gate, branch-finish,
-  review-request, review-resolution, cross-review): a description is a minimal
+- agentflow skills replace their sentimony/skills devflow counterparts (`scope-triage`,
+  `plan-craft`, `implement`, `subagents-implement`, `verify-gate`, `finalize`,
+  `request-review`, `received-review`, `cross-review`; the names `plan-craft`, `implement`
+  and `finalize` also belong to agentflow skills, here they mean the `sentimony/skills`
+  ones): a description is a minimal
   thesis followed by `Use when ...`, without `You MUST`, and ends by naming the devflow skill it
   replaces. All eleven agentflow skills follow the thesis and `Use when` shape; the seven with a
   devflow counterpart also end with `Replaces devflow <skill>.` (`resolve-issue`

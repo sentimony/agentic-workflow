@@ -1,9 +1,9 @@
 ---
 name: cr-received
-description: Verifies each review finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, then routes back to verify. Use when code review, PR comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix. Replaces devflow review-resolution.
+description: Verifies each review finding against the current tree, decides accept, reject, partial, defer, or escalate with evidence, fixes only what holds up, then routes back to verify. Use when code review, PR comments, CI or static-analysis output, or reviewer suggestions need a decision before any fix. Replaces devflow received-review.
 argument-hint: "[<review-path>... | PR #<n>] [--auto]"
 metadata:
-  version: "0.0.19"
+  version: "0.0.20"
 license: MIT
 ---
 

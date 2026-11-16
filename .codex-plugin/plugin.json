@@ -1,6 +1,6 @@
 {
   "name": "agentflow",
-  "version": "0.0.32",
+  "version": "0.0.33",
   "description": "Agentic workflow skills for one change from request to merge: specify the design, craft the plan, implement it, verify with evidence, request and resolve an independent code review, and finalize the branch.",
   "author": {
     "name": "Ihor Orlovskyi",

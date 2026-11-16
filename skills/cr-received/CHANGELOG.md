@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.19] - 2026-11-16
+
+1. `reply_disposition.py` accepts the finding headings the Auto Reviewer posts now: the colored glyph with `High`, `Medium` or `Low` (`$\color{green}◎$ Low R1-F1`), the older `\bigcirc` glyph and the badge image, besides the bold `**Minor** R1-F1` form. Each form maps to the ledger severity (`Critical`/`High`, `Important`/`Medium`, `Minor`/`Low`); a mismatch with the ledger still stops with `root_mismatch`.
+
 ## [0.0.18] - 2026-11-14
 
 1. The per-phase round budget is counted by `cr-request/scripts/round_budget.py`; the skill points to it instead of repeating the phase rules. Behavior is unchanged (`20261030-0851`).

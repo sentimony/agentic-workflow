@@ -138,7 +138,10 @@ verified `owner/repo`; `gh repo view` uses that configuration even when the plan
 in a different repository. The reason file is UTF-8 and contains the human-readable
 evidence. The configured `gh` repository must match `--repository`; the current API actor and any reused marker's
 API actor need repository write, maintain, or admin permission. The root must match the
-original review, finding ID, path, and canonical ledger. The helper serializes its own
+original review, finding ID, path, and canonical ledger. The inline heading may be the
+bold ledger word (`**Minor** R1-F1`) or the colored glyph with `High`, `Medium` or `Low`
+(`$\color{green}◎$ Low R1-F1`); `Critical`, `Important` and `Minor` in the ledger show as
+High, Medium and Low. The helper serializes its own
 writers per finding on this host, but cannot make GitHub writes globally transactional.
 It returns JSON: `posted`, `use_existing`, `marker_conflict` with both states and
 `needs_ruling`, or `needs_ruling` for a failed guard or uncertain write. Do not treat a

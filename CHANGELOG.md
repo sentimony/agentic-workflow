@@ -3,6 +3,10 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.32] - 2026-11-16
+
+1. cr-received 0.0.19: `reply_disposition.py` recognizes the glyph finding headings (`$\color{green}◎$ Low R1-F1`) next to the bold ones, so a REJECT reply no longer stops with `root_mismatch` on current Auto Reviewer threads.
+
 ## [0.0.31] - 2026-11-15
 
 1. session-learnings 0.0.15 leaves this plugin and continues as 0.0.16 in the `skills` plugin (sentimony/skills v0.0.112); finalize 0.0.16 and implement 0.0.17 name it "when installed".

@@ -15,6 +15,30 @@ MARKER = re.compile(r'<!--\s*cr-received-disposition:v1\s+(\{.*?\})\s*-->', re.S
 LEDGER = re.compile(r'<!--\s*claude-review-ledger:v1\s+(\{.*?\})\s*-->', re.S)
 FIELDS = {'schema_version', 'repository', 'pr_number', 'head_sha', 'origin_review_id', 'original_id', 'path', 'disposition', 'reason', 'owner'}
 
+# Inline finding headings the reviewer has posted. The ledger severity is always Critical, Important
+# or Minor; the heading shows it as a bold word (old form), a shields.io badge, or a colored glyph
+# with High, Medium or Low (current form, `\\bigcirc` is the older glyph). Each form is bound to its
+# severity so a heading cannot claim a different severity than the ledger.
+SEVERITY_FORMS = {
+    'Critical': ('Critical', 'High', 'E5534B', 'red'),
+    'Important': ('Important', 'Medium', 'C99A3A', 'orange'),
+    'Minor': ('Minor', 'Low', '539BF5', 'green'),
+}
+
+def _heading_alternatives():
+    alts = []
+    for severity, (word, label, badge, color) in SEVERITY_FORMS.items():
+        glyph = r'\$\\color\{' + color + r'\}(?:\u25ce|\{\\bigcirc\})\$ ' + label
+        bold = r'\*\*' + word + r'\*\*'
+        image = r'!\[' + word + r'\]\(https://img\.shields\.io/badge/' + label + '-' + badge + r'\?style=(?:for-the-badge|flat-square)\)'
+        alts.append(f'(?P<{severity}>{bold}|{image}|{glyph})')
+    return '|'.join(alts)
+
+HEADING = r'^(?:' + _heading_alternatives() + r') (?P<id>R[1-9][0-9]*-(?:[A-Za-z0-9_-]+-)?F[1-9][0-9]*)(?=\s|$)'
+
+def heading_severity_of(match):
+    return next(name for name in SEVERITY_FORMS if match.group(name) is not None)
+
 class Stop(Exception):
     pass
 
@@ -181,10 +205,10 @@ def main():
                 or root.get('pull_request_url') != f'https://api.github.com/{prefix}/pulls/{a.pr}'
                 or root.get('in_reply_to_id') is not None): raise Stop('root_mismatch')
             body = root.get('body')
-            heading_pattern = r'^\*\*(Critical|Important|Minor)\*\* (R[1-9][0-9]*-(?:[A-Za-z0-9_-]+-)?F[1-9][0-9]*)(?=\s|$)'
             if not isinstance(body, str): raise Stop('root_mismatch')
-            heading = re.match(heading_pattern, body)
-            if not heading or heading.group(2) != a.original_id or len(re.findall(heading_pattern, body, re.M)) != 1: raise Stop('root_mismatch')
+            heading = re.match(HEADING, body)
+            if not heading or heading.group('id') != a.original_id or len(re.findall(HEADING, body, re.M)) != 1: raise Stop('root_mismatch')
+            heading_severity = heading_severity_of(heading)
             review = gh(f'{prefix}/pulls/{a.pr}/reviews/{a.origin_review_id}')
             markers = LEDGER.findall(review.get('body', ''))
             if len(markers) != 1: raise Stop('finding_mapping_invalid')
@@ -195,7 +219,7 @@ def main():
                 or ledger.get('published_review_id') != a.origin_review_id or ledger.get('review_source_id') != a.origin_review_id
                 or ledger.get('head_sha') != review.get('commit_id')): raise Stop('finding_mapping_invalid')
             matches = [x for x in ledger.get('findings', []) if isinstance(x, dict) and x.get('origin_review_id') == a.origin_review_id and x.get('original_id') == a.original_id and x.get('path') == a.path]
-            if len(matches) != 1 or heading.group(1) != matches[0]['severity']: raise Stop('finding_mapping_invalid')
+            if len(matches) != 1 or heading_severity != matches[0]['severity']: raise Stop('finding_mapping_invalid')
             def existing():
                 found = []
                 page = 1

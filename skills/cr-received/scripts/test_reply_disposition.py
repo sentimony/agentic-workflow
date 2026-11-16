@@ -112,6 +112,35 @@ class ReplyTests(unittest.TestCase):
             with self.subTest(body=body):
                 (self.p/'trace.jsonl').unlink(missing_ok=True); self.state['root_body'] = body
                 out, writes = self.run_helper(); self.assertNotEqual(out.returncode, 0, out.stdout); self.assertEqual(writes, [])
+    def test_heading_forms_map_to_ledger_severity(self):
+        glyph = lambda color, word: '$\\color{' + color + '}\u25ce$ ' + word
+        legacy = lambda color, word: '$\\color{' + color + '}{\\bigcirc}$ ' + word
+        badge = lambda word, path: '![' + word + '](https://img.shields.io/badge/' + path + '?style=flat-square)'
+        cases = [
+            ('Minor', '**Minor** R1-F1 - title'), ('Minor', glyph('green', 'Low') + ' R1-F1 - title'),
+            ('Minor', legacy('green', 'Low') + ' R1-F1'), ('Minor', badge('Minor', 'Low-539BF5') + ' R1-F1'),
+            ('Important', '**Important** R1-F1'), ('Important', glyph('orange', 'Medium') + ' R1-F1 - title'),
+            ('Critical', '**Critical** R1-F1'), ('Critical', glyph('red', 'High') + ' R1-F1 - title'),
+        ]
+        for severity, heading in cases:
+            with self.subTest(heading=heading):
+                (self.p/'trace.jsonl').unlink(missing_ok=True)
+                self.ledger['findings'][0]['severity'] = severity
+                self.state['ledger'] = '<!-- claude-review-ledger:v1 ' + json.dumps(self.ledger) + ' -->'
+                self.state['root_body'] = heading + '\nEvidence.'
+                out, writes = self.run_helper(); self.assertEqual(out.returncode, 0, out.stdout); self.assertEqual(len(writes), 1)
+    def test_glyph_heading_rejects_mismatches(self):
+        glyph = lambda color, word: '$\\color{' + color + '}\u25ce$ ' + word
+        for body in (glyph('green', 'Low') + ' R1-F2 - title',
+                     glyph('orange', 'Medium') + ' R1-F1 - title',
+                     glyph('red', 'Low') + ' R1-F1 - title',
+                     glyph('green', 'Low') + ' R1-F1extra',
+                     'Intro\n' + glyph('green', 'Low') + ' R1-F1',
+                     glyph('green', 'Low') + ' R1-F1\n' + glyph('green', 'Low') + ' R1-F2',
+                     glyph('green', 'Minor') + ' R1-F1', '**Low** R1-F1'):
+            with self.subTest(body=body):
+                (self.p/'trace.jsonl').unlink(missing_ok=True); self.state['root_body'] = body
+                out, writes = self.run_helper(); self.assertNotEqual(out.returncode, 0, out.stdout); self.assertEqual(writes, [])
     def test_invalid_root_fields(self):
         for field, value in [('root_id', True), ('root_review_id', True), ('root_url', 'https://api.github.com/repos/owner/repo/pulls/43'), ('root_path', '../src/a.py'), ('root_body', 'R2-F1: finding')]:
             with self.subTest(field=field):

@@ -8,8 +8,8 @@ import subprocess
 import unittest
 
 WORKFLOW = Path(__file__).resolve().parents[1] / '.github/workflows/auto-reviewer.yaml'
-# The caller follows the stable branch of the shared workflow.
-USES = re.compile(r'sentimony/github-workflows/\.github/workflows/auto-reviewer-shared\.yaml@stable')
+# The caller pins a commit SHA of the shared workflow.
+USES = re.compile(r'sentimony/github-workflows/\.github/workflows/shared-auto-reviewer\.yaml@[0-9a-f]{40}')
 NAME = 'Auto Reviewer'
 CI_JOB = 'validate'
 
@@ -69,7 +69,7 @@ class CallerContractTest(unittest.TestCase):
                 elif mutation == 'old_ref':
                     job['uses'] = job['uses'].rpartition('@')[0] + '@v0.0.1'
                 else:
-                    job['uses'] = job['uses'].replace('/auto-reviewer-shared.yaml@', '/wrong-workflow.yaml@')
+                    job['uses'] = job['uses'].replace('/shared-auto-reviewer.yaml@', '/wrong-workflow.yaml@')
                 with self.assertRaises(AssertionError):
                     validate(w)
 

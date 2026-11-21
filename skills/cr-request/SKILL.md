@@ -3,7 +3,7 @@ name: cr-request
 description: Pins a change and its tree fingerprint, then dispatches a read-only reviewer for separate verdicts and evidence-backed findings. Use when a finished task, branch, pull request, uncommitted work since a ref, or a spec or plan needs an independent review. Replaces devflow request-review.
 argument-hint: "[<base-ref>] [<spec-path>] [--exclude <path>] [--auto]"
 metadata:
-  version: "0.0.24"
+  version: "0.0.25"
 license: MIT
 ---
 
@@ -30,7 +30,33 @@ plan, intent comes from the conversation and commit messages; no journal is writ
    validates the complete review before domain completion.
 2. Target selection, fingerprints, findings and intake remain owned by this workflow.
    Missing adapters or partial reports cannot turn transport success into valid review.
-3. A review dispatched through `cross-agent` uses its `read-only` mode. For a reviewer
+3. Commands, in this order. `<adapter>` is `python3 <cr-request root>/scripts/cross_agent_adapter.py`;
+   each call reads the host JSON envelope on stdin and prints one JSON object (an error
+   exits 2 with the reason on stderr). Envelope fields and details:
+   [owner adapter](cross-agent-adapter.md).
+   1. `<adapter> --stage prepare` with `payload.assignment` (the text starts with
+      `cr-request`; the rest is free prose) and `owner_context`. Returns `payload.context`:
+      the standard brief with every report label and the target identity. It carries
+      only the first word of the assignment: append the task text (goal, criteria, context)
+      after it as the reviewer's brief, and change nothing in the part `prepare` returned.
+      `accepted: false` with `status` and `reason` means stop and report it.
+   2. Launch the reviewer through `cross-agent` in `read-only` mode with that brief.
+   3. `<adapter> --stage validate` with `payload.result` = `{status: COMPLETED,
+      target_identity, output}`. Accepted means the report is complete; a rejection names
+      the missing label and says it is missing from the reviewer response.
+   4. `<adapter> --stage intake` with the same envelope, plus `task_id`. Needs
+      `owner_context.artifact_root` (an absolute directory outside the target or ignored by
+      Git), an existing `<artifact_root>/<run-id>/` holding `identity.json` (the
+      `target_identity` JSON, same content), and `result.artifacts.output` =
+      `<artifact_root>/<run-id>/review.md` (absolute; the file is written by `intake`).
+      Without `artifacts.output` `intake` refuses. It returns `review_path`; the host then
+      records the `Review` line.
+4. A run of `cross_agent.py run` with a self-written brief is not a review under this skill:
+   record it as `Ruling: review R<n> origin external` and do not close a project gate on it.
+   The round need not be repeated: pass its output through the `validate` command as
+   `result.output` with the `target_identity` it reviewed; for `intake` prepare the run
+   directory and `artifacts.output` as in command 4. A report that fails `validate` stays external.
+5. A review dispatched through `cross-agent` uses its `read-only` mode. For a reviewer
    without a shell (Claude read-only has no Bash), the host sets `embed_diff: true` in
    `owner_context`, and `prepare` adds the diff of the committed boundary to the brief with
    its size and hash and the paths it leaves out; a change over the size limit is blocked

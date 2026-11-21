@@ -98,3 +98,14 @@
     (`author unknown` when `decided_by` is missing or is neither `host` nor `owner`) and
     states that a `host` decision is not an owner decision and a finding the host
     rejected may be raised again.
+17. Assignment text. `prepare` reads only the first word of `payload.assignment` (after an
+    optional leading `/` or `$`) to check the role; the rest is free prose and is never
+    shell-split, so apostrophes, quotes and a trailing backslash are fine. A missing-label
+    rejection from `validate` names the reviewer response as the place the label is missing:
+    `prepare` already puts every required label in the brief. A report from a direct
+    `cross_agent.py run` can be passed to `validate` and `intake` as `result.output` with the
+    identity it reviewed. `intake` also needs `owner_context.artifact_root` (absolute), an
+    existing run directory `<artifact_root>/<run-id>/` with `identity.json` equal to the
+    `target_identity`, and `result.artifacts.output` = `<artifact_root>/<run-id>/review.md`;
+    without it `intake` refuses. `payload.context` from `prepare` is the standard brief
+    only: the host appends the task text after it (see Standalone delegation in `SKILL.md`).

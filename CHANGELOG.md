@@ -3,6 +3,11 @@
 The historical entries below were reconstructed from annotated release tags and
 Git commit subjects. Skill changelogs retain the detailed skill history.
 
+## [0.0.34] - 2026-11-21
+
+1. cr-request 0.0.25: Standalone delegation lists the adapter commands and the `origin external` rule for a direct run; the adapter no longer fails `prepare` on an apostrophe, quote or trailing backslash in the assignment text; `validate` says a missing label is missing from the reviewer response.
+2. plan-craft 0.0.19, specify 0.0.17: the preview skill is `doc-preview` again (`sentimony/skills` v0.0.115).
+
 ## [0.0.33] - 2026-11-16
 
 1. Follow the 14 skill renames in `sentimony/skills` (not yet released there): specify 0.0.16, cr-received 0.0.20, cr-request 0.0.24, finalize 0.0.17, implement 0.0.18, plan-craft 0.0.18 and verify 0.0.17 use the new names in descriptions and bodies (`md-preview`, `received-review`, `request-review`, `verify-gate`, `subagents-implement`).

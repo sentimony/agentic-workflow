@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.25] - 2026-11-21
+
+1. Standalone delegation lists the adapter commands (`prepare`, reviewer launch, `validate`, `intake`), says that a direct `cross_agent.py run` with a self-written brief is an `origin external` review, and shows how to pass its output through `validate` and `intake` (with the run directory, `identity.json` and `artifacts.output` that `intake` needs), and says the task text is appended to the `prepare` brief (ihororlovskyi/skills-aiassist#140).
+2. `validate` names the reviewer response as the place a required label is missing; the labels are one constant, and a test checks the prepared brief lists each of them (ihororlovskyi/skills-aiassist#140).
+3. Owner adapter: `prepare` takes the first word of the assignment without `shlex`, so an apostrophe, a lone quote or a trailing backslash in the task text no longer ends the round as `UNAVAILABLE` (ihororlovskyi/skills-aiassist#144).
+
 ## [0.0.24] - 2026-11-16
 
 1. Description names the renamed `sentimony/skills` skill `request-review` (was `review-request`).

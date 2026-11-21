@@ -177,6 +177,33 @@ class ReviewPolicyTests(unittest.TestCase):
         validate['target_identity'] = identity
         return identity, path, validate
 
+    def test_documented_direct_run_recipe_passes_validate_and_intake(self):
+        identity = self.identity()
+        artifact_root = self.root / 'recipe-artifacts'
+        run = artifact_root / 'run-1'
+        run.mkdir(parents=True)
+        (run / 'identity.json').write_text(json.dumps(identity))
+        context = {'artifact_root': str(artifact_root)}
+        result = {'status': 'COMPLETED', 'target_identity': identity, 'output': report(identity),
+                  'artifacts': {'output': str(run / 'review.md')}}
+        for stage in ('validate', 'intake'):
+            request = self.request(stage, context=context, result=result)
+            request['task_id'] = 'task1'
+            payload = adapter.handle(request, stage)['payload']
+            self.assertTrue(payload['accepted'])
+        self.assertEqual((run / 'review.md').read_text(), report(identity))
+        self.assertEqual(Path(payload['review_path']), (run / 'review.md').resolve())
+
+    def test_intake_without_artifacts_output_is_refused(self):
+        identity = self.identity()
+        artifact_root = self.root / 'recipe-artifacts-missing'
+        (artifact_root / 'run-1').mkdir(parents=True)
+        result = {'status': 'COMPLETED', 'target_identity': identity, 'output': report(identity)}
+        request = self.request('intake', context={'artifact_root': str(artifact_root)}, result=result)
+        with self.assertRaisesRegex(ValueError, 'artifact root required'):
+            adapter.handle(request, 'intake')
+        self.assertEqual(list((artifact_root / 'run-1').iterdir()), [])
+
     def test_receiver_fix_commit_preserves_original_and_captures_post_identity(self):
         identity, path, request = self.execution_fixture()
         original = path.read_bytes()
@@ -522,6 +549,46 @@ class EmbeddedDiffTests(unittest.TestCase):
         stopped = self.prepare(context={'previous_tree': 'not-a-tree', 'embed_diff': True})
         self.assertEqual(stopped['status'], 'BLOCKED')
         self.assertIn('previous_tree must be a full tree ID', stopped['reason'])
+
+
+class AssignmentTextTests(unittest.TestCase):
+    """The assignment is prose: only its first word names the role (it is never shell-split)."""
+
+    setUp = EmbeddedDiffTests.setUp
+    git = EmbeddedDiffTests.git
+    commit = EmbeddedDiffTests.commit
+    request = EmbeddedDiffTests.request
+
+    def test_unbalanced_quotes_and_trailing_backslash_pass_prepare(self):
+        for tail in ("Review the author's change, it doesn't touch the API.",
+                     'Check the "quoted claim and stop.',
+                     'Look at the path C:\\temp\\',
+                     '\n  multi-line\n  text with an apostrophe: don\'t'):
+            with self.subTest(tail=tail):
+                envelope = self.request()
+                envelope['payload']['assignment'] = '/cr-request ' + tail
+                payload = adapter.handle(envelope, 'prepare')['payload']
+                self.assertTrue(payload['accepted'])
+
+    def test_first_word_still_has_to_match_the_role(self):
+        for assignment in ('', '   ', "cr-received it's wrong", 'review the change'):
+            with self.subTest(assignment=assignment):
+                envelope = self.request()
+                envelope['payload']['assignment'] = assignment
+                with self.assertRaisesRegex(ValueError, 'disagree'):
+                    adapter.handle(envelope, 'prepare')
+
+    def test_prepared_brief_lists_every_label_the_validator_requires(self):
+        brief = adapter.handle(self.request(), 'prepare')['payload']['context']
+        for label in adapter.REVIEW_LABELS:
+            with self.subTest(label=label):
+                self.assertRegex(brief, r'(?m)^\s*' + label + r':')
+
+    def test_missing_label_message_says_where_it_is_missing(self):
+        identity = adapter.capture_identity(self.repo, record_host='record.md', base=self.base)
+        text = report(identity).replace('Strengths: fixture', '')
+        with self.assertRaisesRegex(ValueError, 'missing Strengths in the reviewer response'):
+            adapter.validate_review(text, identity)
 
 
 class WorkingTargetTests(unittest.TestCase):

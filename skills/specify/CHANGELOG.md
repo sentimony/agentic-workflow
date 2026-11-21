@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.17] - 2026-11-21
+
+1. The preview skill is `doc-preview` again (renamed back from `md-preview` in `sentimony/skills` v0.0.115).
+
 ## [0.0.16] - 2026-11-16
 
 1. Name the `sentimony/skills` preview skill `md-preview` (was `doc-preview`).

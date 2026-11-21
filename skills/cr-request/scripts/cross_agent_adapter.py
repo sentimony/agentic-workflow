@@ -14,7 +14,6 @@ import os
 from pathlib import Path
 import re
 import shutil
-import shlex
 import stat
 import subprocess
 import sys
@@ -307,19 +306,23 @@ def embed_parts(repo, identity, context, *, limit=None):
     return block, built
 
 
+REVIEW_LABELS = ('Target reviewed', 'Reviewer model', 'Coverage', 'Intent', 'System', 'Craft',
+                 'Summary', 'Merge readiness', 'Findings', 'Evidence attribution',
+                 'Not checkable from the diff', 'Set aside', 'Open questions', 'Strengths')
+
+
 def validate_review(text, identity):
     """Validate the installed cr-request contract, including qualified finding IDs."""
     if not isinstance(text, str):
         raise ValueError('incomplete review: output must be text')
-    labels = ('Target reviewed', 'Reviewer model', 'Coverage', 'Intent', 'System', 'Craft',
-              'Summary', 'Merge readiness', 'Findings', 'Evidence attribution',
-              'Not checkable from the diff', 'Set aside', 'Open questions', 'Strengths')
+    labels = REVIEW_LABELS
     if identity.get('document'):
         # A spec or plan is not merged: document reviews do not require Merge readiness.
         labels = tuple(label for label in labels if label != 'Merge readiness')
     for label in labels:
         if not re.search(r'(?m)^' + re.escape(label) + r':', text):
-            raise ValueError('incomplete review: missing ' + label)
+            raise ValueError('incomplete review: missing ' + label + ' in the reviewer response '
+                             '(the prepared brief lists every required label; a hand-built brief may omit it)')
     for axis in ('Intent', 'System', 'Craft'):
         if not re.search(r'(?m)^' + axis + r':\s*(PASS|FINDINGS|UNASSESSED)\s*-\s*\S', text):
             raise ValueError('incomplete review axis: ' + axis)
@@ -723,7 +726,11 @@ def handle(request, stage, with_metrics=False):
                 return dict(expected, payload=_stop('BLOCKED', str(exc)))
             raise
     if stage == 'prepare':
-        words = shlex.split(payload['assignment'])
+        # The assignment is prose: take its first word only and never tokenize the rest.
+        assignment = payload['assignment']
+        if not isinstance(assignment, str):
+            raise ValueError('assignment must be text')
+        words = assignment.split(None, 1)
         name = words[0].lstrip('/$') if words else ''
         if name != ('cr-request' if role == 'review' else 'cr-received'):
             raise ValueError('assignment and trusted owner role disagree')

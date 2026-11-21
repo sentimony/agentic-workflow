@@ -524,6 +524,46 @@ class EmbeddedDiffTests(unittest.TestCase):
         self.assertIn('previous_tree must be a full tree ID', stopped['reason'])
 
 
+class AssignmentTextTests(unittest.TestCase):
+    """The assignment is prose: only its first word names the role (it is never shell-split)."""
+
+    setUp = EmbeddedDiffTests.setUp
+    git = EmbeddedDiffTests.git
+    commit = EmbeddedDiffTests.commit
+    request = EmbeddedDiffTests.request
+
+    def test_unbalanced_quotes_and_trailing_backslash_pass_prepare(self):
+        for tail in ("Review the author's change, it doesn't touch the API.",
+                     'Check the "quoted claim and stop.',
+                     'Look at the path C:\\temp\\',
+                     '\n  multi-line\n  text with an apostrophe: don\'t'):
+            with self.subTest(tail=tail):
+                envelope = self.request()
+                envelope['payload']['assignment'] = '/cr-request ' + tail
+                payload = adapter.handle(envelope, 'prepare')['payload']
+                self.assertTrue(payload['accepted'])
+
+    def test_first_word_still_has_to_match_the_role(self):
+        for assignment in ('', '   ', "cr-received it's wrong", 'review the change'):
+            with self.subTest(assignment=assignment):
+                envelope = self.request()
+                envelope['payload']['assignment'] = assignment
+                with self.assertRaisesRegex(ValueError, 'disagree'):
+                    adapter.handle(envelope, 'prepare')
+
+    def test_prepared_brief_lists_every_label_the_validator_requires(self):
+        brief = adapter.handle(self.request(), 'prepare')['payload']['context']
+        for label in adapter.REVIEW_LABELS:
+            with self.subTest(label=label):
+                self.assertRegex(brief, r'(?m)^\s*' + label + r':')
+
+    def test_missing_label_message_says_where_it_is_missing(self):
+        identity = adapter.capture_identity(self.repo, record_host='record.md', base=self.base)
+        text = report(identity).replace('Strengths: fixture', '')
+        with self.assertRaisesRegex(ValueError, 'missing Strengths in the reviewer response'):
+            adapter.validate_review(text, identity)
+
+
 class WorkingTargetTests(unittest.TestCase):
     """`owner_context.target: working`: uncommitted work reviewed through one embedded diff."""
 

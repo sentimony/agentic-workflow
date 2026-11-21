@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.19] - 2026-11-21
+
+1. The preview skill is `doc-preview` again (renamed back from `md-preview` in `sentimony/skills` v0.0.115).
+
 ## [0.0.18] - 2026-11-16
 
 1. Description names the renamed `sentimony/skills` skill `plan-craft` (was `plan-crafting`); the preview skill is `md-preview` (was `doc-preview`).

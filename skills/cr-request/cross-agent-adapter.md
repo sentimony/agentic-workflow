@@ -104,4 +104,8 @@
     rejection from `validate` names the reviewer response as the place the label is missing:
     `prepare` already puts every required label in the brief. A report from a direct
     `cross_agent.py run` can be passed to `validate` and `intake` as `result.output` with the
-    identity it reviewed (see Standalone delegation in `SKILL.md`).
+    identity it reviewed. `intake` also needs `owner_context.artifact_root` (absolute), an
+    existing run directory `<artifact_root>/<run-id>/` with `identity.json` equal to the
+    `target_identity`, and `result.artifacts.output` = `<artifact_root>/<run-id>/review.md`;
+    without it `intake` refuses. `payload.context` from `prepare` is the standard brief
+    only: the host appends the task text after it (see Standalone delegation in `SKILL.md`).

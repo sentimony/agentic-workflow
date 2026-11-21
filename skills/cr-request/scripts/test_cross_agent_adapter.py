@@ -177,6 +177,33 @@ class ReviewPolicyTests(unittest.TestCase):
         validate['target_identity'] = identity
         return identity, path, validate
 
+    def test_documented_direct_run_recipe_passes_validate_and_intake(self):
+        identity = self.identity()
+        artifact_root = self.root / 'recipe-artifacts'
+        run = artifact_root / 'run-1'
+        run.mkdir(parents=True)
+        (run / 'identity.json').write_text(json.dumps(identity))
+        context = {'artifact_root': str(artifact_root)}
+        result = {'status': 'COMPLETED', 'target_identity': identity, 'output': report(identity),
+                  'artifacts': {'output': str(run / 'review.md')}}
+        for stage in ('validate', 'intake'):
+            request = self.request(stage, context=context, result=result)
+            request['task_id'] = 'task1'
+            payload = adapter.handle(request, stage)['payload']
+            self.assertTrue(payload['accepted'])
+        self.assertEqual((run / 'review.md').read_text(), report(identity))
+        self.assertEqual(Path(payload['review_path']), (run / 'review.md').resolve())
+
+    def test_intake_without_artifacts_output_is_refused(self):
+        identity = self.identity()
+        artifact_root = self.root / 'recipe-artifacts-missing'
+        (artifact_root / 'run-1').mkdir(parents=True)
+        result = {'status': 'COMPLETED', 'target_identity': identity, 'output': report(identity)}
+        request = self.request('intake', context={'artifact_root': str(artifact_root)}, result=result)
+        with self.assertRaisesRegex(ValueError, 'artifact root required'):
+            adapter.handle(request, 'intake')
+        self.assertEqual(list((artifact_root / 'run-1').iterdir()), [])
+
     def test_receiver_fix_commit_preserves_original_and_captures_post_identity(self):
         identity, path, request = self.execution_fixture()
         original = path.read_bytes()
